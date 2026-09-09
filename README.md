@@ -1,12 +1,24 @@
+<div align="center">
+
+<img src="assets/icon.png" alt="brAInny" width="150" />
+
 # brAInny
 
-<img src="assets/logo.jpg" alt="brAInny logo" width="200" />
+**Your ideas don't have to blow away with the wind.**
+
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue.svg)](pyproject.toml)
+[![Status: v0 seed](https://img.shields.io/badge/status-v0%20seed-orange.svg)](OPERATIONS.md)
+
+</div>
 
 > **Every session with AI, you invent things you never write down — a
 > precaution, a trick, a working fix — and by tomorrow they're gone with
 > the wind. brAInny catches them before they blow away, so you can come
 > back to any of them later, reuse them instead of re-discovering them,
 > and watch what you know actually compound, session after session.**
+
+---
 
 ## The problem this solves
 
@@ -34,6 +46,8 @@ It works for anyone who works with AI, not just developers — a
 precaution, a structure, a working approach is the same shape of thing
 whether you write code, contracts, prose, or research.
 
+---
+
 ## How it works, in one picture
 
 ```
@@ -52,10 +66,12 @@ Nothing runs on a server, nothing leaves your machine unless you
 explicitly point it at a central folder — and even then, syncing to
 GitHub is a separate, explicit command, never silent.
 
+---
+
 ## Install
 
 ```bash
-git clone https://github.com/<you>/brainny
+git clone https://github.com/AlsammanAlsamman/brainny
 cd brainny
 pip install -e ".[dev]"
 ```
@@ -64,6 +80,8 @@ That puts a `brainny` command on your PATH — usable from **any** project
 directory, not just this repo — plus the importable `brainny` package.
 (Not published to PyPI yet — the name is confirmed free, publishing is
 just a deliberate later step.)
+
+---
 
 ## Use it
 
