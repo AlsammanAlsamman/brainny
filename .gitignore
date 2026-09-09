@@ -6,3 +6,9 @@ build/
 dist/
 .venv/
 venv/
+
+# brainny's own captured ideas: personal/local per-project data, same as
+# for any project that uses brainny — not something the tool's own repo
+# should ship or track. Untracked here on purpose; keep dogfooding it
+# locally if you like, it just doesn't belong in git history going forward.
+brainny-out/

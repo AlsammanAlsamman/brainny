@@ -172,7 +172,9 @@ brainny/                 the CLI + engine (Python, assistant-agnostic)
 skills/brainny/          the capture skills (assistant-facing prompts)
 prompts/                 entry + project-nature templates
 tests/                   57 tests, see SEED.md §6 for the testing philosophy
-brainny-out/             this project's own brain — brAInny dogfeeds itself
+brainny-out/             where captures land when you use brainny *on*
+                         this repo (gitignored — same as in any project;
+                         not shipped, this is per-user local data)
 assets/icon.png          brand mark
 SEED.md                  the living design doc — read this first
 OPERATIONS.md            how it actually runs day to day
