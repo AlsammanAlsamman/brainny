@@ -1,0 +1,18 @@
+[
+  {
+    "kind": "technique",
+    "title": "Two-pass capture: project-aware then project-blind",
+    "summary": "Run a precision pass tuned to the project, then a separate recall pass that ignores the project entirely to catch off-topic sparks.",
+    "detail": "Precision and recall pull in opposite directions inside one filter, so splitting into two passes lets each pass tune to its own goal instead of compromising.",
+    "domain": "brainny-design",
+    "tags": ["capture", "precision-recall"]
+  },
+  {
+    "kind": "precaution",
+    "title": "Never let a similarity threshold auto-decide keep/drop",
+    "summary": "Statistics should shortlist candidates; only the model should adjudicate whether two ideas are the same.",
+    "domain": "brainny-design",
+    "tags": ["dedup", "embeddings"],
+    "trigger": "before wiring any embedding-similarity check into an automated keep/drop decision"
+  }
+]

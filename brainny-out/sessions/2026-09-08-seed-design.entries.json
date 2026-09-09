@@ -1,0 +1,25 @@
+[
+  {
+    "kind": "technique",
+    "title": "Two-pass capture: project-aware precision pass + project-blind recall pass",
+    "summary": "Precision (what's reusable in THIS kind of work) and recall (catch the off-topic tangent) pull in opposite directions inside a single filter — run them as two separate passes instead of one compromise pass.",
+    "detail": "Pass 1 is tuned to a one-line project-nature descriptor and applies a hard gate (reusable beyond this task AND non-obvious). Pass 2 ignores the project entirely and just flags sparks as an unclassified 'seed' — placement happens later, by recurrence or decay, not at capture time.",
+    "domain": "brainny-design",
+    "tags": ["capture-design", "precision-recall", "prompt-design"]
+  },
+  {
+    "kind": "precaution",
+    "title": "Never let a similarity threshold auto-decide keep/drop",
+    "summary": "Statistics propose (score, shortlist neighbors); only the AI adjudicates the semantic call (same idea? worth keeping?). A bare embedding-distance cutoff will silently merge distinct ideas or silently drop real ones.",
+    "domain": "brainny-design",
+    "tags": ["dedup-design", "embeddings", "architecture"],
+    "trigger": "before wiring any embedding/similarity score into an automated keep-vs-drop or merge-vs-spawn decision"
+  },
+  {
+    "kind": "insight",
+    "title": "Two contracts, nothing else crosses layers",
+    "summary": "Keeping exactly two data contracts (prompt-to-body is a JSON entry; body-to-AI/viz is graph.json + MCP tools) is what makes the system portable across any assistant that can read an instruction file and shell out — everything else stays internal to one part and is free to change.",
+    "domain": "brainny-design",
+    "tags": ["architecture", "portability"]
+  }
+]

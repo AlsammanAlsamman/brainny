@@ -1,0 +1,17 @@
+[
+  {
+    "kind": "precaution",
+    "title": "`git push` (no args) fails with an upstream-mismatch error if the initial push used `HEAD:main` syntax on a differently-named local branch",
+    "summary": "Pushing via `git push -u origin HEAD:main` sets up tracking in a way that later bare `git push` calls reject with \"the upstream branch of your current branch does not match the name of your current branch.\" Name the local branch to match the remote branch first (e.g. `git checkout -B main`) so a plain `git push` afterward is unambiguous.",
+    "domain": "brainny-design / tooling",
+    "tags": ["git", "upstream-tracking", "push", "automation"],
+    "trigger": "before scripting/automating `git push` calls (no explicit refspec) against a freshly-created repo or test fixture"
+  },
+  {
+    "kind": "insight",
+    "title": "Claude Code's available-skills list refreshes mid-session when a new SKILL.md file appears under ~/.claude/skills/ — no new session needed",
+    "summary": "Writing a new skill file to the global skills directory made it immediately invokable in the *same*, already-running session — confirmed directly by a system reminder listing it right after the file was created. Useful when installing/updating a skill programmatically: no need to tell the user to restart their session just to pick it up.",
+    "domain": "brainny-design / claude-code",
+    "tags": ["claude-code", "skills", "hot-reload"]
+  }
+]

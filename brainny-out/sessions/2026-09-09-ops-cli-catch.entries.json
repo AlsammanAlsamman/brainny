@@ -1,0 +1,20 @@
+[
+  {
+    "kind": "precaution",
+    "title": "A mutable-looking module-level default argument (`x: Path = SOME_DEFAULT`) freezes at function-definition time, not call time",
+    "summary": "Python evaluates default argument values once, when the function is defined — so `monkeypatch.setattr(module, 'SOME_DEFAULT', ...)` in a test does nothing for functions already defined with `param=SOME_DEFAULT`, even though the module attribute itself changed. The function keeps using the original value forever.",
+    "detail": "Bit us for real: brainny/config.py's functions used `config_dir: Path = DEFAULT_CONFIG_DIR`. A pytest fixture patched `DEFAULT_CONFIG_DIR` expecting isolation, but every call silently kept writing to the real ~/.brainny/config.json — the test suite polluted real user config with junk keys before this was caught. Fix: use a `None` sentinel and resolve the module attribute *inside* the function body (late binding), not as the parameter default.",
+    "domain": "brainny-design / testing",
+    "tags": ["python", "late-binding", "monkeypatch", "test-isolation", "default-arguments"],
+    "trigger": "before writing a function whose default argument is meant to be overridable via monkeypatching a module-level constant, especially one used by tests"
+  },
+  {
+    "kind": "precaution",
+    "title": "Renaming a directory that's the pinned working directory of an active tool session fails with \"Device or resource busy\" on Windows — even from outside it",
+    "summary": "The lock isn't held by the shell's own cwd (cd-ing out first doesn't help) — it's held by whatever wrapping/harness process has that path pinned as its working directory for the session. A plain rename/move will fail. Copy the tree to the new name instead (and reinstall any editable pip install from the new path afterward, since it records the absolute source path).",
+    "detail": "Also: git-bash/MSYS mangles Windows-style single-letter robocopy flags (`/E`, `/R:1`, `/COPYALL`) into path conversions, producing bogus errors like \"Invalid Parameter #3: E:/\" — run robocopy from PowerShell instead, not git-bash. And /COPYALL needs elevated 'Manage Auditing' rights; drop it and use robocopy's default copy flags unless you actually need ACL/audit metadata preserved.",
+    "domain": "brainny-design / tooling",
+    "tags": ["windows", "file-lock", "robocopy", "git-bash", "editable-install"],
+    "trigger": "before renaming or moving a project folder that a running Claude Code (or similar pinned-cwd tool) session is currently operating in"
+  }
+]

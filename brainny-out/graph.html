@@ -1,0 +1,575 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>brainny</title>
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; height: 100%; background: #0b1310; }
+  body {
+    font: 14px/1.5 -apple-system, Segoe UI, Helvetica, Arial, sans-serif;
+    color: #eef3ea; display: flex; flex-direction: column; height: 100%;
+  }
+
+  header { padding: 0.9rem 1.25rem; border-bottom: 1px solid rgba(255,255,255,0.08); background: rgba(10,18,12,0.85); flex: none; }
+  header .row { display: flex; align-items: center; gap: 0.9rem; flex-wrap: wrap; }
+  header h1 { margin: 0; font-size: 1.15rem; }
+  header p { margin: 0.35rem 0 0; color: #9aab97; font-size: 0.82rem; }
+  #view-select {
+    background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.16); color: #eef3ea;
+    padding: 0.3rem 0.6rem; border-radius: 8px; font: inherit; font-size: 0.85rem; cursor: pointer;
+  }
+  #view-select:hover { background: rgba(255,255,255,0.1); }
+  /* the dropdown's open popup is native-rendered with a white background
+     regardless of the select's own styling, so its options need their
+     own dark text or they're invisible against it */
+  #view-select option { color: #111; background: #fff; }
+  .note {
+    margin: 0.6rem 0 0; padding: 0.6rem 0.8rem; border-radius: 8px;
+    background: rgba(232,178,61,0.08); border: 1px solid rgba(232,178,61,0.25);
+    font-size: 0.78rem; color: #d7c9a0;
+  }
+
+  main { flex: 1; display: grid; grid-template-columns: 300px 1fr; min-height: 0; }
+  #panel { border-right: 1px solid rgba(255,255,255,0.08); overflow-y: auto; padding: 0.75rem; }
+  #panel h2 { font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.04em; color: #8fa08c; margin: 0.25rem 0.25rem 0.6rem; }
+  #viz { position: relative; overflow: hidden; }
+  #viz svg { display: block; width: 100%; height: 100%; }
+  .empty-note { padding: 0.75rem; color: #8fa08c; font-size: 0.85rem; }
+
+  .legend-row { display: flex; flex-wrap: wrap; gap: 0.6rem; margin: 0 0 0.6rem; padding: 0 0.25rem; font-size: 0.76rem; color: #c9d3c6; }
+  .legend-item { display: inline-flex; align-items: center; gap: 0.3rem; }
+  .dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; flex: none; }
+  .state-dot.state-seed { width: 6px; height: 6px; background: #6b7a68; }
+  .state-dot.state-sprouting { width: 8px; height: 8px; background: #6fae5c; }
+  .state-dot.state-mature { width: 10px; height: 10px; background: #4f9e63; }
+  .state-dot.state-harvested { width: 11px; height: 11px; background: #e8b23d; }
+
+  /* ---- itemized accordion list ---- */
+  .item-list { display: flex; flex-direction: column; gap: 0.9rem; }
+  .item-group-heading { font-size: 0.76rem; color: #8fa08c; margin: 0 0 0.35rem; padding: 0 0.25rem; }
+  .item { border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; margin-bottom: 0.4rem; overflow: hidden; background: rgba(255,255,255,0.02); }
+  .item-promising { border-color: rgba(232,178,61,0.55); box-shadow: 0 0 0 1px rgba(232,178,61,0.15) inset; }
+  .item-flash { animation: item-flash-kf 1.4s ease-out; }
+  @keyframes item-flash-kf {
+    0% { background: rgba(191,227,107,0.28); border-color: rgba(191,227,107,0.8); }
+    100% { background: rgba(255,255,255,0.02); }
+  }
+  .item-title-row {
+    width: 100%; display: flex; align-items: center; gap: 0.5rem;
+    background: none; border: none; color: #eef3ea; text-align: left;
+    padding: 0.5rem 0.6rem; cursor: pointer; font: inherit; font-size: 0.85rem;
+  }
+  .item-title-row:hover { background: rgba(255,255,255,0.04); }
+  .item-dot { width: 8px; height: 8px; border-radius: 50%; flex: none; }
+  .item-title { flex: 1; }
+  .item-caret { color: #6b7a68; transition: transform 0.15s; font-size: 0.7rem; }
+  .item-title-row.open .item-caret { transform: rotate(90deg); }
+  .item-body { padding: 0 0.75rem 0.7rem 1.85rem; font-size: 0.82rem; }
+  .item-summary { margin: 0 0 0.35rem; color: #d7ddd4; }
+  .item-detail { margin: 0 0 0.35rem; color: #a9b7a6; }
+  .item-trigger { margin: 0 0 0.35rem; color: #c9d3c6; font-size: 0.8rem; }
+  .item-meta { margin: 0 0 0.35rem; color: #7c8c79; font-size: 0.72rem; }
+  .item-tags { display: flex; flex-wrap: wrap; gap: 0.3rem; }
+  .item-tag { background: rgba(255,255,255,0.08); border-radius: 999px; padding: 0.05rem 0.5rem; font-size: 0.7rem; }
+
+  #tooltip {
+    position: fixed; z-index: 10; pointer-events: none; max-width: 280px;
+    background: rgba(12,20,14,0.96); border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 10px; padding: 0.6rem 0.75rem; font-size: 0.8rem; display: none;
+  }
+  #tooltip .tt-title { font-weight: 600; margin-bottom: 0.2rem; }
+  #tooltip .tt-meta { color: #8fa08c; font-size: 0.72rem; }
+
+  #fallback { padding: 2rem; white-space: pre-wrap; color: #eef3ea; background: #0b1310; height: 100%; margin: 0; overflow: auto; }
+</style>
+</head>
+<body>
+<header>
+  <div class="row">
+    <h1>brainny</h1>
+    <select id="view-select">
+      <option value="radial">Radial tree</option>
+      <option value="force">Force network with cluster halos</option>
+    </select>
+  </div>
+  <p id="view-desc"></p>
+  <p class="note">12 idea(s) · 9 branch(es), grown over 4 session(s) · sizing/highlighting uses the real <code>recurrence</code>/<code>state</code> fields, but v0.1 (dedup/stats) doesn't exist yet — every idea is currently <code>recurrence: 1</code>, <code>state: "seed"</code>, so nothing visibly stands out yet. Click any idea to jump to it in the list.</p>
+</header>
+<main>
+  <div id="panel">
+    <h2>legend</h2>
+    <div class="legend-row"><span class="legend-item"><span class="dot" style="background:#3b6fd6"></span>technique</span><span class="legend-item"><span class="dot" style="background:#c9432c"></span>precaution</span><span class="legend-item"><span class="dot" style="background:#2f9e5e"></span>solution</span><span class="legend-item"><span class="dot" style="background:#8b5cd6"></span>insight</span><span class="legend-item"><span class="dot" style="background:#8a8f98"></span>seed</span></div>
+    <div class="legend-row"><span class="legend-item"><span class="dot state-dot state-seed"></span>seed / bud</span><span class="legend-item"><span class="dot state-dot state-sprouting"></span>sprouting leaf</span><span class="legend-item"><span class="dot state-dot state-mature"></span>mature fruit</span><span class="legend-item"><span class="dot state-dot state-harvested"></span>harvested fruit</span></div>
+    <h2>ideas</h2>
+    <div id="item-list-mount"></div>
+  </div>
+  <div id="viz"></div>
+</main>
+<div id="tooltip"></div>
+<pre id="fallback" hidden>brainny - 12 idea(s): 2 insight, 8 precaution, 2 technique
+
+GWAS / genotype data merging/
+  [T] (seed) Pick genotype-merge strategy (union vs. intersection) by what the downstream tool tolerates, not by habit - idea_0007 [plink, genotype-merge, ld-reference-panel, gcta, grm]
+
+HPC / Python environments/
+  [!] (seed) `PYTHONNOUSERSITE=1` can cause a false ModuleNotFoundError for a package that IS installed - idea_0006 [python, pip, environment-variables, debugging]
+
+HPC / SLURM sbatch scripts/
+  [!] (seed) `module load X 2&gt;/dev/null || true` can silently no-op inside a non-interactive sbatch script - idea_0005 [slurm, module-load, sbatch, environment]
+
+HPC / Snakemake + SLURM orchestration/
+  [!] (seed) Bumping a Snakemake rule&#x27;s cluster time-limit isn&#x27;t enough if the orchestrating sbatch controller has its own, smaller --time budget - idea_0008 [slurm, snakemake, time-limit, sbatch, orchestration]
+
+bioinformatics pipelines / Snakemake on SLURM/
+  [!] (seed) Delete stale rule .done markers when extending a Snakemake pipeline&#x27;s scope mid-project - idea_0004 [snakemake, slurm, pipeline-orchestration, stale-state]
+
+brainny-design/
+  [!] (seed) Never let a similarity threshold auto-decide keep/drop - idea_0002 [dedup-design, embeddings, architecture]
+  [I] (seed) Two contracts, nothing else crosses layers - idea_0003 [architecture, portability]
+  [T] (seed) Two-pass capture: project-aware precision pass + project-blind recall pass - idea_0001 [capture-design, precision-recall, prompt-design]
+
+brainny-design / claude-code/
+  [I] (seed) Claude Code&#x27;s available-skills list refreshes mid-session when a new SKILL.md file appears under ~/.claude/skills/ — no new session needed - idea_0012 [claude-code, skills, hot-reload]
+
+brainny-design / testing/
+  [!] (seed) A mutable-looking module-level default argument (`x: Path = SOME_DEFAULT`) freezes at function-definition time, not call time - idea_0009 [python, late-binding, monkeypatch, test-isolation, default-arguments]
+
+brainny-design / tooling/
+  [!] (seed) Renaming a directory that&#x27;s the pinned working directory of an active tool session fails with &quot;Device or resource busy&quot; on Windows — even from outside it - idea_0010 [windows, file-lock, robocopy, git-bash, editable-install]
+  [!] (seed) `git push` (no args) fails with an upstream-mismatch error if the initial push used `HEAD:main` syntax on a differently-named local branch - idea_0011 [git, upstream-tracking, push, automation]
+</pre>
+<script id="brainny-data" type="application/json">{"title": "brainny", "nodes": [{"id": "idea_0001", "kind": "technique", "title": "Two-pass capture: project-aware precision pass + project-blind recall pass", "summary": "Precision (what's reusable in THIS kind of work) and recall (catch the off-topic tangent) pull in opposite directions inside a single filter — run them as two separate passes instead of one compromise pass.", "detail": "Pass 1 is tuned to a one-line project-nature descriptor and applies a hard gate (reusable beyond this task AND non-obvious). Pass 2 ignores the project entirely and just flags sparks as an unclassified 'seed' — placement happens later, by recurrence or decay, not at capture time.", "domain": "brainny-design", "tags": ["capture-design", "precision-recall", "prompt-design"], "trigger": null, "state": "seed", "recurrence": 1, "session": "seed-design", "sessionTs": "2026-09-09T00:05:17+00:00"}, {"id": "idea_0002", "kind": "precaution", "title": "Never let a similarity threshold auto-decide keep/drop", "summary": "Statistics propose (score, shortlist neighbors); only the AI adjudicates the semantic call (same idea? worth keeping?). A bare embedding-distance cutoff will silently merge distinct ideas or silently drop real ones.", "detail": null, "domain": "brainny-design", "tags": ["dedup-design", "embeddings", "architecture"], "trigger": "before wiring any embedding/similarity score into an automated keep-vs-drop or merge-vs-spawn decision", "state": "seed", "recurrence": 1, "session": "seed-design", "sessionTs": "2026-09-09T00:05:17+00:00"}, {"id": "idea_0003", "kind": "insight", "title": "Two contracts, nothing else crosses layers", "summary": "Keeping exactly two data contracts (prompt-to-body is a JSON entry; body-to-AI/viz is graph.json + MCP tools) is what makes the system portable across any assistant that can read an instruction file and shell out — everything else stays internal to one part and is free to change.", "detail": null, "domain": "brainny-design", "tags": ["architecture", "portability"], "trigger": null, "state": "seed", "recurrence": 1, "session": "seed-design", "sessionTs": "2026-09-09T00:05:17+00:00"}, {"id": "idea_0004", "kind": "precaution", "title": "Delete stale rule .done markers when extending a Snakemake pipeline's scope mid-project", "summary": "In individual-rule submission mode, targeting a rule-name aggregator can report 'Nothing to be done' even though new work (e.g. a newly added region/chromosome/sample) is required, if a .done marker from an earlier narrower run still exists. Verify by targeting the exact new output file directly; if that path triggers work but the aggregator doesn't, delete the stale .done marker files to force Snakemake to re-examine the full dependency list.", "detail": null, "domain": "bioinformatics pipelines / Snakemake on SLURM", "tags": ["snakemake", "slurm", "pipeline-orchestration", "stale-state"], "trigger": "adding new regions/chromosomes/samples to an already-completed Snakemake pipeline and getting an unexpected 'Nothing to be done'", "state": "seed", "recurrence": 1, "session": "sle-gwas-hpc-2026-09-08", "sessionTs": "2026-09-09T03:14:16+00:00"}, {"id": "idea_0005", "kind": "precaution", "title": "`module load X 2>/dev/null || true` can silently no-op inside a non-interactive sbatch script", "summary": "Suppressing module-load errors with `|| true` hides the fact that the `module` command itself may not be initialized in a non-interactive SLURM job shell, leaving the wrong (or a bare default) toolchain on PATH with no visible failure. If a script depends on a specific interpreter/toolchain, resolve and export its absolute bin path directly instead of trusting `module load` to have worked.", "detail": null, "domain": "HPC / SLURM sbatch scripts", "tags": ["slurm", "module-load", "sbatch", "environment"], "trigger": "writing an sbatch script that calls module load before running an interpreter or tool, especially if failures are silenced", "state": "seed", "recurrence": 1, "session": "sle-gwas-hpc-2026-09-08", "sessionTs": "2026-09-09T03:14:16+00:00"}, {"id": "idea_0006", "kind": "precaution", "title": "`PYTHONNOUSERSITE=1` can cause a false ModuleNotFoundError for a package that IS installed", "summary": "If a package was installed with `pip install --user`, setting PYTHONNOUSERSITE=1 hides it from the interpreter even when PATH and the module/toolchain are otherwise correct -- the resulting ImportError looks like a missing dependency, not an environment-variable problem. Check for this env var specifically when an import fails despite pip show/pip list confirming the package is present.", "detail": null, "domain": "HPC / Python environments", "tags": ["python", "pip", "environment-variables", "debugging"], "trigger": "debugging a ModuleNotFoundError in a non-interactive job shell for a package pip confirms is installed", "state": "seed", "recurrence": 1, "session": "sle-gwas-hpc-2026-09-08", "sessionTs": "2026-09-09T03:14:16+00:00"}, {"id": "idea_0007", "kind": "technique", "title": "Pick genotype-merge strategy (union vs. intersection) by what the downstream tool tolerates, not by habit", "summary": "When merging multiple genotyped cohorts into one panel, an intersection (common-SNP-only) merge gives near-zero missingness but can be too sparse for tools that need positional SNP density (e.g. an LD/fine-mapping reference panel needing a minimum match rate). Use a union merge instead when the consumer mode-imputes missing calls (e.g. bigsnpr's snp_fastImputeSimple). Conversely, use an intersection merge for GRM/heritability estimation, where dense non-imputed genotypes are wanted rather than tolerating imputed missingness.", "detail": null, "domain": "GWAS / genotype data merging", "tags": ["plink", "genotype-merge", "ld-reference-panel", "gcta", "grm"], "trigger": null, "state": "seed", "recurrence": 1, "session": "sle-gwas-hpc-2026-09-08", "sessionTs": "2026-09-09T03:14:16+00:00"}, {"id": "idea_0008", "kind": "precaution", "title": "Bumping a Snakemake rule's cluster time-limit isn't enough if the orchestrating sbatch controller has its own, smaller --time budget", "summary": "When a cluster job hits its SLURM time limit, increasing just the rule's resources.time (or a job's requested time) can still fail silently if the outer controller/orchestrator script that submits and waits on it has its own shorter --time in its own #SBATCH header -- the controller gets killed and the dispatched sub-job is orphaned before it can finish, even though the actual computation would have completed given more time. Always check and align BOTH budgets (the rule/job AND its orchestrator) when responding to a timeout, not just the one that actually got killed.", "detail": null, "domain": "HPC / Snakemake + SLURM orchestration", "tags": ["slurm", "snakemake", "time-limit", "sbatch", "orchestration"], "trigger": "increasing a rule's or job's SLURM time resource after a timeout, when that job is itself launched by another sbatch/controller script", "state": "seed", "recurrence": 1, "session": "sle-gwas-hpc-2026-09-08", "sessionTs": "2026-09-09T03:14:16+00:00"}, {"id": "idea_0009", "kind": "precaution", "title": "A mutable-looking module-level default argument (`x: Path = SOME_DEFAULT`) freezes at function-definition time, not call time", "summary": "Python evaluates default argument values once, when the function is defined — so `monkeypatch.setattr(module, 'SOME_DEFAULT', ...)` in a test does nothing for functions already defined with `param=SOME_DEFAULT`, even though the module attribute itself changed. The function keeps using the original value forever.", "detail": "Bit us for real: brainny/config.py's functions used `config_dir: Path = DEFAULT_CONFIG_DIR`. A pytest fixture patched `DEFAULT_CONFIG_DIR` expecting isolation, but every call silently kept writing to the real ~/.brainny/config.json — the test suite polluted real user config with junk keys before this was caught. Fix: use a `None` sentinel and resolve the module attribute *inside* the function body (late binding), not as the parameter default.", "domain": "brainny-design / testing", "tags": ["python", "late-binding", "monkeypatch", "test-isolation", "default-arguments"], "trigger": "before writing a function whose default argument is meant to be overridable via monkeypatching a module-level constant, especially one used by tests", "state": "seed", "recurrence": 1, "session": "ops-cli-catch", "sessionTs": "2026-09-09T16:59:09+00:00"}, {"id": "idea_0010", "kind": "precaution", "title": "Renaming a directory that's the pinned working directory of an active tool session fails with \"Device or resource busy\" on Windows — even from outside it", "summary": "The lock isn't held by the shell's own cwd (cd-ing out first doesn't help) — it's held by whatever wrapping/harness process has that path pinned as its working directory for the session. A plain rename/move will fail. Copy the tree to the new name instead (and reinstall any editable pip install from the new path afterward, since it records the absolute source path).", "detail": "Also: git-bash/MSYS mangles Windows-style single-letter robocopy flags (`/E`, `/R:1`, `/COPYALL`) into path conversions, producing bogus errors like \"Invalid Parameter #3: E:/\" — run robocopy from PowerShell instead, not git-bash. And /COPYALL needs elevated 'Manage Auditing' rights; drop it and use robocopy's default copy flags unless you actually need ACL/audit metadata preserved.", "domain": "brainny-design / tooling", "tags": ["windows", "file-lock", "robocopy", "git-bash", "editable-install"], "trigger": "before renaming or moving a project folder that a running Claude Code (or similar pinned-cwd tool) session is currently operating in", "state": "seed", "recurrence": 1, "session": "ops-cli-catch", "sessionTs": "2026-09-09T16:59:09+00:00"}, {"id": "idea_0011", "kind": "precaution", "title": "`git push` (no args) fails with an upstream-mismatch error if the initial push used `HEAD:main` syntax on a differently-named local branch", "summary": "Pushing via `git push -u origin HEAD:main` sets up tracking in a way that later bare `git push` calls reject with \"the upstream branch of your current branch does not match the name of your current branch.\" Name the local branch to match the remote branch first (e.g. `git checkout -B main`) so a plain `git push` afterward is unambiguous.", "detail": null, "domain": "brainny-design / tooling", "tags": ["git", "upstream-tracking", "push", "automation"], "trigger": "before scripting/automating `git push` calls (no explicit refspec) against a freshly-created repo or test fixture", "state": "seed", "recurrence": 1, "session": "ambient-loop-catch", "sessionTs": "2026-09-09T19:16:13+00:00"}, {"id": "idea_0012", "kind": "insight", "title": "Claude Code's available-skills list refreshes mid-session when a new SKILL.md file appears under ~/.claude/skills/ — no new session needed", "summary": "Writing a new skill file to the global skills directory made it immediately invokable in the *same*, already-running session — confirmed directly by a system reminder listing it right after the file was created. Useful when installing/updating a skill programmatically: no need to tell the user to restart their session just to pick it up.", "detail": null, "domain": "brainny-design / claude-code", "tags": ["claude-code", "skills", "hot-reload"], "trigger": null, "state": "seed", "recurrence": 1, "session": "ambient-loop-catch", "sessionTs": "2026-09-09T19:16:13+00:00"}], "sessions": [{"session": "seed-design", "ts": "2026-09-09T00:05:17+00:00", "count": 3}, {"session": "sle-gwas-hpc-2026-09-08", "ts": "2026-09-09T03:14:16+00:00", "count": 5}, {"session": "ops-cli-catch", "ts": "2026-09-09T16:59:09+00:00", "count": 2}, {"session": "ambient-loop-catch", "ts": "2026-09-09T19:16:13+00:00", "count": 2}], "domainCount": 9, "kindColor": {"technique": "#3b6fd6", "precaution": "#c9432c", "solution": "#2f9e5e", "insight": "#8b5cd6", "seed": "#8a8f98"}, "stateMeta": {"seed": {"label": "seed / bud", "size": 0.16, "emissive": 0.12, "gold": false}, "sprouting": {"label": "sprouting leaf", "size": 0.22, "emissive": 0.22, "gold": false}, "mature": {"label": "mature fruit", "size": 0.3, "emissive": 0.4, "gold": false}, "harvested": {"label": "harvested fruit", "size": 0.34, "emissive": 0.65, "gold": true}}}</script>
+<script src="https://cdn.jsdelivr.net/npm/d3@7.9.0/dist/d3.min.js" crossorigin="anonymous"></script>
+<script>
+(function () {
+  function showFallback() {
+    var main = document.querySelector('main');
+    var fb = document.getElementById('fallback');
+    if (main) main.hidden = true;
+    if (fb) fb.hidden = false;
+  }
+
+  var DATA;
+  try {
+    DATA = JSON.parse(document.getElementById('brainny-data').textContent);
+  } catch (e) {
+    showFallback();
+    return;
+  }
+
+  if (typeof d3 === 'undefined') {
+    showFallback();
+    return;
+  }
+
+  var STATE_RANK = { seed: 1, sprouting: 2, mature: 3, harvested: 4 };
+
+  function potentialScore(idea) {
+    return idea.recurrence * (STATE_RANK[idea.state] || 1);
+  }
+
+  function isPromising(idea) {
+    return idea.recurrence > 1 || idea.state !== 'seed';
+  }
+
+  function escapeHtml(s) {
+    var div = document.createElement('div');
+    div.textContent = s == null ? '' : String(s);
+    return div.innerHTML;
+  }
+
+  // domain path ("GWAS / sub-analysis") -> nested {name, kind, children}
+  // tree, d3.hierarchy()-ready. Leaves carry the idea + its potentialScore
+  // as `value` (branch/root nodes leave value undefined so d3's .sum()
+  // aggregates bottom-up from real leaves only).
+  function buildHierarchy(data) {
+    var root = { id: '__root__', name: data.title, kind: 'root', children: [] };
+    var byId = { __root__: root };
+
+    function ensureBranch(pathParts) {
+      var id = pathParts.join(' / ');
+      if (byId[id]) return byId[id];
+      var parentParts = pathParts.slice(0, -1);
+      var parent = parentParts.length ? ensureBranch(parentParts) : root;
+      var node = { id: id, name: pathParts[pathParts.length - 1], kind: 'branch', children: [] };
+      byId[id] = node;
+      parent.children.push(node);
+      return node;
+    }
+
+    data.nodes.forEach(function (idea) {
+      var parts = idea.domain.split('/').map(function (p) { return p.trim(); }).filter(Boolean);
+      var parent = parts.length ? ensureBranch(parts) : root;
+      parent.children.push({
+        id: idea.id, name: idea.title, kind: 'idea', idea: idea,
+        value: potentialScore(idea), children: [],
+      });
+    });
+
+    (function prune(node) {
+      if (!node.children.length) { delete node.children; }
+      else { node.children.forEach(prune); }
+    })(root);
+
+    return root;
+  }
+
+  // ---- itemized accordion list (click a title to unfold) ----
+  function renderItemList(container, data) {
+    if (!data.nodes.length) {
+      var empty = document.createElement('p');
+      empty.className = 'empty-note';
+      empty.textContent = 'No ideas captured yet. Run `brainny capture <entries.json>`.';
+      container.appendChild(empty);
+      return;
+    }
+
+    var byDomain = {};
+    data.nodes.forEach(function (n) { (byDomain[n.domain] = byDomain[n.domain] || []).push(n); });
+
+    var wrap = document.createElement('div');
+    wrap.className = 'item-list';
+    Object.keys(byDomain).sort().forEach(function (domain) {
+      var group = document.createElement('div');
+      group.className = 'item-group';
+      var heading = document.createElement('div');
+      heading.className = 'item-group-heading';
+      heading.textContent = domain + ' (' + byDomain[domain].length + ')';
+      group.appendChild(heading);
+
+      byDomain[domain].forEach(function (idea) {
+        var item = document.createElement('div');
+        item.className = 'item' + (isPromising(idea) ? ' item-promising' : '');
+        item.dataset.itemId = idea.id;
+
+        var titleRow = document.createElement('button');
+        titleRow.type = 'button';
+        titleRow.className = 'item-title-row';
+        titleRow.innerHTML =
+          '<span class="item-dot" style="background:' + (data.kindColor[idea.kind] || '#8a8f98') + '"></span>' +
+          '<span class="item-title">' + escapeHtml(idea.title) + '</span>' +
+          '<span class="item-caret">\u25b8</span>';
+
+        var body = document.createElement('div');
+        body.className = 'item-body';
+        body.hidden = true;
+        var tags = (idea.tags || []).map(function (t) { return '<span class="item-tag">' + escapeHtml(t) + '</span>'; }).join('');
+        body.innerHTML =
+          '<p class="item-summary">' + escapeHtml(idea.summary) + '</p>' +
+          (idea.detail ? '<p class="item-detail">' + escapeHtml(idea.detail) + '</p>' : '') +
+          (idea.trigger ? '<p class="item-trigger"><strong>trigger:</strong> ' + escapeHtml(idea.trigger) + '</p>' : '') +
+          '<p class="item-meta">' + escapeHtml(idea.kind) + ' \u00b7 ' + escapeHtml(idea.state) +
+          ' \u00b7 ' + escapeHtml(idea.id) + '</p>' +
+          '<div class="item-tags">' + tags + '</div>';
+
+        titleRow.addEventListener('click', function () {
+          body.hidden = !body.hidden;
+          titleRow.classList.toggle('open', !body.hidden);
+        });
+
+        item.appendChild(titleRow);
+        item.appendChild(body);
+        group.appendChild(item);
+      });
+
+      wrap.appendChild(group);
+    });
+
+    container.appendChild(wrap);
+  }
+
+  // clicking an idea in a visualization calls this to open + scroll to its
+  // entry in the itemized list, so the list is where its info actually shows
+  var focusFlashTimer = null;
+  function focusItem(id) {
+    var el = document.querySelector('[data-item-id="' + CSS.escape(id) + '"]');
+    if (!el) return;
+    var row = el.querySelector('.item-title-row');
+    var body = el.querySelector('.item-body');
+    body.hidden = false;
+    row.classList.add('open');
+    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    el.classList.remove('item-flash');
+    void el.offsetWidth;
+    el.classList.add('item-flash');
+    clearTimeout(focusFlashTimer);
+    focusFlashTimer = setTimeout(function () { el.classList.remove('item-flash'); }, 1400);
+  }
+
+  renderItemList(document.getElementById('item-list-mount'), DATA);
+
+  var vizEl = document.getElementById('viz');
+  var tooltip = document.getElementById('tooltip');
+  var descEl = document.getElementById('view-desc');
+
+  var DESCRIPTIONS = {
+    radial: 'Domains as branches radiating from the center; ideas as leaves at the rim. Simplest to scan for hierarchy.',
+    force: 'Physics-based layout with an explicit colored halo per domain group, instead of relying on link topology alone to imply grouping.',
+  };
+
+  function showTooltip(event, html) {
+    tooltip.innerHTML = html;
+    tooltip.style.display = 'block';
+    tooltip.style.left = (event.clientX + 14) + 'px';
+    tooltip.style.top = (event.clientY + 14) + 'px';
+  }
+  function hideTooltip() { tooltip.style.display = 'none'; }
+
+  function tooltipHtml(n) {
+    var html = '<div class="tt-title">' + escapeHtml(n.name) + '</div>';
+    if (n.kind === 'idea') {
+      html += '<div class="tt-meta">' + escapeHtml(n.idea.kind) + ' \u00b7 ' + escapeHtml(n.idea.state) + ' \u00b7 click to view</div>';
+    } else if (n.kind === 'branch') {
+      html += '<div class="tt-meta">branch</div>';
+    } else {
+      html += '<div class="tt-meta">mother tree</div>';
+    }
+    return html;
+  }
+
+  // ---- view 1: radial tree ----
+  function renderRadialTree() {
+    var hierarchyData = buildHierarchy(DATA);
+    var root = d3.hierarchy(hierarchyData);
+
+    var width = vizEl.clientWidth;
+    var height = vizEl.clientHeight;
+    var radius = Math.min(width, height) / 2 - 90;
+
+    var tree = d3.tree().size([2 * Math.PI, radius])
+      .separation(function (a, b) { return (a.parent === b.parent ? 1 : 2) / a.depth; });
+    tree(root);
+
+    var svg = d3.select(vizEl).append('svg').attr('viewBox', [-width / 2, -height / 2, width, height]);
+    var g = svg.append('g');
+    svg.call(d3.zoom().scaleExtent([0.4, 4]).on('zoom', function (event) { g.attr('transform', event.transform); }));
+
+    function radialPoint(x, y) {
+      return [y * Math.cos(x - Math.PI / 2), y * Math.sin(x - Math.PI / 2)];
+    }
+
+    g.append('g')
+      .attr('fill', 'none')
+      .attr('stroke', 'rgba(190,205,180,0.28)')
+      .selectAll('path')
+      .data(root.links())
+      .join('path')
+      .attr('d', d3.linkRadial().angle(function (d) { return d.x; }).radius(function (d) { return d.y; }));
+
+    var node = g.append('g')
+      .selectAll('g')
+      .data(root.descendants())
+      .join('g')
+      .attr('transform', function (d) {
+        var p = radialPoint(d.x, d.y);
+        return 'translate(' + p[0] + ',' + p[1] + ')';
+      });
+
+    node.append('circle')
+      .attr('r', function (d) { return d.data.kind === 'idea' ? 4 + (d.data.value || 1) * 2 : d.data.kind === 'root' ? 7 : 5; })
+      .attr('fill', function (d) {
+        if (d.data.kind === 'root') return '#e8b23d';
+        if (d.data.kind === 'branch') return '#7c8c6e';
+        return DATA.kindColor[d.data.idea.kind] || '#8a8f98';
+      })
+      .attr('stroke', function (d) { return d.data.kind === 'idea' && isPromising(d.data.idea) ? '#e8b23d' : 'none'; })
+      .attr('stroke-width', 2)
+      .style('cursor', 'pointer')
+      .on('mouseenter', function (event, d) { showTooltip(event, tooltipHtml(d.data)); })
+      .on('mousemove', function (event, d) { showTooltip(event, tooltipHtml(d.data)); })
+      .on('mouseleave', hideTooltip)
+      .on('click', function (event, d) { if (d.data.kind === 'idea') focusItem(d.data.id); });
+
+    node.append('text')
+      .attr('dy', '0.31em')
+      .attr('x', function (d) { return radialPoint(d.x, d.y)[0] < 0 ? -8 : 8; })
+      .attr('text-anchor', function (d) { return radialPoint(d.x, d.y)[0] < 0 ? 'end' : 'start'; })
+      .attr('fill', '#c9d3c6')
+      .style('font-size', '10px')
+      .style('pointer-events', 'none')
+      .text(function (d) { return d.data.kind === 'root' ? d.data.name : (d.data.name.length > 28 ? d.data.name.slice(0, 27) + '\u2026' : d.data.name); });
+
+    return function cleanup() {};
+  }
+
+  // ---- view 2: force network with cluster halos ----
+  function renderForceClusters() {
+    var hierarchyData = buildHierarchy(DATA);
+    var nodes = [];
+    var links = [];
+    var groupPalette = ['#3b6fd6', '#c9432c', '#2f9e5e', '#8b5cd6', '#d68a3b', '#3bb0d6', '#d63b8a'];
+    var groupColor = {};
+    var groupIdx = 0;
+
+    (function walk(node, parent, group) {
+      var thisGroup = group || (node.kind === 'branch' ? node.id : null);
+      if (thisGroup && !(thisGroup in groupColor)) groupColor[thisGroup] = groupPalette[groupIdx++ % groupPalette.length];
+      nodes.push({
+        id: node.id, name: node.name, kind: node.kind,
+        idea: node.idea || null, value: node.value || 0,
+        group: node.kind === 'root' ? null : thisGroup,
+      });
+      if (parent) links.push({ source: parent.id, target: node.id });
+      (node.children || []).forEach(function (c) { walk(c, node, thisGroup); });
+    })(hierarchyData, null, null);
+
+    var width = vizEl.clientWidth;
+    var height = vizEl.clientHeight;
+
+    var svg = d3.select(vizEl).append('svg').attr('viewBox', [0, 0, width, height]);
+    var g = svg.append('g');
+    var zoom = d3.zoom().scaleExtent([0.4, 4]).on('zoom', function (event) { g.attr('transform', event.transform); });
+    svg.call(zoom);
+
+    var hullLayer = g.append('g');
+    var linkLayer = g.append('g');
+    var nodeLayer = g.append('g');
+
+    function radiusOf(d) {
+      if (d.kind === 'root') return 12;
+      if (d.kind === 'branch') return 7;
+      return 5 + (d.value || 1) * 2.5;
+    }
+
+    function forceCluster(strength) {
+      var n;
+      function force(alpha) {
+        var centroids = {};
+        n.forEach(function (d) {
+          if (!d.group) return;
+          var c = centroids[d.group] || (centroids[d.group] = { x: 0, y: 0, count: 0 });
+          c.x += d.x; c.y += d.y; c.count += 1;
+        });
+        Object.keys(centroids).forEach(function (k) { centroids[k].x /= centroids[k].count; centroids[k].y /= centroids[k].count; });
+        n.forEach(function (d) {
+          if (!d.group) return;
+          var c = centroids[d.group];
+          d.vx -= (d.x - c.x) * strength * alpha;
+          d.vy -= (d.y - c.y) * strength * alpha;
+        });
+      }
+      force.initialize = function (_) { n = _; };
+      return force;
+    }
+
+    var simulation = d3.forceSimulation(nodes)
+      .force('link', d3.forceLink(links).id(function (d) { return d.id; }).distance(38).strength(0.6))
+      .force('charge', d3.forceManyBody().strength(-90))
+      .force('center', d3.forceCenter(width / 2, height / 2))
+      .force('collide', d3.forceCollide().radius(function (d) { return radiusOf(d) + 4; }))
+      .force('cluster', forceCluster(0.12));
+
+    var link = linkLayer.selectAll('line').data(links).join('line').attr('stroke', 'rgba(190,205,180,0.25)');
+
+    var node = nodeLayer.selectAll('circle')
+      .data(nodes)
+      .join('circle')
+      .attr('r', radiusOf)
+      .attr('fill', function (d) {
+        if (d.kind === 'root') return '#e8b23d';
+        if (d.kind === 'branch') return '#7c8c6e';
+        return DATA.kindColor[d.idea.kind] || '#8a8f98';
+      })
+      .attr('stroke', function (d) { return d.kind === 'idea' && isPromising(d.idea) ? '#e8b23d' : 'rgba(255,255,255,0.15)'; })
+      .attr('stroke-width', function (d) { return d.kind === 'idea' && isPromising(d.idea) ? 2.5 : 1; })
+      .style('cursor', 'pointer')
+      .on('mouseenter', function (event, d) { showTooltip(event, tooltipHtml(d)); })
+      .on('mousemove', function (event, d) { showTooltip(event, tooltipHtml(d)); })
+      .on('mouseleave', hideTooltip)
+      .on('click', function (event, d) { if (d.kind === 'idea') focusItem(d.id); })
+      .call(d3.drag()
+        .on('start', function (event, d) { if (!event.active) simulation.alphaTarget(0.25).restart(); d.fx = d.x; d.fy = d.y; })
+        .on('drag', function (event, d) { d.fx = event.x; d.fy = event.y; })
+        .on('end', function (event, d) { if (!event.active) simulation.alphaTarget(0); d.fx = null; d.fy = null; }));
+
+    function paddedHull(points, pad) {
+      if (points.length === 0) return null;
+      if (points.length < 3) {
+        var cx = d3.mean(points, function (p) { return p[0]; });
+        var cy = d3.mean(points, function (p) { return p[1]; });
+        var steps = 12;
+        return d3.range(steps).map(function (i) {
+          var a = (i / steps) * Math.PI * 2;
+          return [cx + Math.cos(a) * pad, cy + Math.sin(a) * pad];
+        });
+      }
+      var hull = d3.polygonHull(points);
+      if (!hull) return null;
+      var centroid = d3.polygonCentroid(hull);
+      return hull.map(function (p) {
+        var dx = p[0] - centroid[0], dy = p[1] - centroid[1];
+        var len = Math.sqrt(dx * dx + dy * dy) || 1;
+        return [p[0] + (dx / len) * pad, p[1] + (dy / len) * pad];
+      });
+    }
+
+    var lineGen = d3.line().curve(d3.curveCatmullRomClosed.alpha(0.7));
+
+    simulation.on('tick', function () {
+      link.attr('x1', function (d) { return d.source.x; }).attr('y1', function (d) { return d.source.y; })
+        .attr('x2', function (d) { return d.target.x; }).attr('y2', function (d) { return d.target.y; });
+      node.attr('cx', function (d) { return d.x; }).attr('cy', function (d) { return d.y; });
+
+      var byGroup = {};
+      nodes.forEach(function (d) {
+        if (!d.group) return;
+        (byGroup[d.group] = byGroup[d.group] || []).push([d.x, d.y]);
+      });
+      hullLayer.selectAll('path')
+        .data(Object.keys(byGroup).map(function (k) { return [k, byGroup[k]]; }), function (d) { return d[0]; })
+        .join('path')
+        .attr('fill', function (d) { return groupColor[d[0]]; })
+        .attr('fill-opacity', 0.08)
+        .attr('stroke', function (d) { return groupColor[d[0]]; })
+        .attr('stroke-opacity', 0.35)
+        .attr('d', function (d) { return lineGen(paddedHull(d[1], 26)); });
+    });
+
+    simulation.on('end', function () {
+      var xs = nodes.map(function (d) { return d.x; }), ys = nodes.map(function (d) { return d.y; });
+      var pad = 60;
+      var x0 = Math.min.apply(null, xs) - pad, x1 = Math.max.apply(null, xs) + pad;
+      var y0 = Math.min.apply(null, ys) - pad, y1 = Math.max.apply(null, ys) + pad;
+      var scale = Math.min(4, 0.9 / Math.max((x1 - x0) / width, (y1 - y0) / height));
+      var tx = width / 2 - scale * (x0 + x1) / 2;
+      var ty = height / 2 - scale * (y0 + y1) / 2;
+      svg.transition().duration(500).call(zoom.transform, d3.zoomIdentity.translate(tx, ty).scale(scale));
+    });
+
+    return function cleanup() { simulation.stop(); };
+  }
+
+  // ---- dropdown wiring ----
+  var VIEWS = { radial: renderRadialTree, force: renderForceClusters };
+  var currentCleanup = null;
+
+  function switchView(name) {
+    if (currentCleanup) currentCleanup();
+    vizEl.innerHTML = '';
+    hideTooltip();
+    descEl.textContent = DESCRIPTIONS[name];
+    if (DATA.nodes.length) {
+      currentCleanup = VIEWS[name]();
+    } else {
+      currentCleanup = null;
+      var empty = document.createElement('p');
+      empty.className = 'empty-note';
+      empty.style.padding = '2rem';
+      empty.textContent = 'No ideas captured yet \u2014 just the mother tree. Run `brainny capture <entries.json>`.';
+      vizEl.appendChild(empty);
+    }
+  }
+
+  var select = document.getElementById('view-select');
+  select.addEventListener('change', function () { switchView(select.value); });
+  switchView(select.value);
+
+  window.addEventListener('resize', function () {
+    switchView(select.value);
+  });
+})();
+</script>
+</body>
+</html>
