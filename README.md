@@ -18,6 +18,12 @@
 > back to any of them later, reuse them instead of re-discovering them,
 > and watch what you know actually compound, session after session.**
 
+<p align="center">
+  <img src="assets/screenshot-dashboard.png" alt="brAInny dashboard: radial tree of captured ideas by domain, with an itemized list alongside" width="100%">
+</p>
+
+<p align="center"><sub><code>brainny query --html</code> — this project's own real, dogfooded ideas.</sub></p>
+
 ---
 
 ## The problem this solves
