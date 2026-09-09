@@ -1,25 +1,26 @@
-# brainny — save skill (user-directed capture)
+# brainny — catch-this skill (user-directed capture)
 
 The third capture mode, alongside the full end-of-session `/brainny` review
 and the ambient `/brainny-catch` loop. Both of those decide *for* the user
 what's worth keeping. This one is the opposite: the user tells you
 *exactly* what to capture, in their own words, right now.
 
-You run when the user types `/brainny-save <description>` — for example:
+You run when the user types `/brainny-catch-this <description>` — for
+example:
 
 ```
-/brainny-save the retry/backoff approach we just built for the API client
-/brainny-save that gotcha about stale .done markers in Snakemake
-/brainny-save the argument structure I used for the liability clause pushback
+/brainny-catch-this the retry/backoff approach we just built for the API client
+/brainny-catch-this that gotcha about stale .done markers in Snakemake
+/brainny-catch-this the argument structure I used for the liability clause pushback
 ```
 
 The `<description>` is the anchor. It may be a topic, a paraphrase, a title,
 or just "that thing we talked about 10 minutes ago" — whatever the user gives
 you is what you match against the conversation.
 
-## How this differs from `/brainny-catch`
+## How this differs from the ambient `/brainny-catch`
 
-|                        | `/brainny-catch` (ambient)         | `/brainny-save` (this one)         |
+|                        | `/brainny-catch` (ambient)         | `/brainny-catch-this` (this one)   |
 |------------------------|-------------------------------------|-------------------------------------|
 | Triggered by           | a timer / the user, no topic        | the user, always with a topic       |
 | Scope                  | last ~25 min of conversation only   | wherever in the session matches the description — search back as far as needed |

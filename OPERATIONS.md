@@ -342,13 +342,16 @@ permission-gated local check — see above.
      (`.gitignore` + `git rm --cached`) since it's per-project local
      data, same as in any project that uses brainny.
 
-10. User-directed capture: the `brainny-save` skill. ✅
+10. User-directed capture: the `brainny-catch-this` skill. ✅
     - The other two capture skills (`/brainny` full review, `/brainny-catch`
       ambient) decide *for* the user what's worth keeping. There was no way
       for the user to just say "capture that specific thing I'm pointing
       at" without waiting for the ambient loop to maybe notice it in its
       next ~25-min pass, or manually hand-writing an `entries.json`.
-    - `/brainny-save <description>` searches the *whole* session (not a
+    - Originally named `/brainny-save`; renamed to `/brainny-catch-this` so
+      the naming reads clearly alongside the ambient `/brainny-catch` it's
+      the directed sibling of.
+    - `/brainny-catch-this <description>` searches the *whole* session (not a
       recent window — the user may be pointing at something from much
       earlier), and treats the user's request itself as having already
       cleared the "is this worth keeping" bar — no ambient gate to
