@@ -134,10 +134,9 @@ brainny search "docker"        # find anything by keyword, tag, domain, kind
 brainny recent --days 7          # what you've captured lately
 ```
 
-**3. Let it capture itself, ambiently.** Install the three skills once
-(`skills/brainny/catch.md`, `sync-check.md`, `onboarding.md`, plus their
-global counterparts under `~/.claude/skills/`) and every Claude Code
-session will:
+**3. Let it capture itself, ambiently.** Install the skills once
+(`skills/brainny/*.md`, plus their global counterparts under
+`~/.claude/skills/`) and every Claude Code session will:
 - **once, ever, per machine** — on the first session after install, if
   no central folder is set up yet, ask whether you want one (and where,
   and whether to back it with GitHub) before ever touching anything;
@@ -150,6 +149,18 @@ session will:
 
 Nothing is ever pushed to GitHub without you asking for it, in that
 moment, every time.
+
+**Every Claude Code command brainny adds:**
+
+| Command | Runs | What it does |
+|---|---|---|
+| `/brainny` | manually, end of a session | full two-pass review of the whole session (project-aware + project-blind); project-local only — copy `skills/brainny/SKILL.md` into a project to use it there |
+| `/brainny-catch` | manually, or every ~25 min in the background | lightweight scan of the last ~25 min for anything worth keeping; silent when it finds nothing |
+| `/brainny-catch-this <description>` | manually, whenever you point at something | searches the *whole* session for what you describe and captures it; always tells you what it did |
+| `/brainny-sync-check` | automatically, once per session | checks for drift against your central folder and asks before syncing |
+| `/brainny-onboarding` | automatically, once ever per machine | offers to set up a central folder (and optionally GitHub) on first use |
+
+All but `/brainny` are installed globally, once, and then work in any project.
 
 **4. Optionally, keep one brain across every project** (the onboarding
 skill above offers to do this for you on first run — or by hand):
