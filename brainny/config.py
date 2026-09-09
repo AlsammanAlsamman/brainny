@@ -28,6 +28,9 @@ KNOWN_KEYS = {
     "git-auto-push": "'true' to let `brainny sync` push without needing --push each time",
     "sync-interval-days": "how often the ambient reconciliation runs (default 3)",
     "project-nature": "one-line descriptor for this project's capture prompt",
+    "onboarding-done": "'true' once the one-time central-folder setup offer "
+    "(brainny-onboarding skill) has been asked, so it never asks again "
+    "regardless of the answer",
 }
 
 
