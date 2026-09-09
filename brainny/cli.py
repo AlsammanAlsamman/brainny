@@ -292,7 +292,7 @@ class BannerArgumentParser(argparse.ArgumentParser):
 
 
 def build_parser() -> argparse.ArgumentParser:
-    parser = BannerArgumentParser(prog="brainny", description="brAInny - remembers how you work with AI.")
+    parser = BannerArgumentParser(prog="brainny", description="brAInny - catches your ideas before the wind.")
     parser.add_argument("--version", action="version", version=f"brainny {__version__}")
     parser.add_argument(
         "--out-dir", default=str(DEFAULT_OUT_DIR), help="output directory (default: brainny-out)"

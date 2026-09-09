@@ -70,10 +70,10 @@ def render_banner() -> str:
     if _color_enabled():
         glyph = f"{PINK}{_GLYPH}{RESET}"
         wordmark = f"   {BOLD}br{GOLD}AI{RESET}{BOLD}nny{RESET}  v{__version__}"
-        tagline = f"   {DIM}remembers how you work with AI{RESET}"
+        tagline = f"   {DIM}catches your ideas before the wind{RESET}"
     else:
         glyph = _GLYPH
         wordmark = f"   brAInny  v{__version__}"
-        tagline = "   remembers how you work with AI"
+        tagline = "   catches your ideas before the wind"
 
     return glyph + "\n\n" + wordmark + "\n" + tagline + "\n"

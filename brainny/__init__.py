@@ -1,4 +1,4 @@
-"""brAInny — remembers how you work with AI."""
+"""brAInny — catches your ideas before the wind."""
 
 # Static source of truth, kept in sync with pyproject.toml and
 # brainny/_version.py::_FALLBACK_VERSION.

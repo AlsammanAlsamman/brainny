@@ -1,7 +1,7 @@
 [project]
 name = "brainny"
 version = "0.1.0"
-description = "brAInny remembers how you work with AI — techniques, precautions, and insights that would otherwise evaporate at the end of a session."
+description = "brAInny catches your ideas before the wind — techniques, precautions, and insights that would otherwise evaporate at the end of a session."
 readme = "README.md"
 requires-python = ">=3.10"
 license = { file = "LICENSE" }
