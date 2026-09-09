@@ -17,6 +17,7 @@ RESET = "\033[0m"
 BOLD = "\033[1m"
 DIM = "\033[2m"
 GOLD = "\033[93m"
+PINK = "\033[38;5;211m"
 
 _GLYPH = """\
 #######################################..............###########################################
@@ -55,7 +56,7 @@ def _color_enabled() -> bool:
 
 def render_banner() -> str:
     if _color_enabled():
-        glyph = f"{DIM}{_GLYPH}{RESET}"
+        glyph = f"{PINK}{_GLYPH}{RESET}"
         wordmark = f"   {BOLD}br{GOLD}AI{RESET}{BOLD}nny{RESET}  v{__version__}"
         tagline = f"   {DIM}remembers how you work with AI{RESET}"
     else:
