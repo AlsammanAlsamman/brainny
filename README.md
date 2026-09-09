@@ -19,10 +19,16 @@
 > and watch what you know actually compound, session after session.**
 
 <p align="center">
-  <img src="assets/screenshot-dashboard.png" alt="brAInny dashboard: radial tree of captured ideas by domain, with an itemized list alongside" width="100%">
+  <img src="assets/screenshot-dashboard.png" alt="brAInny dashboard: force-directed network of captured ideas with a colored halo per domain cluster, plus an itemized list alongside" width="100%">
 </p>
 
-<p align="center"><sub><code>brainny query --html</code> — this project's own real, dogfooded ideas.</sub></p>
+<p align="center"><sub>Graph tab — force network with cluster halos.</sub></p>
+
+<p align="center">
+  <img src="assets/screenshot-stats.png" alt="brAInny dashboard Stats tab: domain treemap, per-cluster activity table, kind breakdown, and newest ideas" width="100%">
+</p>
+
+<p align="center"><sub>Stats tab — domain treemap, growth trends, kind breakdown. Both from <code>brainny query --html</code>, on this project's own real, dogfooded ideas.</sub></p>
 
 ---
 

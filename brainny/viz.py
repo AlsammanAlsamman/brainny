@@ -177,6 +177,7 @@ _CSS = """
 
   main { flex: 1; display: grid; grid-template-columns: 300px 1fr; min-height: 0; }
   main#stats-main { display: block; overflow-y: auto; padding: 1.1rem 1.4rem 2rem; }
+  #graph-main[hidden], #stats-main[hidden] { display: none !important; }
 
   /* ---- stats tab ---- */
   .stat-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 0.7rem; margin: 0 0 1.4rem; }
@@ -640,7 +641,7 @@ _JS = """
 
     var lineGen = d3.line().curve(d3.curveCatmullRomClosed.alpha(0.7));
 
-    simulation.on('tick', function () {
+    function renderPositions() {
       link.attr('x1', function (d) { return d.source.x; }).attr('y1', function (d) { return d.source.y; })
         .attr('x2', function (d) { return d.target.x; }).attr('y2', function (d) { return d.target.y; });
       node.attr('cx', function (d) { return d.x; }).attr('cy', function (d) { return d.y; });
@@ -658,9 +659,9 @@ _JS = """
         .attr('stroke', function (d) { return groupColor[d[0]]; })
         .attr('stroke-opacity', 0.35)
         .attr('d', function (d) { return lineGen(paddedHull(d[1], 26)); });
-    });
+    }
 
-    simulation.on('end', function () {
+    function fitToViewport(animate) {
       var xs = nodes.map(function (d) { return d.x; }), ys = nodes.map(function (d) { return d.y; });
       var pad = 60;
       var x0 = Math.min.apply(null, xs) - pad, x1 = Math.max.apply(null, xs) + pad;
@@ -668,8 +669,28 @@ _JS = """
       var scale = Math.min(4, 0.9 / Math.max((x1 - x0) / width, (y1 - y0) / height));
       var tx = width / 2 - scale * (x0 + x1) / 2;
       var ty = height / 2 - scale * (y0 + y1) / 2;
-      svg.transition().duration(500).call(zoom.transform, d3.zoomIdentity.translate(tx, ty).scale(scale));
-    });
+      var t = d3.zoomIdentity.translate(tx, ty).scale(scale);
+      if (animate) svg.transition().duration(500).call(zoom.transform, t);
+      else svg.call(zoom.transform, t);
+    }
+
+    // Pre-converge synchronously (a static force layout, computed with plain
+    // .tick() calls instead of waiting on the simulation's own animation
+    // timer) so the graph renders already-settled on the very first paint —
+    // no animate-in delay for users, and no dependency on requestAnimationFrame
+    // actually advancing (which headless browsers don't reliably do, unlike
+    // real ones — screenshots of the live rAF-driven version came out with
+    // the cluster barely spread apart because the simulation hadn't run yet).
+    simulation.stop();
+    for (var i = 0; i < 300; i++) simulation.tick();
+    renderPositions();
+    fitToViewport(false);
+
+    // Resume live physics (softly) so drag interactions still feel right;
+    // renderPositions/fitToViewport re-run per ongoing tick same as before.
+    simulation.on('tick', renderPositions);
+    simulation.on('end', function () { fitToViewport(true); });
+    simulation.alpha(0.05).restart();
 
     return function cleanup() { simulation.stop(); };
   }
