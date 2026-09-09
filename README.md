@@ -2,7 +2,7 @@
 
 <img src="assets/icon.png" alt="brAInny" width="150" />
 
-# brAInny
+# br<font color="#e8b23d">AI</font>nny
 
 **Your ideas don't have to blow away with the wind.**
 
