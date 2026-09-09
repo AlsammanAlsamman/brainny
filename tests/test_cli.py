@@ -413,3 +413,34 @@ def test_sync_no_remote_no_push_is_informational_only(tmp_path, capsys, isolated
     code = main(["--out-dir", str(out_dir), "sync"])
     assert code == 0
     assert "local sync only" in capsys.readouterr().out
+
+
+# --- regression: version resolution must survive namespace-package shadowing ---
+
+def test_get_version_is_nonempty():
+    from brainny._version import get_version
+
+    v = get_version()
+    assert isinstance(v, str) and v and v != "0.0.0"
+
+
+def test_python_m_runs_from_parent_of_clone():
+    """`python -m brainny.cli --version` and `python -m brainny --version` must
+    not crash when the working directory contains a folder named `brainny`
+    (repo-root shadowing makes `import brainny` a namespace package with no
+    `__version__`). Regression for the ImportError on cli.py's version import.
+    """
+    import subprocess
+    import sys
+
+    repo_root = Path(__file__).resolve().parents[1]
+    parent = repo_root.parent  # contains the clone dir, itself named "brainny"
+    for target in ("brainny.cli", "brainny"):
+        r = subprocess.run(
+            [sys.executable, "-m", target, "--version"],
+            cwd=parent,
+            capture_output=True,
+            text=True,
+        )
+        assert r.returncode == 0, f"{target}: {r.stderr or r.stdout}"
+        assert "brainny" in (r.stdout + r.stderr).lower()

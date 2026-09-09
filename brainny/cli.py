@@ -18,12 +18,17 @@ from collections import Counter, defaultdict
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
-from brainny import __version__, config
+from brainny import config
+from brainny._version import get_version
 from brainny.banner import render_banner
 from brainny.capture import capture as do_capture
 from brainny.graph import DEFAULT_OUT_DIR, graph_path, html_path, load_graph, save_graph
 from brainny.schema import Graph
 from brainny.viz import render_tree, save_html
+
+# Resolved defensively so `python -m brainny.cli` works from any directory,
+# even one that shadows the package as a namespace package.
+__version__ = get_version()
 
 NOT_YET = {
     "grow": "v0.1 (needs stats.py + dedup.py)",

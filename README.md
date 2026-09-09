@@ -81,6 +81,15 @@ directory, not just this repo — plus the importable `brainny` package.
 (Not published to PyPI yet — the name is confirmed free, publishing is
 just a deliberate later step.)
 
+`python -m brainny` and `python -m brainny.cli` both work too, from any
+directory (including the parent of your clone).
+
+**Windows note.** With the Microsoft Store build of Python, the `Scripts`
+directory that receives `brainny.exe` is often *not* on `PATH` — pip prints a
+`WARNING: The script brainny.exe is installed in '…\PythonXX\Scripts' which is
+not on PATH`. Add that `…\Scripts` folder to your user `PATH` (or just run
+`python -m brainny`).
+
 ---
 
 ## Use it

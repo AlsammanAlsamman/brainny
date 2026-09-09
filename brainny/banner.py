@@ -15,7 +15,9 @@ from __future__ import annotations
 import os
 import sys
 
-from brainny import __version__
+from brainny._version import get_version
+
+__version__ = get_version()
 
 RESET = "\033[0m"
 BOLD = "\033[1m"
