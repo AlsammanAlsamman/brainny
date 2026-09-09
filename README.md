@@ -2,128 +2,137 @@
 
 <img src="assets/logo.jpg" alt="brAInny logo" width="200" />
 
-**brAInny remembers *how you work* — the techniques you invent and the
-precautions you learn while solving problems with AI — so you stop
-re-learning your own lessons.**
+> **Every session with AI, you invent things you never write down — a
+> precaution, a trick, a working fix — and by tomorrow they're gone with
+> the wind. brAInny catches them before they blow away, so you can come
+> back to any of them later, reuse them instead of re-discovering them,
+> and watch what you know actually compound, session after session.**
 
-Not a note app. It captures the procedural residue that gets generated in
-passing while you solve something else with AI, and would otherwise
-evaporate when the session ends: techniques, precautions, solutions, and
-insights, plus stray ideas that might grow into something later.
+## The problem this solves
 
-For anyone who works with AI — not any one field. See `SEED.md` §0 for
-the full pitch and examples across domains.
+You're deep in a task with an AI assistant, solving something else
+entirely, and along the way you figure out a trick, hit a gotcha you'll
+absolutely hit again, or land on a working approach you're proud of. It
+was never the *point* of the session — so it isn't written anywhere. The
+session ends, the terminal closes, and it's gone. Weeks later you pay the
+same cost to re-learn the same lesson.
+
+**brAInny is not a note app.** It's built specifically to catch that
+throwaway residue — the stuff nobody would think to write down on
+purpose — and turn it into something durable:
+
+- A **technique** you invented gets saved, so next time it's a lookup,
+  not a rediscovery.
+- A **precaution** you learned the hard way gets remembered, so you never
+  pay for the same mistake twice.
+- A **solution** to a fiddly problem stays reachable, so future-you can
+  just reuse it.
+- A stray **insight** that isn't useful yet gets kept as a seed — if it
+  keeps coming back across sessions, brAInny notices and lets it grow.
+
+It works for anyone who works with AI, not just developers — a
+precaution, a structure, a working approach is the same shape of thing
+whether you write code, contracts, prose, or research.
+
+## How it works, in one picture
+
+```
+[ your AI session ]
+        │  a lightweight skill watches for reusable moments and emits them
+        ▼
+   brainny capture           ← the CLI: validates, dedups, files it
+        ▼
+  brainny-out/graph.json     ← your durable, growing memory for this project
+        │
+        ├── graph.html       interactive dashboard — browse, search, revisit
+        └── (optional) sync to one shared "central" brain across all your projects
+```
+
+Nothing runs on a server, nothing leaves your machine unless you
+explicitly point it at a central folder — and even then, syncing to
+GitHub is a separate, explicit command, never silent.
+
+## Install
+
+```bash
+git clone https://github.com/<you>/brainny
+cd brainny
+pip install -e ".[dev]"
+```
+
+That puts a `brainny` command on your PATH — usable from **any** project
+directory, not just this repo — plus the importable `brainny` package.
+(Not published to PyPI yet — the name is confirmed free, publishing is
+just a deliberate later step.)
+
+## Use it
+
+**1. Capture something reusable**, by hand or via the assistant skill:
+
+```bash
+brainny capture path/to/entries.json --project myproj --session s1
+```
+
+(`prompts/capture.md` shows the shape of an entry. In Claude Code, the
+`skills/brainny/` skills do this for you — see below.)
+
+**2. See what you've kept:**
+
+```bash
+brainny status              # counts, domains, last capture, sync state
+brainny query                # your ideas as a terminal tree
+brainny query --html          # a browsable dashboard: brainny-out/graph.html
+brainny open                  # open that dashboard in your browser
+brainny search "docker"        # find anything by keyword, tag, domain, kind
+brainny recent --days 7          # what you've captured lately
+```
+
+**3. Let it capture itself, ambiently.** Install the two skills once
+(`skills/brainny/catch.md` and `skills/brainny/sync-check.md`, plus their
+global counterparts under `~/.claude/skills/`) and every Claude Code
+session will:
+- quietly scan the last ~25 minutes of conversation for anything worth
+  keeping, and file it without interrupting you — most cycles catch
+  nothing, and that's correct;
+- once, at the start of the session, check whether anything's drifted
+  from your shared central brain and ask before syncing it.
+
+Nothing is ever pushed to GitHub without you asking for it, in that
+moment, every time.
+
+**4. Optionally, keep one brain across every project:**
+
+```bash
+brainny config set-central ~/brainy-central   # point at a shared folder
+brainny sync                                    # push this project's ideas there
+brainny sync --push                              # + commit & push, if that folder has a git remote
+```
+
+Sync only ever flows project → central. Central never overwrites a
+project's own copy unless you explicitly ask for that.
 
 ## Status
 
-**v0 · seed** (see `SEED.md` §7 for the full roadmap). Working today:
-
-- `brainny capture <entries.json> --project <name> --session <id>` —
-  validate entries, write them into `brainny-out/graph.json`, and refresh
-  `brainny-out/graph.html`.
-- `brainny query` — print the graph as a terminal tree.
-- `brainny query --html` — (re)write `brainny-out/graph.html`: a
-  dashboard ([D3](https://d3js.org/), CDN-loaded) with a dropdown
-  switching between a **radial tree** (domains branching from a center,
-  ideas as leaves at the rim) and a **force-directed network** (physics-
-  based layout with an explicit colored halo per domain group), plus an
-  itemized accordion list — click a title to unfold summary/detail/
-  trigger/tags. Clicking an idea in either graph opens + scrolls to its
-  entry in the list, so the list is where its info actually shows. Ideas
-  are sized/highlighted by growth state and kind — real fields, though
-  inert until v0.1 (`dedup.py`/`stats.py`) makes `recurrence`/`state`
-  actually vary. Static file, no server — falls back to a plain terminal
-  tree if D3 can't load. (This replaced an earlier standalone 3D
-  network-graph implementation after a round of exploring alternatives
-  in a throwaway `examples/` folder — since folded in and deleted.)
-
-- `brainny status` / `search <term>` / `recent [--days N]` / `open` —
-  quick-look commands over data that already exists: idea counts and
-  central-sync state, keyword/tag/domain search, what's been captured
-  lately, and opening `graph.html` without hand-typing the path.
-- `brainny config get [key]` / `config set <key> <value>` — local
-  settings in `~/.brainny/config.json` (`central-folder`,
-  `github-remote`, `sync-interval-days`, `project-nature`).
-- `brainny config set-central <path>` / `brainny sync` — point this
-  machine at a central folder and push this project's current graph
-  there (`<central>/<project>/graph.json` + `graph.html`). Always local →
-  central, never the reverse. `status` reports whether the central copy
-  is in sync or has drifted.
-- `brainny sync --push` — if the central folder is a git repo with a
-  remote *you've already set up yourself* (brainny never runs `git init`
-  or `git remote add`), also commit + push. Never runs without `--push`
-  for that call or the durable `git-auto-push: true` setting — pushing is
-  never silent.
-- `/brainny-catch` — the lightweight ambient sibling of the full
-  `/brainny` capture skill (`skills/brainny/catch.md`): scans just the
-  recent slice of conversation, single-pass, silent when nothing
-  qualifies, one non-blocking receipt line when something is caught.
-  Also installed globally (`~/.claude/skills/brainny-catch/`) and wired
-  into a standing rule in the user's `~/.claude/CLAUDE.md`: at the start
-  of every Claude Code session, in every project, it self-schedules a
-  recurring ~25-minute loop running this skill — ambient capture without
-  being asked, anywhere `brainny` is installed.
-- `brainny-sync-check` skill (`skills/brainny/sync-check.md`, also
-  installed globally) — runs once at the start of every session (not on
-  a loop): checks `brainny status` for drift between the local and
-  central copies, and if there's any, asks permission in plain chat
-  before running `brainny sync`. Silent when there's no central folder
-  configured or nothing's drifted. Stands in for a true "every 2-3 days"
-  background trigger, which turned out not to be buildable — see
-  `OPERATIONS.md` step 7 for why.
-
-Not yet built: dedup/novelty/decay (`stats.py`, `dedup.py`), `grow`,
-`neglected`, the MCP server (`serve`), git hooks, and true cross-project
-reconciliation. Each stub command in the CLI says which
-roadmap stage it lands in. See `OPERATIONS.md` for the full build order.
-
-## Installation
-
-Not on PyPI yet — the name (`brainny`) is confirmed free there, but
-publishing is a separate, explicit decision, not made yet (SEED.md §5,
-OPERATIONS.md §6 step 8). Until then, install from source:
-
-```bash
-# to use brainny in another project:
-pip install "brainny @ git+https://github.com/<you>/brainny"   # once pushed to a remote
-# or, from a local clone:
-pip install /path/to/brainny
-
-# to work on brainny itself:
-git clone <this repo> && cd brainny
-pip install -e ".[dev]"
-```
-
-Either way you get a `brainny` command on PATH (works from *any* project
-directory — see OPERATIONS.md §6 step 6) plus the importable `brainny`
-package.
-
-## Quick start
-
-```bash
-pip install -e ".[dev]"
-pytest tests/                    # 55 tests, all green
-
-# hand-write an entries.json (see prompts/capture.md for the shape), then:
-brainny capture path/to/entries.json --project myproj --session s1
-brainny query
-brainny status
-```
+**v0 · seed** — the core loop above is real and tested (55 tests). Not
+yet built: automatic dedup/novelty scoring so `recurrence`/`state` truly
+evolve over time, decay for neglected ideas, and an MCP server for direct
+AI access to your brain. See `OPERATIONS.md` for the full build order and
+`SEED.md` for the complete design rationale — both are as honest about
+what's *not* built yet as what is.
 
 ## Layout
 
 ```
-brainny/                 the body (Part 2 — AI-agnostic Python)
-skills/brainny/SKILL.md  the capture prompt (Part 1 — AI-facing)
-prompts/                 capture + project-nature prompt templates
-tests/                   layered test strategy, see SEED.md §6
-brainny-out/             this project's own brain (graph.json + sessions/)
+brainny/                 the CLI + engine (Python, assistant-agnostic)
+skills/brainny/          the capture skills (assistant-facing prompts)
+prompts/                 entry + project-nature templates
+tests/                   55 tests, see SEED.md §6 for the testing philosophy
+brainny-out/             this project's own brain — brAInny dogfeeds itself
 assets/logo.jpg          brand mark
 SEED.md                  the living design doc — read this first
+OPERATIONS.md            how it actually runs day to day
 ```
 
-Read `SEED.md` for the constitution (§1), the architecture (§2-3), the
-entry schema (§4), and how testing an LLM-in-the-loop system actually
-works (§6). Read `OPERATIONS.md` for how brAInny actually gets invoked
-day to day — the command surface, ambient background scanning, the
-central/GitHub sync model, packaging, and branding.
+Read `SEED.md` for the constitution, architecture, and entry schema.
+Read `OPERATIONS.md` for the command surface, ambient capture, and the
+central/GitHub sync model in full.
