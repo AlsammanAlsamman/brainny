@@ -115,6 +115,12 @@ brainny capture path/to/entries.json --project myproj --session s1
 (`prompts/capture.md` shows the shape of an entry. In Claude Code, the
 `skills/brainny/` skills do this for you — see below.)
 
+Or, mid-session, just point at it: **`/brainny-save the retry approach we
+just built for the API client`** — searches the whole session for whatever
+you describe (not just a recent window), and always tells you what it
+captured. Unlike the ambient skills below, this one doesn't second-guess
+whether it's worth keeping — you already decided that.
+
 **2. See what you've kept:**
 
 ```bash

@@ -342,5 +342,24 @@ permission-gated local check — see above.
      (`.gitignore` + `git rm --cached`) since it's per-project local
      data, same as in any project that uses brainny.
 
+10. User-directed capture: the `brainny-save` skill. ✅
+    - The other two capture skills (`/brainny` full review, `/brainny-catch`
+      ambient) decide *for* the user what's worth keeping. There was no way
+      for the user to just say "capture that specific thing I'm pointing
+      at" without waiting for the ambient loop to maybe notice it in its
+      next ~25-min pass, or manually hand-writing an `entries.json`.
+    - `/brainny-save <description>` searches the *whole* session (not a
+      recent window — the user may be pointing at something from much
+      earlier), and treats the user's request itself as having already
+      cleared the "is this worth keeping" bar — no ambient gate to
+      second-guess it, unlike catch/full-review. It always responds
+      (title + kind captured, or "couldn't find that, say more"), unlike
+      the ambient skills' silence-by-default.
+    - Dogfooded live: invoked with a real description
+      ("the technique for visually verifying colored terminal/ANSI output
+      by converting it to HTML and screenshotting with headless Chrome"),
+      correctly found that technique in the session, wrote it up, and
+      captured it as `idea_0023`.
+
 Each step should land, get tested, and get dogfooded (per SEED.md §6
 Layer 7) before the next starts — same discipline as the v0 build.
