@@ -4,7 +4,7 @@
 
 # br<font color="#e8b23d">AI</font>nny
 
-**Your ideas don't have to blow away with the wind.**
+**catches your ideas before the wind**
 
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue.svg)](pyproject.toml)
