@@ -129,6 +129,8 @@ brainny sync --push                              # + commit & push, if that fold
 Sync only ever flows project → central. Central never overwrites a
 project's own copy unless you explicitly ask for that.
 
+---
+
 ## Status
 
 **v0 · seed** — the core loop above is real and tested (55 tests). Not
@@ -138,6 +140,8 @@ AI access to your brain. See `OPERATIONS.md` for the full build order and
 `SEED.md` for the complete design rationale — both are as honest about
 what's *not* built yet as what is.
 
+---
+
 ## Layout
 
 ```
@@ -146,7 +150,7 @@ skills/brainny/          the capture skills (assistant-facing prompts)
 prompts/                 entry + project-nature templates
 tests/                   55 tests, see SEED.md §6 for the testing philosophy
 brainny-out/             this project's own brain — brAInny dogfeeds itself
-assets/logo.jpg          brand mark
+assets/icon.png          brand mark
 SEED.md                  the living design doc — read this first
 OPERATIONS.md            how it actually runs day to day
 ```
