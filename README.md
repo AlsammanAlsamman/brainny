@@ -128,10 +128,14 @@ brainny search "docker"        # find anything by keyword, tag, domain, kind
 brainny recent --days 7          # what you've captured lately
 ```
 
-**3. Let it capture itself, ambiently.** Install the two skills once
-(`skills/brainny/catch.md` and `skills/brainny/sync-check.md`, plus their
+**3. Let it capture itself, ambiently.** Install the three skills once
+(`skills/brainny/catch.md`, `sync-check.md`, `onboarding.md`, plus their
 global counterparts under `~/.claude/skills/`) and every Claude Code
 session will:
+- **once, ever, per machine** — on the first session after install, if
+  no central folder is set up yet, ask whether you want one (and where,
+  and whether to back it with GitHub) before ever touching anything;
+  never asks again after that, whatever you answered;
 - quietly scan the last ~25 minutes of conversation for anything worth
   keeping, and file it without interrupting you — most cycles catch
   nothing, and that's correct;
@@ -141,7 +145,8 @@ session will:
 Nothing is ever pushed to GitHub without you asking for it, in that
 moment, every time.
 
-**4. Optionally, keep one brain across every project:**
+**4. Optionally, keep one brain across every project** (the onboarding
+skill above offers to do this for you on first run — or by hand):
 
 ```bash
 brainny config set-central ~/brainy-central   # point at a shared folder

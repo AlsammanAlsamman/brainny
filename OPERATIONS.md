@@ -313,5 +313,34 @@ something hollow around infrastructure that fundamentally can't reach the
 user's local machine, step 7 was redefined to a session-start,
 permission-gated local check — see above.
 
+9. First-run onboarding: the `brainny-onboarding` skill. ✅
+   - Added after the fact, not in the original plan — a real user (not
+     the maintainer) installing brainny for the first time had no way to
+     discover `central-folder`/GitHub sync short of reading `README.md`.
+     Same pattern as steps 3/6's ambient skills, but the guard is
+     "at most once, ever, per machine" rather than per-session or
+     looped: it checks `onboarding-done` in `~/.brainny/config.json`
+     first and does nothing at all once that's set, regardless of the
+     answer given.
+   - Only actually asks anything when both `onboarding-done` and
+     `central-folder` are unset. Asks two things via `AskUserQuestion`:
+     where the central folder should live (home dir / Documents /
+     custom — never guessed), and whether to back it with a GitHub repo
+     (walking through installing a portable `gh` CLI without admin
+     rights and a token-based, non-browser login if needed) or stay
+     local-only.
+   - New `onboarding-done` config key in `brainny/config.py`.
+   - Dogfooded for real, not just read: invoked live on the maintainer's
+     own machine (which genuinely had neither key set), correctly
+     detected the fresh-install state, asked both questions, and set
+     `central-folder` to the chosen path. Confirmed `brainny sync`
+     afterward actually populates that folder — onboarding only points
+     config at it, it never pushes anything itself.
+   - Caught a related gap this surfaced: `brainny-out/` (the tool's own
+     dogfooded ideas) had been committed into brainny's own repo the
+     whole time, which is confusing for a fresh clone — untracked it
+     (`.gitignore` + `git rm --cached`) since it's per-project local
+     data, same as in any project that uses brainny.
+
 Each step should land, get tested, and get dogfooded (per SEED.md §6
 Layer 7) before the next starts — same discipline as the v0 build.
