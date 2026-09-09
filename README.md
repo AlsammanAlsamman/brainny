@@ -144,7 +144,7 @@ project's own copy unless you explicitly ask for that.
 
 ## Status
 
-**v0 · seed** — the core loop above is real and tested (55 tests). Not
+**v0 · seed** — the core loop above is real and tested (57 tests). Not
 yet built: automatic dedup/novelty scoring so `recurrence`/`state` truly
 evolve over time, decay for neglected ideas, and an MCP server for direct
 AI access to your brain. See `OPERATIONS.md` for the full build order and
@@ -159,7 +159,7 @@ what's *not* built yet as what is.
 brainny/                 the CLI + engine (Python, assistant-agnostic)
 skills/brainny/          the capture skills (assistant-facing prompts)
 prompts/                 entry + project-nature templates
-tests/                   55 tests, see SEED.md §6 for the testing philosophy
+tests/                   57 tests, see SEED.md §6 for the testing philosophy
 brainny-out/             this project's own brain — brAInny dogfeeds itself
 assets/icon.png          brand mark
 SEED.md                  the living design doc — read this first
