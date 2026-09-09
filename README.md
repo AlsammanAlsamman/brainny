@@ -100,6 +100,8 @@ brainny capture path/to/entries.json --project myproj --session s1
 brainny status              # counts, domains, last capture, sync state
 brainny query                # your ideas as a terminal tree
 brainny query --html          # a browsable dashboard: brainny-out/graph.html
+                                #   Graph tab: radial tree / force network, click-to-inspect
+                                #   Stats tab: domain treemap, growth trends, kind breakdown
 brainny open                  # open that dashboard in your browser
 brainny search "docker"        # find anything by keyword, tag, domain, kind
 brainny recent --days 7          # what you've captured lately

@@ -31,7 +31,59 @@
     font-size: 0.78rem; color: #d7c9a0;
   }
 
+  #tab-bar { display: flex; gap: 0.3rem; margin-left: 0.4rem; }
+  .tab-btn {
+    background: none; border: 1px solid transparent; color: #9aab97; font: inherit;
+    font-size: 0.85rem; padding: 0.3rem 0.8rem; border-radius: 8px; cursor: pointer;
+  }
+  .tab-btn:hover { background: rgba(255,255,255,0.06); color: #eef3ea; }
+  .tab-btn.active { background: rgba(232,178,61,0.14); border-color: rgba(232,178,61,0.4); color: #f0e2bb; }
+
   main { flex: 1; display: grid; grid-template-columns: 300px 1fr; min-height: 0; }
+  main#stats-main { display: block; overflow-y: auto; padding: 1.1rem 1.4rem 2rem; }
+
+  /* ---- stats tab ---- */
+  .stat-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 0.7rem; margin: 0 0 1.4rem; }
+  .stat-card {
+    background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 10px; padding: 0.7rem 0.9rem;
+  }
+  .stat-card .stat-num { font-size: 1.6rem; font-weight: 600; color: #eef3ea; line-height: 1.1; }
+  .stat-card .stat-label { font-size: 0.74rem; color: #8fa08c; margin-top: 0.2rem; text-transform: uppercase; letter-spacing: 0.03em; }
+
+  .stats-grid { display: grid; grid-template-columns: minmax(280px, 1fr) minmax(320px, 1.2fr); gap: 1.4rem; align-items: start; }
+  @media (max-width: 900px) { .stats-grid { grid-template-columns: 1fr; } }
+
+  .stats-block h2 { font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.04em; color: #8fa08c; margin: 0 0 0.6rem; }
+  .stats-caption { font-size: 0.74rem; color: #7c8c79; margin: 0.5rem 0 0; }
+
+  #treemap-mount svg { display: block; width: 100%; }
+  .tm-cell rect { stroke: rgba(11,19,16,0.7); stroke-width: 1.5; cursor: pointer; }
+  .tm-cell text { pointer-events: none; fill: #0b1310; font-size: 11px; font-weight: 600; }
+  .tm-cell .tm-count { font-weight: 400; opacity: 0.75; }
+
+  .domain-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+  .domain-table th { text-align: left; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.03em; color: #7c8c79; padding: 0.3rem 0.5rem; border-bottom: 1px solid rgba(255,255,255,0.1); }
+  .domain-table td { padding: 0.4rem 0.5rem; border-bottom: 1px solid rgba(255,255,255,0.05); vertical-align: middle; }
+  .domain-table tr:hover td { background: rgba(255,255,255,0.03); }
+  .spark { display: inline-block; vertical-align: middle; }
+  .trend-badge { display: inline-flex; align-items: center; gap: 0.3rem; padding: 0.1rem 0.5rem; border-radius: 999px; font-size: 0.72rem; white-space: nowrap; }
+  .trend-growing { background: rgba(111,174,92,0.16); color: #8fd67a; }
+  .trend-steady { background: rgba(255,255,255,0.06); color: #9aab97; }
+  .trend-quiet { background: rgba(201,67,44,0.12); color: #d68a7a; }
+
+  .kind-bars { display: flex; flex-direction: column; gap: 0.4rem; margin-top: 0.4rem; }
+  .kind-bar-row { display: flex; align-items: center; gap: 0.6rem; font-size: 0.78rem; }
+  .kind-bar-label { width: 90px; flex: none; color: #c9d3c6; }
+  .kind-bar-track { flex: 1; height: 10px; border-radius: 999px; background: rgba(255,255,255,0.06); overflow: hidden; }
+  .kind-bar-fill { height: 100%; border-radius: 999px; }
+  .kind-bar-count { width: 24px; flex: none; text-align: right; color: #8fa08c; }
+
+  .recent-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.5rem; }
+  .recent-item { display: flex; flex-direction: column; gap: 0.1rem; padding: 0.45rem 0.6rem; border-radius: 8px; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.06); cursor: pointer; }
+  .recent-item:hover { background: rgba(255,255,255,0.05); }
+  .recent-item .ri-title { color: #eef3ea; font-size: 0.84rem; }
+  .recent-item .ri-meta { color: #7c8c79; font-size: 0.72rem; }
   #panel { border-right: 1px solid rgba(255,255,255,0.08); overflow-y: auto; padding: 0.75rem; }
   #panel h2 { font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.04em; color: #8fa08c; margin: 0.25rem 0.25rem 0.6rem; }
   #viz { position: relative; overflow: hidden; }
@@ -48,6 +100,7 @@
 
   /* ---- itemized accordion list ---- */
   .item-list { display: flex; flex-direction: column; gap: 0.9rem; }
+  .item-group { border-radius: 8px; padding: 0.15rem; }
   .item-group-heading { font-size: 0.76rem; color: #8fa08c; margin: 0 0 0.35rem; padding: 0 0.25rem; }
   .item { border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; margin-bottom: 0.4rem; overflow: hidden; background: rgba(255,255,255,0.02); }
   .item-promising { border-color: rgba(232,178,61,0.55); box-shadow: 0 0 0 1px rgba(232,178,61,0.15) inset; }
@@ -89,15 +142,19 @@
 <header>
   <div class="row">
     <h1>brainny</h1>
+    <nav id="tab-bar">
+      <button type="button" class="tab-btn active" data-tab="graph">Graph</button>
+      <button type="button" class="tab-btn" data-tab="stats">Stats</button>
+    </nav>
     <select id="view-select">
       <option value="radial">Radial tree</option>
       <option value="force">Force network with cluster halos</option>
     </select>
   </div>
   <p id="view-desc"></p>
-  <p class="note">12 idea(s) · 9 branch(es), grown over 4 session(s) · sizing/highlighting uses the real <code>recurrence</code>/<code>state</code> fields, but v0.1 (dedup/stats) doesn't exist yet — every idea is currently <code>recurrence: 1</code>, <code>state: "seed"</code>, so nothing visibly stands out yet. Click any idea to jump to it in the list.</p>
+  <p class="note">16 idea(s) · 12 branch(es), grown over 5 session(s) · sizing/highlighting uses the real <code>recurrence</code>/<code>state</code> fields, but v0.1 (dedup/stats) doesn't exist yet — every idea is currently <code>recurrence: 1</code>, <code>state: "seed"</code>, so nothing visibly stands out yet. Click any idea to jump to it in the list.</p>
 </header>
-<main>
+<main id="graph-main">
   <div id="panel">
     <h2>legend</h2>
     <div class="legend-row"><span class="legend-item"><span class="dot" style="background:#3b6fd6"></span>technique</span><span class="legend-item"><span class="dot" style="background:#c9432c"></span>precaution</span><span class="legend-item"><span class="dot" style="background:#2f9e5e"></span>solution</span><span class="legend-item"><span class="dot" style="background:#8b5cd6"></span>insight</span><span class="legend-item"><span class="dot" style="background:#8a8f98"></span>seed</span></div>
@@ -107,8 +164,9 @@
   </div>
   <div id="viz"></div>
 </main>
+<main id="stats-main" hidden></main>
 <div id="tooltip"></div>
-<pre id="fallback" hidden>brainny - 12 idea(s): 2 insight, 8 precaution, 2 technique
+<pre id="fallback" hidden>brainny - 16 idea(s): 2 insight, 11 precaution, 3 technique
 
 GWAS / genotype data merging/
   [T] (seed) Pick genotype-merge strategy (union vs. intersection) by what the downstream tool tolerates, not by habit - idea_0007 [plink, genotype-merge, ld-reference-panel, gcta, grm]
@@ -139,8 +197,18 @@ brainny-design / testing/
 brainny-design / tooling/
   [!] (seed) Renaming a directory that&#x27;s the pinned working directory of an active tool session fails with &quot;Device or resource busy&quot; on Windows — even from outside it - idea_0010 [windows, file-lock, robocopy, git-bash, editable-install]
   [!] (seed) `git push` (no args) fails with an upstream-mismatch error if the initial push used `HEAD:main` syntax on a differently-named local branch - idea_0011 [git, upstream-tracking, push, automation]
+
+build/tooling/
+  [!] (seed) assets baked into source code at generation time don&#x27;t auto-update from their source file - idea_0014 [codegen, assets, documentation]
+
+dev tooling/
+  [T] (seed) when a GUI installer needs elevation in a non-interactive shell, grab the tool&#x27;s portable zip instead - idea_0015 [windows, installer, cli, non-interactive]
+
+python packaging/
+  [!] (seed) Python namespace-package shadowing when cwd&#x27;s parent contains a folder matching the import name - idea_0016 [python, namespace-package, debugging, import-system]
+  [!] (seed) pip editable installs silently drift from the clone you think you&#x27;re editing - idea_0013 [pip, editable-install, git, debugging]
 </pre>
-<script id="brainny-data" type="application/json">{"title": "brainny", "nodes": [{"id": "idea_0001", "kind": "technique", "title": "Two-pass capture: project-aware precision pass + project-blind recall pass", "summary": "Precision (what's reusable in THIS kind of work) and recall (catch the off-topic tangent) pull in opposite directions inside a single filter — run them as two separate passes instead of one compromise pass.", "detail": "Pass 1 is tuned to a one-line project-nature descriptor and applies a hard gate (reusable beyond this task AND non-obvious). Pass 2 ignores the project entirely and just flags sparks as an unclassified 'seed' — placement happens later, by recurrence or decay, not at capture time.", "domain": "brainny-design", "tags": ["capture-design", "precision-recall", "prompt-design"], "trigger": null, "state": "seed", "recurrence": 1, "session": "seed-design", "sessionTs": "2026-09-09T00:05:17+00:00"}, {"id": "idea_0002", "kind": "precaution", "title": "Never let a similarity threshold auto-decide keep/drop", "summary": "Statistics propose (score, shortlist neighbors); only the AI adjudicates the semantic call (same idea? worth keeping?). A bare embedding-distance cutoff will silently merge distinct ideas or silently drop real ones.", "detail": null, "domain": "brainny-design", "tags": ["dedup-design", "embeddings", "architecture"], "trigger": "before wiring any embedding/similarity score into an automated keep-vs-drop or merge-vs-spawn decision", "state": "seed", "recurrence": 1, "session": "seed-design", "sessionTs": "2026-09-09T00:05:17+00:00"}, {"id": "idea_0003", "kind": "insight", "title": "Two contracts, nothing else crosses layers", "summary": "Keeping exactly two data contracts (prompt-to-body is a JSON entry; body-to-AI/viz is graph.json + MCP tools) is what makes the system portable across any assistant that can read an instruction file and shell out — everything else stays internal to one part and is free to change.", "detail": null, "domain": "brainny-design", "tags": ["architecture", "portability"], "trigger": null, "state": "seed", "recurrence": 1, "session": "seed-design", "sessionTs": "2026-09-09T00:05:17+00:00"}, {"id": "idea_0004", "kind": "precaution", "title": "Delete stale rule .done markers when extending a Snakemake pipeline's scope mid-project", "summary": "In individual-rule submission mode, targeting a rule-name aggregator can report 'Nothing to be done' even though new work (e.g. a newly added region/chromosome/sample) is required, if a .done marker from an earlier narrower run still exists. Verify by targeting the exact new output file directly; if that path triggers work but the aggregator doesn't, delete the stale .done marker files to force Snakemake to re-examine the full dependency list.", "detail": null, "domain": "bioinformatics pipelines / Snakemake on SLURM", "tags": ["snakemake", "slurm", "pipeline-orchestration", "stale-state"], "trigger": "adding new regions/chromosomes/samples to an already-completed Snakemake pipeline and getting an unexpected 'Nothing to be done'", "state": "seed", "recurrence": 1, "session": "sle-gwas-hpc-2026-09-08", "sessionTs": "2026-09-09T03:14:16+00:00"}, {"id": "idea_0005", "kind": "precaution", "title": "`module load X 2>/dev/null || true` can silently no-op inside a non-interactive sbatch script", "summary": "Suppressing module-load errors with `|| true` hides the fact that the `module` command itself may not be initialized in a non-interactive SLURM job shell, leaving the wrong (or a bare default) toolchain on PATH with no visible failure. If a script depends on a specific interpreter/toolchain, resolve and export its absolute bin path directly instead of trusting `module load` to have worked.", "detail": null, "domain": "HPC / SLURM sbatch scripts", "tags": ["slurm", "module-load", "sbatch", "environment"], "trigger": "writing an sbatch script that calls module load before running an interpreter or tool, especially if failures are silenced", "state": "seed", "recurrence": 1, "session": "sle-gwas-hpc-2026-09-08", "sessionTs": "2026-09-09T03:14:16+00:00"}, {"id": "idea_0006", "kind": "precaution", "title": "`PYTHONNOUSERSITE=1` can cause a false ModuleNotFoundError for a package that IS installed", "summary": "If a package was installed with `pip install --user`, setting PYTHONNOUSERSITE=1 hides it from the interpreter even when PATH and the module/toolchain are otherwise correct -- the resulting ImportError looks like a missing dependency, not an environment-variable problem. Check for this env var specifically when an import fails despite pip show/pip list confirming the package is present.", "detail": null, "domain": "HPC / Python environments", "tags": ["python", "pip", "environment-variables", "debugging"], "trigger": "debugging a ModuleNotFoundError in a non-interactive job shell for a package pip confirms is installed", "state": "seed", "recurrence": 1, "session": "sle-gwas-hpc-2026-09-08", "sessionTs": "2026-09-09T03:14:16+00:00"}, {"id": "idea_0007", "kind": "technique", "title": "Pick genotype-merge strategy (union vs. intersection) by what the downstream tool tolerates, not by habit", "summary": "When merging multiple genotyped cohorts into one panel, an intersection (common-SNP-only) merge gives near-zero missingness but can be too sparse for tools that need positional SNP density (e.g. an LD/fine-mapping reference panel needing a minimum match rate). Use a union merge instead when the consumer mode-imputes missing calls (e.g. bigsnpr's snp_fastImputeSimple). Conversely, use an intersection merge for GRM/heritability estimation, where dense non-imputed genotypes are wanted rather than tolerating imputed missingness.", "detail": null, "domain": "GWAS / genotype data merging", "tags": ["plink", "genotype-merge", "ld-reference-panel", "gcta", "grm"], "trigger": null, "state": "seed", "recurrence": 1, "session": "sle-gwas-hpc-2026-09-08", "sessionTs": "2026-09-09T03:14:16+00:00"}, {"id": "idea_0008", "kind": "precaution", "title": "Bumping a Snakemake rule's cluster time-limit isn't enough if the orchestrating sbatch controller has its own, smaller --time budget", "summary": "When a cluster job hits its SLURM time limit, increasing just the rule's resources.time (or a job's requested time) can still fail silently if the outer controller/orchestrator script that submits and waits on it has its own shorter --time in its own #SBATCH header -- the controller gets killed and the dispatched sub-job is orphaned before it can finish, even though the actual computation would have completed given more time. Always check and align BOTH budgets (the rule/job AND its orchestrator) when responding to a timeout, not just the one that actually got killed.", "detail": null, "domain": "HPC / Snakemake + SLURM orchestration", "tags": ["slurm", "snakemake", "time-limit", "sbatch", "orchestration"], "trigger": "increasing a rule's or job's SLURM time resource after a timeout, when that job is itself launched by another sbatch/controller script", "state": "seed", "recurrence": 1, "session": "sle-gwas-hpc-2026-09-08", "sessionTs": "2026-09-09T03:14:16+00:00"}, {"id": "idea_0009", "kind": "precaution", "title": "A mutable-looking module-level default argument (`x: Path = SOME_DEFAULT`) freezes at function-definition time, not call time", "summary": "Python evaluates default argument values once, when the function is defined — so `monkeypatch.setattr(module, 'SOME_DEFAULT', ...)` in a test does nothing for functions already defined with `param=SOME_DEFAULT`, even though the module attribute itself changed. The function keeps using the original value forever.", "detail": "Bit us for real: brainny/config.py's functions used `config_dir: Path = DEFAULT_CONFIG_DIR`. A pytest fixture patched `DEFAULT_CONFIG_DIR` expecting isolation, but every call silently kept writing to the real ~/.brainny/config.json — the test suite polluted real user config with junk keys before this was caught. Fix: use a `None` sentinel and resolve the module attribute *inside* the function body (late binding), not as the parameter default.", "domain": "brainny-design / testing", "tags": ["python", "late-binding", "monkeypatch", "test-isolation", "default-arguments"], "trigger": "before writing a function whose default argument is meant to be overridable via monkeypatching a module-level constant, especially one used by tests", "state": "seed", "recurrence": 1, "session": "ops-cli-catch", "sessionTs": "2026-09-09T16:59:09+00:00"}, {"id": "idea_0010", "kind": "precaution", "title": "Renaming a directory that's the pinned working directory of an active tool session fails with \"Device or resource busy\" on Windows — even from outside it", "summary": "The lock isn't held by the shell's own cwd (cd-ing out first doesn't help) — it's held by whatever wrapping/harness process has that path pinned as its working directory for the session. A plain rename/move will fail. Copy the tree to the new name instead (and reinstall any editable pip install from the new path afterward, since it records the absolute source path).", "detail": "Also: git-bash/MSYS mangles Windows-style single-letter robocopy flags (`/E`, `/R:1`, `/COPYALL`) into path conversions, producing bogus errors like \"Invalid Parameter #3: E:/\" — run robocopy from PowerShell instead, not git-bash. And /COPYALL needs elevated 'Manage Auditing' rights; drop it and use robocopy's default copy flags unless you actually need ACL/audit metadata preserved.", "domain": "brainny-design / tooling", "tags": ["windows", "file-lock", "robocopy", "git-bash", "editable-install"], "trigger": "before renaming or moving a project folder that a running Claude Code (or similar pinned-cwd tool) session is currently operating in", "state": "seed", "recurrence": 1, "session": "ops-cli-catch", "sessionTs": "2026-09-09T16:59:09+00:00"}, {"id": "idea_0011", "kind": "precaution", "title": "`git push` (no args) fails with an upstream-mismatch error if the initial push used `HEAD:main` syntax on a differently-named local branch", "summary": "Pushing via `git push -u origin HEAD:main` sets up tracking in a way that later bare `git push` calls reject with \"the upstream branch of your current branch does not match the name of your current branch.\" Name the local branch to match the remote branch first (e.g. `git checkout -B main`) so a plain `git push` afterward is unambiguous.", "detail": null, "domain": "brainny-design / tooling", "tags": ["git", "upstream-tracking", "push", "automation"], "trigger": "before scripting/automating `git push` calls (no explicit refspec) against a freshly-created repo or test fixture", "state": "seed", "recurrence": 1, "session": "ambient-loop-catch", "sessionTs": "2026-09-09T19:16:13+00:00"}, {"id": "idea_0012", "kind": "insight", "title": "Claude Code's available-skills list refreshes mid-session when a new SKILL.md file appears under ~/.claude/skills/ — no new session needed", "summary": "Writing a new skill file to the global skills directory made it immediately invokable in the *same*, already-running session — confirmed directly by a system reminder listing it right after the file was created. Useful when installing/updating a skill programmatically: no need to tell the user to restart their session just to pick it up.", "detail": null, "domain": "brainny-design / claude-code", "tags": ["claude-code", "skills", "hot-reload"], "trigger": null, "state": "seed", "recurrence": 1, "session": "ambient-loop-catch", "sessionTs": "2026-09-09T19:16:13+00:00"}], "sessions": [{"session": "seed-design", "ts": "2026-09-09T00:05:17+00:00", "count": 3}, {"session": "sle-gwas-hpc-2026-09-08", "ts": "2026-09-09T03:14:16+00:00", "count": 5}, {"session": "ops-cli-catch", "ts": "2026-09-09T16:59:09+00:00", "count": 2}, {"session": "ambient-loop-catch", "ts": "2026-09-09T19:16:13+00:00", "count": 2}], "domainCount": 9, "kindColor": {"technique": "#3b6fd6", "precaution": "#c9432c", "solution": "#2f9e5e", "insight": "#8b5cd6", "seed": "#8a8f98"}, "stateMeta": {"seed": {"label": "seed / bud", "size": 0.16, "emissive": 0.12, "gold": false}, "sprouting": {"label": "sprouting leaf", "size": 0.22, "emissive": 0.22, "gold": false}, "mature": {"label": "mature fruit", "size": 0.3, "emissive": 0.4, "gold": false}, "harvested": {"label": "harvested fruit", "size": 0.34, "emissive": 0.65, "gold": true}}}</script>
+<script id="brainny-data" type="application/json">{"title": "brainny", "nodes": [{"id": "idea_0001", "kind": "technique", "title": "Two-pass capture: project-aware precision pass + project-blind recall pass", "summary": "Precision (what's reusable in THIS kind of work) and recall (catch the off-topic tangent) pull in opposite directions inside a single filter — run them as two separate passes instead of one compromise pass.", "detail": "Pass 1 is tuned to a one-line project-nature descriptor and applies a hard gate (reusable beyond this task AND non-obvious). Pass 2 ignores the project entirely and just flags sparks as an unclassified 'seed' — placement happens later, by recurrence or decay, not at capture time.", "domain": "brainny-design", "tags": ["capture-design", "precision-recall", "prompt-design"], "trigger": null, "state": "seed", "recurrence": 1, "lastTouched": "2026-09-09T00:05:17+00:00", "session": "seed-design", "sessionTs": "2026-09-09T00:05:17+00:00"}, {"id": "idea_0002", "kind": "precaution", "title": "Never let a similarity threshold auto-decide keep/drop", "summary": "Statistics propose (score, shortlist neighbors); only the AI adjudicates the semantic call (same idea? worth keeping?). A bare embedding-distance cutoff will silently merge distinct ideas or silently drop real ones.", "detail": null, "domain": "brainny-design", "tags": ["dedup-design", "embeddings", "architecture"], "trigger": "before wiring any embedding/similarity score into an automated keep-vs-drop or merge-vs-spawn decision", "state": "seed", "recurrence": 1, "lastTouched": "2026-09-09T00:05:17+00:00", "session": "seed-design", "sessionTs": "2026-09-09T00:05:17+00:00"}, {"id": "idea_0003", "kind": "insight", "title": "Two contracts, nothing else crosses layers", "summary": "Keeping exactly two data contracts (prompt-to-body is a JSON entry; body-to-AI/viz is graph.json + MCP tools) is what makes the system portable across any assistant that can read an instruction file and shell out — everything else stays internal to one part and is free to change.", "detail": null, "domain": "brainny-design", "tags": ["architecture", "portability"], "trigger": null, "state": "seed", "recurrence": 1, "lastTouched": "2026-09-09T00:05:17+00:00", "session": "seed-design", "sessionTs": "2026-09-09T00:05:17+00:00"}, {"id": "idea_0004", "kind": "precaution", "title": "Delete stale rule .done markers when extending a Snakemake pipeline's scope mid-project", "summary": "In individual-rule submission mode, targeting a rule-name aggregator can report 'Nothing to be done' even though new work (e.g. a newly added region/chromosome/sample) is required, if a .done marker from an earlier narrower run still exists. Verify by targeting the exact new output file directly; if that path triggers work but the aggregator doesn't, delete the stale .done marker files to force Snakemake to re-examine the full dependency list.", "detail": null, "domain": "bioinformatics pipelines / Snakemake on SLURM", "tags": ["snakemake", "slurm", "pipeline-orchestration", "stale-state"], "trigger": "adding new regions/chromosomes/samples to an already-completed Snakemake pipeline and getting an unexpected 'Nothing to be done'", "state": "seed", "recurrence": 1, "lastTouched": "2026-09-09T03:14:16+00:00", "session": "sle-gwas-hpc-2026-09-08", "sessionTs": "2026-09-09T03:14:16+00:00"}, {"id": "idea_0005", "kind": "precaution", "title": "`module load X 2>/dev/null || true` can silently no-op inside a non-interactive sbatch script", "summary": "Suppressing module-load errors with `|| true` hides the fact that the `module` command itself may not be initialized in a non-interactive SLURM job shell, leaving the wrong (or a bare default) toolchain on PATH with no visible failure. If a script depends on a specific interpreter/toolchain, resolve and export its absolute bin path directly instead of trusting `module load` to have worked.", "detail": null, "domain": "HPC / SLURM sbatch scripts", "tags": ["slurm", "module-load", "sbatch", "environment"], "trigger": "writing an sbatch script that calls module load before running an interpreter or tool, especially if failures are silenced", "state": "seed", "recurrence": 1, "lastTouched": "2026-09-09T03:14:16+00:00", "session": "sle-gwas-hpc-2026-09-08", "sessionTs": "2026-09-09T03:14:16+00:00"}, {"id": "idea_0006", "kind": "precaution", "title": "`PYTHONNOUSERSITE=1` can cause a false ModuleNotFoundError for a package that IS installed", "summary": "If a package was installed with `pip install --user`, setting PYTHONNOUSERSITE=1 hides it from the interpreter even when PATH and the module/toolchain are otherwise correct -- the resulting ImportError looks like a missing dependency, not an environment-variable problem. Check for this env var specifically when an import fails despite pip show/pip list confirming the package is present.", "detail": null, "domain": "HPC / Python environments", "tags": ["python", "pip", "environment-variables", "debugging"], "trigger": "debugging a ModuleNotFoundError in a non-interactive job shell for a package pip confirms is installed", "state": "seed", "recurrence": 1, "lastTouched": "2026-09-09T03:14:16+00:00", "session": "sle-gwas-hpc-2026-09-08", "sessionTs": "2026-09-09T03:14:16+00:00"}, {"id": "idea_0007", "kind": "technique", "title": "Pick genotype-merge strategy (union vs. intersection) by what the downstream tool tolerates, not by habit", "summary": "When merging multiple genotyped cohorts into one panel, an intersection (common-SNP-only) merge gives near-zero missingness but can be too sparse for tools that need positional SNP density (e.g. an LD/fine-mapping reference panel needing a minimum match rate). Use a union merge instead when the consumer mode-imputes missing calls (e.g. bigsnpr's snp_fastImputeSimple). Conversely, use an intersection merge for GRM/heritability estimation, where dense non-imputed genotypes are wanted rather than tolerating imputed missingness.", "detail": null, "domain": "GWAS / genotype data merging", "tags": ["plink", "genotype-merge", "ld-reference-panel", "gcta", "grm"], "trigger": null, "state": "seed", "recurrence": 1, "lastTouched": "2026-09-09T03:14:16+00:00", "session": "sle-gwas-hpc-2026-09-08", "sessionTs": "2026-09-09T03:14:16+00:00"}, {"id": "idea_0008", "kind": "precaution", "title": "Bumping a Snakemake rule's cluster time-limit isn't enough if the orchestrating sbatch controller has its own, smaller --time budget", "summary": "When a cluster job hits its SLURM time limit, increasing just the rule's resources.time (or a job's requested time) can still fail silently if the outer controller/orchestrator script that submits and waits on it has its own shorter --time in its own #SBATCH header -- the controller gets killed and the dispatched sub-job is orphaned before it can finish, even though the actual computation would have completed given more time. Always check and align BOTH budgets (the rule/job AND its orchestrator) when responding to a timeout, not just the one that actually got killed.", "detail": null, "domain": "HPC / Snakemake + SLURM orchestration", "tags": ["slurm", "snakemake", "time-limit", "sbatch", "orchestration"], "trigger": "increasing a rule's or job's SLURM time resource after a timeout, when that job is itself launched by another sbatch/controller script", "state": "seed", "recurrence": 1, "lastTouched": "2026-09-09T03:14:16+00:00", "session": "sle-gwas-hpc-2026-09-08", "sessionTs": "2026-09-09T03:14:16+00:00"}, {"id": "idea_0009", "kind": "precaution", "title": "A mutable-looking module-level default argument (`x: Path = SOME_DEFAULT`) freezes at function-definition time, not call time", "summary": "Python evaluates default argument values once, when the function is defined — so `monkeypatch.setattr(module, 'SOME_DEFAULT', ...)` in a test does nothing for functions already defined with `param=SOME_DEFAULT`, even though the module attribute itself changed. The function keeps using the original value forever.", "detail": "Bit us for real: brainny/config.py's functions used `config_dir: Path = DEFAULT_CONFIG_DIR`. A pytest fixture patched `DEFAULT_CONFIG_DIR` expecting isolation, but every call silently kept writing to the real ~/.brainny/config.json — the test suite polluted real user config with junk keys before this was caught. Fix: use a `None` sentinel and resolve the module attribute *inside* the function body (late binding), not as the parameter default.", "domain": "brainny-design / testing", "tags": ["python", "late-binding", "monkeypatch", "test-isolation", "default-arguments"], "trigger": "before writing a function whose default argument is meant to be overridable via monkeypatching a module-level constant, especially one used by tests", "state": "seed", "recurrence": 1, "lastTouched": "2026-09-09T16:59:09+00:00", "session": "ops-cli-catch", "sessionTs": "2026-09-09T16:59:09+00:00"}, {"id": "idea_0010", "kind": "precaution", "title": "Renaming a directory that's the pinned working directory of an active tool session fails with \"Device or resource busy\" on Windows — even from outside it", "summary": "The lock isn't held by the shell's own cwd (cd-ing out first doesn't help) — it's held by whatever wrapping/harness process has that path pinned as its working directory for the session. A plain rename/move will fail. Copy the tree to the new name instead (and reinstall any editable pip install from the new path afterward, since it records the absolute source path).", "detail": "Also: git-bash/MSYS mangles Windows-style single-letter robocopy flags (`/E`, `/R:1`, `/COPYALL`) into path conversions, producing bogus errors like \"Invalid Parameter #3: E:/\" — run robocopy from PowerShell instead, not git-bash. And /COPYALL needs elevated 'Manage Auditing' rights; drop it and use robocopy's default copy flags unless you actually need ACL/audit metadata preserved.", "domain": "brainny-design / tooling", "tags": ["windows", "file-lock", "robocopy", "git-bash", "editable-install"], "trigger": "before renaming or moving a project folder that a running Claude Code (or similar pinned-cwd tool) session is currently operating in", "state": "seed", "recurrence": 1, "lastTouched": "2026-09-09T16:59:09+00:00", "session": "ops-cli-catch", "sessionTs": "2026-09-09T16:59:09+00:00"}, {"id": "idea_0011", "kind": "precaution", "title": "`git push` (no args) fails with an upstream-mismatch error if the initial push used `HEAD:main` syntax on a differently-named local branch", "summary": "Pushing via `git push -u origin HEAD:main` sets up tracking in a way that later bare `git push` calls reject with \"the upstream branch of your current branch does not match the name of your current branch.\" Name the local branch to match the remote branch first (e.g. `git checkout -B main`) so a plain `git push` afterward is unambiguous.", "detail": null, "domain": "brainny-design / tooling", "tags": ["git", "upstream-tracking", "push", "automation"], "trigger": "before scripting/automating `git push` calls (no explicit refspec) against a freshly-created repo or test fixture", "state": "seed", "recurrence": 1, "lastTouched": "2026-09-09T19:16:13+00:00", "session": "ambient-loop-catch", "sessionTs": "2026-09-09T19:16:13+00:00"}, {"id": "idea_0012", "kind": "insight", "title": "Claude Code's available-skills list refreshes mid-session when a new SKILL.md file appears under ~/.claude/skills/ — no new session needed", "summary": "Writing a new skill file to the global skills directory made it immediately invokable in the *same*, already-running session — confirmed directly by a system reminder listing it right after the file was created. Useful when installing/updating a skill programmatically: no need to tell the user to restart their session just to pick it up.", "detail": null, "domain": "brainny-design / claude-code", "tags": ["claude-code", "skills", "hot-reload"], "trigger": null, "state": "seed", "recurrence": 1, "lastTouched": "2026-09-09T19:16:13+00:00", "session": "ambient-loop-catch", "sessionTs": "2026-09-09T19:16:13+00:00"}, {"id": "idea_0013", "kind": "precaution", "title": "pip editable installs silently drift from the clone you think you're editing", "summary": "When a package is pip-installed with `pip install -e`, `pip show <pkg>`'s \"Editable project location\" is the actual source of truth for what code runs — not whatever clone you happen to be editing. If you have more than one clone/checkout of the same repo on disk, the CLI can keep behaving 'old' after you push/pull changes elsewhere, because the install points at a different, stale clone entirely.", "detail": null, "domain": "python packaging", "tags": ["pip", "editable-install", "git", "debugging"], "trigger": "Before assuming a code change 'isn't taking effect', run `pip show <pkg>` and check Editable project location matches the clone you actually edited/pulled.", "state": "seed", "recurrence": 1, "lastTouched": "2026-09-09T20:34:12+00:00", "session": "github-prep-catch", "sessionTs": "2026-09-09T20:34:12+00:00"}, {"id": "idea_0014", "kind": "precaution", "title": "assets baked into source code at generation time don't auto-update from their source file", "summary": "A generated artifact (e.g. ASCII art rendered from an image, then hand-copied into a Python constant) has no build step tying it to its source file. Editing the source file (assci.txt) later does nothing to the baked constant (_GLYPH in banner.py) until someone manually regenerates and re-pastes it. Easy to think 'I updated the source, why didn't the output change'.", "detail": null, "domain": "build/tooling", "tags": ["codegen", "assets", "documentation"], "trigger": "When a file looks like a 'source' for something baked into code, check whether there's an actual build step wiring them together, or just a one-time manual copy — and document which, right next to the baked constant.", "state": "seed", "recurrence": 1, "lastTouched": "2026-09-09T20:34:12+00:00", "session": "github-prep-catch", "sessionTs": "2026-09-09T20:34:12+00:00"}, {"id": "idea_0015", "kind": "technique", "title": "when a GUI installer needs elevation in a non-interactive shell, grab the tool's portable zip instead", "summary": "`winget install` for a tool that ships an MSI (e.g. GitHub CLI) can fail silently with exit 1602 ('you cancelled the installation') in a non-interactive/sandboxed session, because the UAC elevation prompt can't be answered. Downloading the project's portable/zip release directly (Invoke-WebRequest + Expand-Archive) and calling the .exe by full path sidesteps the need for elevation entirely, with no admin rights required.", "detail": null, "domain": "dev tooling", "tags": ["windows", "installer", "cli", "non-interactive"], "trigger": "winget/MSI install failing with an elevation-flavored exit code in an automated/non-interactive context.", "state": "seed", "recurrence": 1, "lastTouched": "2026-09-09T20:34:12+00:00", "session": "github-prep-catch", "sessionTs": "2026-09-09T20:34:12+00:00"}, {"id": "idea_0016", "kind": "precaution", "title": "Python namespace-package shadowing when cwd's parent contains a folder matching the import name", "summary": "Running `python -c \"import X\"` (or any script) from inside a directory whose *parent* also contains a folder literally named X can make Python resolve X as an implicit PEP 420 namespace package rooted at the wrong path, shadowing the real installed/editable package. `X.__path__` shows a `_NamespacePath` pointing at the unexpected directory instead of the real one, and `X.__file__` may print `None` or raise on further imports.", "detail": null, "domain": "python packaging", "tags": ["python", "namespace-package", "debugging", "import-system"], "trigger": "An import behaves unexpectedly (wrong __file__/__path__, or ImportError for a name that should exist) only when run from one specific directory — check whether a folder there shares the package's own name.", "state": "seed", "recurrence": 1, "lastTouched": "2026-09-09T20:34:12+00:00", "session": "github-prep-catch", "sessionTs": "2026-09-09T20:34:12+00:00"}], "sessions": [{"session": "seed-design", "ts": "2026-09-09T00:05:17+00:00", "count": 3}, {"session": "sle-gwas-hpc-2026-09-08", "ts": "2026-09-09T03:14:16+00:00", "count": 5}, {"session": "ops-cli-catch", "ts": "2026-09-09T16:59:09+00:00", "count": 2}, {"session": "ambient-loop-catch", "ts": "2026-09-09T19:16:13+00:00", "count": 2}, {"session": "github-prep-catch", "ts": "2026-09-09T20:34:12+00:00", "count": 4}], "domainCount": 12, "kindColor": {"technique": "#3b6fd6", "precaution": "#c9432c", "solution": "#2f9e5e", "insight": "#8b5cd6", "seed": "#8a8f98"}, "stateMeta": {"seed": {"label": "seed / bud", "size": 0.16, "emissive": 0.12, "gold": false}, "sprouting": {"label": "sprouting leaf", "size": 0.22, "emissive": 0.22, "gold": false}, "mature": {"label": "mature fruit", "size": 0.3, "emissive": 0.4, "gold": false}, "harvested": {"label": "harvested fruit", "size": 0.34, "emissive": 0.65, "gold": true}}}</script>
 <script src="https://cdn.jsdelivr.net/npm/d3@7.9.0/dist/d3.min.js" crossorigin="anonymous"></script>
 <script>
 (function () {
@@ -234,6 +302,7 @@ brainny-design / tooling/
     Object.keys(byDomain).sort().forEach(function (domain) {
       var group = document.createElement('div');
       group.className = 'item-group';
+      group.dataset.domain = domain;
       var heading = document.createElement('div');
       heading.className = 'item-group-heading';
       heading.textContent = domain + ' (' + byDomain[domain].length + ')';
@@ -541,7 +610,268 @@ brainny-design / tooling/
     return function cleanup() { simulation.stop(); };
   }
 
-  // ---- dropdown wiring ----
+  // ---- stats tab: real, derived-from-timestamps cluster health ----
+  // "growing" / "quiet" are honest proxies from real last_touched timestamps,
+  // not a decay model — that's v0.1 (stats.py), not built yet (see SEED.md §7).
+  var RECENT_MS = 3 * 24 * 3600 * 1000;
+  var QUIET_MS = 14 * 24 * 3600 * 1000;
+
+  function formatRelative(ts) {
+    if (!ts) return 'never';
+    var diff = Date.now() - ts;
+    var mins = diff / 60000;
+    if (mins < 1) return 'just now';
+    if (mins < 60) return Math.round(mins) + 'm ago';
+    var hours = mins / 60;
+    if (hours < 24) return Math.round(hours) + 'h ago';
+    var days = hours / 24;
+    if (days < 30) return Math.round(days) + 'd ago';
+    return Math.round(days / 30) + 'mo ago';
+  }
+
+  function buildDomainStats(data) {
+    var now = Date.now();
+    var byDomain = {};
+    data.nodes.forEach(function (n) {
+      var d = byDomain[n.domain] || (byDomain[n.domain] = {
+        domain: n.domain, count: 0, recentCount: 0, kinds: {}, lastTouched: null, timestamps: [],
+      });
+      d.count += 1;
+      d.kinds[n.kind] = (d.kinds[n.kind] || 0) + 1;
+      var ts = n.lastTouched ? new Date(n.lastTouched).getTime() : null;
+      if (ts) {
+        d.timestamps.push(ts);
+        if (!d.lastTouched || ts > d.lastTouched) d.lastTouched = ts;
+        if (now - ts <= RECENT_MS) d.recentCount += 1;
+      }
+    });
+    var domains = Object.keys(byDomain).map(function (k) { return byDomain[k]; });
+    domains.forEach(function (d) {
+      d.timestamps.sort(function (a, b) { return a - b; });
+      var daysSince = d.lastTouched ? (now - d.lastTouched) / 86400000 : Infinity;
+      if (d.recentCount > 0) d.trend = 'growing';
+      else if (now - (d.lastTouched || 0) > QUIET_MS) d.trend = 'quiet';
+      else d.trend = 'steady';
+      d.daysSince = daysSince;
+    });
+    domains.sort(function (a, b) { return b.count - a.count; });
+    return domains;
+  }
+
+  var TREND_LABEL = { growing: '\u25b2 active', steady: '\u2013 steady', quiet: '\u25bc quiet' };
+  var TREND_FILL = { growing: '#4f8f52', steady: '#5b6b63', quiet: '#8a4a3d' };
+
+  function renderSparkline(mount, domainStat) {
+    var w = 92, h = 22;
+    var svg = d3.select(mount).append('svg').attr('width', w).attr('height', h).attr('class', 'spark');
+    var pts = domainStat.timestamps;
+    if (pts.length < 2) {
+      svg.append('circle').attr('cx', w / 2).attr('cy', h / 2).attr('r', 2.5).attr('fill', TREND_FILL[domainStat.trend]);
+      return;
+    }
+    var x = d3.scaleLinear().domain([pts[0], pts[pts.length - 1]]).range([2, w - 2]);
+    var cumulative = pts.map(function (t, i) { return { t: t, y: i + 1 }; });
+    var y = d3.scaleLinear().domain([0, cumulative[cumulative.length - 1].y]).range([h - 3, 3]);
+    var line = d3.line().curve(d3.curveStepAfter).x(function (d) { return x(d.t); }).y(function (d) { return y(d.y); });
+    svg.append('path').attr('d', line(cumulative)).attr('fill', 'none')
+      .attr('stroke', TREND_FILL[domainStat.trend]).attr('stroke-width', 1.6);
+  }
+
+  function scrollToDomainGroup(domain) {
+    switchTab('graph');
+    setTimeout(function () {
+      var group = document.querySelector('.item-group[data-domain="' + CSS.escape(domain) + '"]');
+      if (!group) return;
+      group.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      group.classList.remove('item-flash');
+      void group.offsetWidth;
+      group.classList.add('item-flash');
+      setTimeout(function () { group.classList.remove('item-flash'); }, 1400);
+    }, 0);
+  }
+
+  function goToIdea(id) {
+    switchTab('graph');
+    setTimeout(function () { focusItem(id); }, 0);
+  }
+
+  function renderTreemap(mount, domains) {
+    var w = mount.clientWidth || 480;
+    var h = 260;
+    var svg = d3.select(mount).append('svg').attr('viewBox', [0, 0, w, h]).attr('width', '100%').attr('height', h);
+
+    var root = d3.hierarchy({ children: domains })
+      .sum(function (d) { return d.count || 0; })
+      .sort(function (a, b) { return b.value - a.value; });
+    d3.treemap().size([w, h]).paddingInner(3)(root);
+
+    var cell = svg.selectAll('g').data(root.leaves()).join('g')
+      .attr('class', 'tm-cell')
+      .attr('transform', function (d) { return 'translate(' + d.x0 + ',' + d.y0 + ')'; })
+      .style('cursor', 'pointer')
+      .on('click', function (event, d) { scrollToDomainGroup(d.data.domain); })
+      .on('mouseenter', function (event, d) {
+        showTooltip(event, '<div class="tt-title">' + escapeHtml(d.data.domain) + '</div>' +
+          '<div class="tt-meta">' + d.data.count + ' idea(s) \u00b7 ' + TREND_LABEL[d.data.trend] +
+          ' \u00b7 last touched ' + escapeHtml(formatRelative(d.data.lastTouched)) + '</div>');
+      })
+      .on('mousemove', function (event) { showTooltip(event, tooltip.innerHTML); })
+      .on('mouseleave', hideTooltip);
+
+    cell.append('rect')
+      .attr('width', function (d) { return Math.max(0, d.x1 - d.x0); })
+      .attr('height', function (d) { return Math.max(0, d.y1 - d.y0); })
+      .attr('fill', function (d) { return TREND_FILL[d.data.trend]; })
+      .attr('fill-opacity', 0.85);
+
+    cell.append('text').attr('x', 6).attr('y', 16)
+      .text(function (d) {
+        var w0 = d.x1 - d.x0;
+        if (w0 < 40) return '';
+        var name = d.data.domain;
+        return name.length > 20 ? name.slice(0, 19) + '\u2026' : name;
+      });
+    cell.append('text').attr('class', 'tm-count').attr('x', 6).attr('y', 30)
+      .text(function (d) { return (d.x1 - d.x0) < 40 || (d.y1 - d.y0) < 34 ? '' : d.data.count + ' idea(s)'; });
+  }
+
+  function renderKindBars(mount, data) {
+    var counts = {};
+    data.nodes.forEach(function (n) { counts[n.kind] = (counts[n.kind] || 0) + 1; });
+    var max = Math.max.apply(null, Object.keys(counts).map(function (k) { return counts[k]; }).concat([1]));
+    var wrap = document.createElement('div');
+    wrap.className = 'kind-bars';
+    Object.keys(data.kindColor).forEach(function (kind) {
+      var n = counts[kind] || 0;
+      var row = document.createElement('div');
+      row.className = 'kind-bar-row';
+      row.innerHTML =
+        '<span class="kind-bar-label">' + escapeHtml(kind) + '</span>' +
+        '<span class="kind-bar-track"><span class="kind-bar-fill" style="width:' + (n / max * 100) +
+        '%;background:' + data.kindColor[kind] + '"></span></span>' +
+        '<span class="kind-bar-count">' + n + '</span>';
+      wrap.appendChild(row);
+    });
+    mount.appendChild(wrap);
+  }
+
+  function renderRecentList(mount, data) {
+    var withTs = data.nodes.filter(function (n) { return n.lastTouched; })
+      .slice().sort(function (a, b) { return new Date(b.lastTouched) - new Date(a.lastTouched); })
+      .slice(0, 8);
+    var ul = document.createElement('ul');
+    ul.className = 'recent-list';
+    if (!withTs.length) {
+      mount.innerHTML = '<p class="empty-note">Nothing captured yet.</p>';
+      return;
+    }
+    withTs.forEach(function (n) {
+      var li = document.createElement('li');
+      li.className = 'recent-item';
+      li.innerHTML =
+        '<span class="ri-title">' + escapeHtml(n.title) + '</span>' +
+        '<span class="ri-meta">' + escapeHtml(n.domain) + ' \u00b7 ' + escapeHtml(formatRelative(new Date(n.lastTouched).getTime())) + '</span>';
+      li.addEventListener('click', function () { goToIdea(n.id); });
+      ul.appendChild(li);
+    });
+    mount.appendChild(ul);
+  }
+
+  var statsRendered = false;
+  function renderStatsView() {
+    var mount = document.getElementById('stats-main');
+    mount.innerHTML = '';
+    if (!DATA.nodes.length) {
+      mount.innerHTML = '<p class="empty-note" style="padding:2rem">No ideas captured yet \u2014 nothing to show stats on.</p>';
+      return;
+    }
+
+    var domains = buildDomainStats(DATA);
+    var recentTotal = DATA.nodes.filter(function (n) {
+      return n.lastTouched && Date.now() - new Date(n.lastTouched).getTime() <= RECENT_MS;
+    }).length;
+
+    var cards = document.createElement('div');
+    cards.className = 'stat-cards';
+    [
+      [DATA.nodes.length, 'ideas'],
+      [domains.length, 'domains'],
+      [DATA.sessions.length, 'sessions'],
+      [recentTotal, 'new (3d)'],
+      [domains.filter(function (d) { return d.trend === 'growing'; }).length, 'growing clusters'],
+      [domains.filter(function (d) { return d.trend === 'quiet'; }).length, 'quiet clusters'],
+    ].forEach(function (pair) {
+      var card = document.createElement('div');
+      card.className = 'stat-card';
+      card.innerHTML = '<div class="stat-num">' + pair[0] + '</div><div class="stat-label">' + pair[1] + '</div>';
+      cards.appendChild(card);
+    });
+    mount.appendChild(cards);
+
+    var grid = document.createElement('div');
+    grid.className = 'stats-grid';
+
+    var left = document.createElement('div');
+    left.className = 'stats-block';
+    left.innerHTML = '<h2>domain treemap \u2014 size = idea count, color = activity</h2><div id="treemap-mount"></div>' +
+      '<p class="stats-caption">Click a cluster to jump to it in the Graph tab\u2019s idea list.</p>';
+    grid.appendChild(left);
+
+    var right = document.createElement('div');
+    right.className = 'stats-block';
+    var tableRows = domains.map(function (d) {
+      return '<tr data-domain="' + escapeHtml(d.domain) + '">' +
+        '<td>' + escapeHtml(d.domain) + '</td>' +
+        '<td>' + d.count + '</td>' +
+        '<td><span class="trend-badge trend-' + d.trend + '">' + TREND_LABEL[d.trend] + '</span></td>' +
+        '<td>' + escapeHtml(formatRelative(d.lastTouched)) + '</td>' +
+        '<td><span id="spark-' + tableRows_i(d.domain) + '"></span></td>' +
+        '</tr>';
+    });
+    right.innerHTML = '<h2>clusters, by activity</h2>' +
+      '<table class="domain-table"><thead><tr><th>domain</th><th>ideas</th><th>trend</th><th>last touched</th><th>growth</th></tr></thead>' +
+      '<tbody>' + tableRows.join('') + '</tbody></table>';
+    grid.appendChild(right);
+
+    mount.appendChild(grid);
+
+    var bottom = document.createElement('div');
+    bottom.className = 'stats-grid';
+    bottom.style.marginTop = '1.4rem';
+    var kindBlock = document.createElement('div');
+    kindBlock.className = 'stats-block';
+    kindBlock.innerHTML = '<h2>by kind</h2>';
+    renderKindBars(kindBlock, DATA);
+    bottom.appendChild(kindBlock);
+
+    var recentBlock = document.createElement('div');
+    recentBlock.className = 'stats-block';
+    recentBlock.innerHTML = '<h2>newest ideas</h2>';
+    renderRecentList(recentBlock, DATA);
+    bottom.appendChild(recentBlock);
+    mount.appendChild(bottom);
+
+    renderTreemap(document.getElementById('treemap-mount'), domains);
+    domains.forEach(function (d) {
+      var el = document.getElementById('spark-' + tableRows_i(d.domain));
+      if (el) renderSparkline(el, d);
+    });
+
+    document.querySelectorAll('.domain-table tbody tr').forEach(function (tr) {
+      tr.style.cursor = 'pointer';
+      tr.addEventListener('click', function () { scrollToDomainGroup(tr.dataset.domain); });
+    });
+  }
+
+  // stable per-domain DOM-safe id for sparkline mounts
+  var _sparkIds = {};
+  var _sparkIdSeq = 0;
+  function tableRows_i(domain) {
+    if (!(domain in _sparkIds)) _sparkIds[domain] = 'd' + (_sparkIdSeq++);
+    return _sparkIds[domain];
+  }
+
+  // ---- dropdown + tab wiring ----
   var VIEWS = { radial: renderRadialTree, force: renderForceClusters };
   var currentCleanup = null;
 
@@ -564,10 +894,31 @@ brainny-design / tooling/
 
   var select = document.getElementById('view-select');
   select.addEventListener('change', function () { switchView(select.value); });
+
+  var activeTab = 'graph';
+  function switchTab(name) {
+    if (name === activeTab) return;
+    activeTab = name;
+    document.querySelectorAll('.tab-btn').forEach(function (b) { b.classList.toggle('active', b.dataset.tab === name); });
+    document.getElementById('graph-main').hidden = name !== 'graph';
+    document.getElementById('stats-main').hidden = name !== 'stats';
+    select.style.display = name === 'graph' ? '' : 'none';
+    descEl.hidden = name !== 'graph';
+    if (name === 'stats') {
+      renderStatsView();
+    } else if (!currentCleanup && DATA.nodes.length) {
+      switchView(select.value);
+    }
+  }
+  document.querySelectorAll('.tab-btn').forEach(function (b) {
+    b.addEventListener('click', function () { switchTab(b.dataset.tab); });
+  });
+
   switchView(select.value);
 
   window.addEventListener('resize', function () {
-    switchView(select.value);
+    if (activeTab === 'graph') switchView(select.value);
+    else if (activeTab === 'stats') renderStatsView();
   });
 })();
 </script>

@@ -100,6 +100,7 @@ def _build_payload(graph: Graph, title: str) -> dict:
                 "trigger": n.trigger,
                 "state": n.state,
                 "recurrence": n.recurrence,
+                "lastTouched": n.last_touched,
                 "session": prov.session if prov else None,
                 "sessionTs": prov.ts if prov else "",
             }
@@ -155,7 +156,59 @@ _CSS = """
     font-size: 0.78rem; color: #d7c9a0;
   }
 
+  #tab-bar { display: flex; gap: 0.3rem; margin-left: 0.4rem; }
+  .tab-btn {
+    background: none; border: 1px solid transparent; color: #9aab97; font: inherit;
+    font-size: 0.85rem; padding: 0.3rem 0.8rem; border-radius: 8px; cursor: pointer;
+  }
+  .tab-btn:hover { background: rgba(255,255,255,0.06); color: #eef3ea; }
+  .tab-btn.active { background: rgba(232,178,61,0.14); border-color: rgba(232,178,61,0.4); color: #f0e2bb; }
+
   main { flex: 1; display: grid; grid-template-columns: 300px 1fr; min-height: 0; }
+  main#stats-main { display: block; overflow-y: auto; padding: 1.1rem 1.4rem 2rem; }
+
+  /* ---- stats tab ---- */
+  .stat-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 0.7rem; margin: 0 0 1.4rem; }
+  .stat-card {
+    background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 10px; padding: 0.7rem 0.9rem;
+  }
+  .stat-card .stat-num { font-size: 1.6rem; font-weight: 600; color: #eef3ea; line-height: 1.1; }
+  .stat-card .stat-label { font-size: 0.74rem; color: #8fa08c; margin-top: 0.2rem; text-transform: uppercase; letter-spacing: 0.03em; }
+
+  .stats-grid { display: grid; grid-template-columns: minmax(280px, 1fr) minmax(320px, 1.2fr); gap: 1.4rem; align-items: start; }
+  @media (max-width: 900px) { .stats-grid { grid-template-columns: 1fr; } }
+
+  .stats-block h2 { font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.04em; color: #8fa08c; margin: 0 0 0.6rem; }
+  .stats-caption { font-size: 0.74rem; color: #7c8c79; margin: 0.5rem 0 0; }
+
+  #treemap-mount svg { display: block; width: 100%; }
+  .tm-cell rect { stroke: rgba(11,19,16,0.7); stroke-width: 1.5; cursor: pointer; }
+  .tm-cell text { pointer-events: none; fill: #0b1310; font-size: 11px; font-weight: 600; }
+  .tm-cell .tm-count { font-weight: 400; opacity: 0.75; }
+
+  .domain-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+  .domain-table th { text-align: left; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.03em; color: #7c8c79; padding: 0.3rem 0.5rem; border-bottom: 1px solid rgba(255,255,255,0.1); }
+  .domain-table td { padding: 0.4rem 0.5rem; border-bottom: 1px solid rgba(255,255,255,0.05); vertical-align: middle; }
+  .domain-table tr:hover td { background: rgba(255,255,255,0.03); }
+  .spark { display: inline-block; vertical-align: middle; }
+  .trend-badge { display: inline-flex; align-items: center; gap: 0.3rem; padding: 0.1rem 0.5rem; border-radius: 999px; font-size: 0.72rem; white-space: nowrap; }
+  .trend-growing { background: rgba(111,174,92,0.16); color: #8fd67a; }
+  .trend-steady { background: rgba(255,255,255,0.06); color: #9aab97; }
+  .trend-quiet { background: rgba(201,67,44,0.12); color: #d68a7a; }
+
+  .kind-bars { display: flex; flex-direction: column; gap: 0.4rem; margin-top: 0.4rem; }
+  .kind-bar-row { display: flex; align-items: center; gap: 0.6rem; font-size: 0.78rem; }
+  .kind-bar-label { width: 90px; flex: none; color: #c9d3c6; }
+  .kind-bar-track { flex: 1; height: 10px; border-radius: 999px; background: rgba(255,255,255,0.06); overflow: hidden; }
+  .kind-bar-fill { height: 100%; border-radius: 999px; }
+  .kind-bar-count { width: 24px; flex: none; text-align: right; color: #8fa08c; }
+
+  .recent-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.5rem; }
+  .recent-item { display: flex; flex-direction: column; gap: 0.1rem; padding: 0.45rem 0.6rem; border-radius: 8px; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.06); cursor: pointer; }
+  .recent-item:hover { background: rgba(255,255,255,0.05); }
+  .recent-item .ri-title { color: #eef3ea; font-size: 0.84rem; }
+  .recent-item .ri-meta { color: #7c8c79; font-size: 0.72rem; }
   #panel { border-right: 1px solid rgba(255,255,255,0.08); overflow-y: auto; padding: 0.75rem; }
   #panel h2 { font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.04em; color: #8fa08c; margin: 0.25rem 0.25rem 0.6rem; }
   #viz { position: relative; overflow: hidden; }
@@ -172,6 +225,7 @@ _CSS = """
 
   /* ---- itemized accordion list ---- */
   .item-list { display: flex; flex-direction: column; gap: 0.9rem; }
+  .item-group { border-radius: 8px; padding: 0.15rem; }
   .item-group-heading { font-size: 0.76rem; color: #8fa08c; margin: 0 0 0.35rem; padding: 0 0.25rem; }
   .item { border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; margin-bottom: 0.4rem; overflow: hidden; background: rgba(255,255,255,0.02); }
   .item-promising { border-color: rgba(232,178,61,0.55); box-shadow: 0 0 0 1px rgba(232,178,61,0.15) inset; }
@@ -301,6 +355,7 @@ _JS = """
     Object.keys(byDomain).sort().forEach(function (domain) {
       var group = document.createElement('div');
       group.className = 'item-group';
+      group.dataset.domain = domain;
       var heading = document.createElement('div');
       heading.className = 'item-group-heading';
       heading.textContent = domain + ' (' + byDomain[domain].length + ')';
@@ -608,7 +663,268 @@ _JS = """
     return function cleanup() { simulation.stop(); };
   }
 
-  // ---- dropdown wiring ----
+  // ---- stats tab: real, derived-from-timestamps cluster health ----
+  // "growing" / "quiet" are honest proxies from real last_touched timestamps,
+  // not a decay model — that's v0.1 (stats.py), not built yet (see SEED.md §7).
+  var RECENT_MS = 3 * 24 * 3600 * 1000;
+  var QUIET_MS = 14 * 24 * 3600 * 1000;
+
+  function formatRelative(ts) {
+    if (!ts) return 'never';
+    var diff = Date.now() - ts;
+    var mins = diff / 60000;
+    if (mins < 1) return 'just now';
+    if (mins < 60) return Math.round(mins) + 'm ago';
+    var hours = mins / 60;
+    if (hours < 24) return Math.round(hours) + 'h ago';
+    var days = hours / 24;
+    if (days < 30) return Math.round(days) + 'd ago';
+    return Math.round(days / 30) + 'mo ago';
+  }
+
+  function buildDomainStats(data) {
+    var now = Date.now();
+    var byDomain = {};
+    data.nodes.forEach(function (n) {
+      var d = byDomain[n.domain] || (byDomain[n.domain] = {
+        domain: n.domain, count: 0, recentCount: 0, kinds: {}, lastTouched: null, timestamps: [],
+      });
+      d.count += 1;
+      d.kinds[n.kind] = (d.kinds[n.kind] || 0) + 1;
+      var ts = n.lastTouched ? new Date(n.lastTouched).getTime() : null;
+      if (ts) {
+        d.timestamps.push(ts);
+        if (!d.lastTouched || ts > d.lastTouched) d.lastTouched = ts;
+        if (now - ts <= RECENT_MS) d.recentCount += 1;
+      }
+    });
+    var domains = Object.keys(byDomain).map(function (k) { return byDomain[k]; });
+    domains.forEach(function (d) {
+      d.timestamps.sort(function (a, b) { return a - b; });
+      var daysSince = d.lastTouched ? (now - d.lastTouched) / 86400000 : Infinity;
+      if (d.recentCount > 0) d.trend = 'growing';
+      else if (now - (d.lastTouched || 0) > QUIET_MS) d.trend = 'quiet';
+      else d.trend = 'steady';
+      d.daysSince = daysSince;
+    });
+    domains.sort(function (a, b) { return b.count - a.count; });
+    return domains;
+  }
+
+  var TREND_LABEL = { growing: '\\u25b2 active', steady: '\\u2013 steady', quiet: '\\u25bc quiet' };
+  var TREND_FILL = { growing: '#4f8f52', steady: '#5b6b63', quiet: '#8a4a3d' };
+
+  function renderSparkline(mount, domainStat) {
+    var w = 92, h = 22;
+    var svg = d3.select(mount).append('svg').attr('width', w).attr('height', h).attr('class', 'spark');
+    var pts = domainStat.timestamps;
+    if (pts.length < 2) {
+      svg.append('circle').attr('cx', w / 2).attr('cy', h / 2).attr('r', 2.5).attr('fill', TREND_FILL[domainStat.trend]);
+      return;
+    }
+    var x = d3.scaleLinear().domain([pts[0], pts[pts.length - 1]]).range([2, w - 2]);
+    var cumulative = pts.map(function (t, i) { return { t: t, y: i + 1 }; });
+    var y = d3.scaleLinear().domain([0, cumulative[cumulative.length - 1].y]).range([h - 3, 3]);
+    var line = d3.line().curve(d3.curveStepAfter).x(function (d) { return x(d.t); }).y(function (d) { return y(d.y); });
+    svg.append('path').attr('d', line(cumulative)).attr('fill', 'none')
+      .attr('stroke', TREND_FILL[domainStat.trend]).attr('stroke-width', 1.6);
+  }
+
+  function scrollToDomainGroup(domain) {
+    switchTab('graph');
+    setTimeout(function () {
+      var group = document.querySelector('.item-group[data-domain="' + CSS.escape(domain) + '"]');
+      if (!group) return;
+      group.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      group.classList.remove('item-flash');
+      void group.offsetWidth;
+      group.classList.add('item-flash');
+      setTimeout(function () { group.classList.remove('item-flash'); }, 1400);
+    }, 0);
+  }
+
+  function goToIdea(id) {
+    switchTab('graph');
+    setTimeout(function () { focusItem(id); }, 0);
+  }
+
+  function renderTreemap(mount, domains) {
+    var w = mount.clientWidth || 480;
+    var h = 260;
+    var svg = d3.select(mount).append('svg').attr('viewBox', [0, 0, w, h]).attr('width', '100%').attr('height', h);
+
+    var root = d3.hierarchy({ children: domains })
+      .sum(function (d) { return d.count || 0; })
+      .sort(function (a, b) { return b.value - a.value; });
+    d3.treemap().size([w, h]).paddingInner(3)(root);
+
+    var cell = svg.selectAll('g').data(root.leaves()).join('g')
+      .attr('class', 'tm-cell')
+      .attr('transform', function (d) { return 'translate(' + d.x0 + ',' + d.y0 + ')'; })
+      .style('cursor', 'pointer')
+      .on('click', function (event, d) { scrollToDomainGroup(d.data.domain); })
+      .on('mouseenter', function (event, d) {
+        showTooltip(event, '<div class="tt-title">' + escapeHtml(d.data.domain) + '</div>' +
+          '<div class="tt-meta">' + d.data.count + ' idea(s) \\u00b7 ' + TREND_LABEL[d.data.trend] +
+          ' \\u00b7 last touched ' + escapeHtml(formatRelative(d.data.lastTouched)) + '</div>');
+      })
+      .on('mousemove', function (event) { showTooltip(event, tooltip.innerHTML); })
+      .on('mouseleave', hideTooltip);
+
+    cell.append('rect')
+      .attr('width', function (d) { return Math.max(0, d.x1 - d.x0); })
+      .attr('height', function (d) { return Math.max(0, d.y1 - d.y0); })
+      .attr('fill', function (d) { return TREND_FILL[d.data.trend]; })
+      .attr('fill-opacity', 0.85);
+
+    cell.append('text').attr('x', 6).attr('y', 16)
+      .text(function (d) {
+        var w0 = d.x1 - d.x0;
+        if (w0 < 40) return '';
+        var name = d.data.domain;
+        return name.length > 20 ? name.slice(0, 19) + '\\u2026' : name;
+      });
+    cell.append('text').attr('class', 'tm-count').attr('x', 6).attr('y', 30)
+      .text(function (d) { return (d.x1 - d.x0) < 40 || (d.y1 - d.y0) < 34 ? '' : d.data.count + ' idea(s)'; });
+  }
+
+  function renderKindBars(mount, data) {
+    var counts = {};
+    data.nodes.forEach(function (n) { counts[n.kind] = (counts[n.kind] || 0) + 1; });
+    var max = Math.max.apply(null, Object.keys(counts).map(function (k) { return counts[k]; }).concat([1]));
+    var wrap = document.createElement('div');
+    wrap.className = 'kind-bars';
+    Object.keys(data.kindColor).forEach(function (kind) {
+      var n = counts[kind] || 0;
+      var row = document.createElement('div');
+      row.className = 'kind-bar-row';
+      row.innerHTML =
+        '<span class="kind-bar-label">' + escapeHtml(kind) + '</span>' +
+        '<span class="kind-bar-track"><span class="kind-bar-fill" style="width:' + (n / max * 100) +
+        '%;background:' + data.kindColor[kind] + '"></span></span>' +
+        '<span class="kind-bar-count">' + n + '</span>';
+      wrap.appendChild(row);
+    });
+    mount.appendChild(wrap);
+  }
+
+  function renderRecentList(mount, data) {
+    var withTs = data.nodes.filter(function (n) { return n.lastTouched; })
+      .slice().sort(function (a, b) { return new Date(b.lastTouched) - new Date(a.lastTouched); })
+      .slice(0, 8);
+    var ul = document.createElement('ul');
+    ul.className = 'recent-list';
+    if (!withTs.length) {
+      mount.innerHTML = '<p class="empty-note">Nothing captured yet.</p>';
+      return;
+    }
+    withTs.forEach(function (n) {
+      var li = document.createElement('li');
+      li.className = 'recent-item';
+      li.innerHTML =
+        '<span class="ri-title">' + escapeHtml(n.title) + '</span>' +
+        '<span class="ri-meta">' + escapeHtml(n.domain) + ' \\u00b7 ' + escapeHtml(formatRelative(new Date(n.lastTouched).getTime())) + '</span>';
+      li.addEventListener('click', function () { goToIdea(n.id); });
+      ul.appendChild(li);
+    });
+    mount.appendChild(ul);
+  }
+
+  var statsRendered = false;
+  function renderStatsView() {
+    var mount = document.getElementById('stats-main');
+    mount.innerHTML = '';
+    if (!DATA.nodes.length) {
+      mount.innerHTML = '<p class="empty-note" style="padding:2rem">No ideas captured yet \\u2014 nothing to show stats on.</p>';
+      return;
+    }
+
+    var domains = buildDomainStats(DATA);
+    var recentTotal = DATA.nodes.filter(function (n) {
+      return n.lastTouched && Date.now() - new Date(n.lastTouched).getTime() <= RECENT_MS;
+    }).length;
+
+    var cards = document.createElement('div');
+    cards.className = 'stat-cards';
+    [
+      [DATA.nodes.length, 'ideas'],
+      [domains.length, 'domains'],
+      [DATA.sessions.length, 'sessions'],
+      [recentTotal, 'new (3d)'],
+      [domains.filter(function (d) { return d.trend === 'growing'; }).length, 'growing clusters'],
+      [domains.filter(function (d) { return d.trend === 'quiet'; }).length, 'quiet clusters'],
+    ].forEach(function (pair) {
+      var card = document.createElement('div');
+      card.className = 'stat-card';
+      card.innerHTML = '<div class="stat-num">' + pair[0] + '</div><div class="stat-label">' + pair[1] + '</div>';
+      cards.appendChild(card);
+    });
+    mount.appendChild(cards);
+
+    var grid = document.createElement('div');
+    grid.className = 'stats-grid';
+
+    var left = document.createElement('div');
+    left.className = 'stats-block';
+    left.innerHTML = '<h2>domain treemap \\u2014 size = idea count, color = activity</h2><div id="treemap-mount"></div>' +
+      '<p class="stats-caption">Click a cluster to jump to it in the Graph tab\\u2019s idea list.</p>';
+    grid.appendChild(left);
+
+    var right = document.createElement('div');
+    right.className = 'stats-block';
+    var tableRows = domains.map(function (d) {
+      return '<tr data-domain="' + escapeHtml(d.domain) + '">' +
+        '<td>' + escapeHtml(d.domain) + '</td>' +
+        '<td>' + d.count + '</td>' +
+        '<td><span class="trend-badge trend-' + d.trend + '">' + TREND_LABEL[d.trend] + '</span></td>' +
+        '<td>' + escapeHtml(formatRelative(d.lastTouched)) + '</td>' +
+        '<td><span id="spark-' + tableRows_i(d.domain) + '"></span></td>' +
+        '</tr>';
+    });
+    right.innerHTML = '<h2>clusters, by activity</h2>' +
+      '<table class="domain-table"><thead><tr><th>domain</th><th>ideas</th><th>trend</th><th>last touched</th><th>growth</th></tr></thead>' +
+      '<tbody>' + tableRows.join('') + '</tbody></table>';
+    grid.appendChild(right);
+
+    mount.appendChild(grid);
+
+    var bottom = document.createElement('div');
+    bottom.className = 'stats-grid';
+    bottom.style.marginTop = '1.4rem';
+    var kindBlock = document.createElement('div');
+    kindBlock.className = 'stats-block';
+    kindBlock.innerHTML = '<h2>by kind</h2>';
+    renderKindBars(kindBlock, DATA);
+    bottom.appendChild(kindBlock);
+
+    var recentBlock = document.createElement('div');
+    recentBlock.className = 'stats-block';
+    recentBlock.innerHTML = '<h2>newest ideas</h2>';
+    renderRecentList(recentBlock, DATA);
+    bottom.appendChild(recentBlock);
+    mount.appendChild(bottom);
+
+    renderTreemap(document.getElementById('treemap-mount'), domains);
+    domains.forEach(function (d) {
+      var el = document.getElementById('spark-' + tableRows_i(d.domain));
+      if (el) renderSparkline(el, d);
+    });
+
+    document.querySelectorAll('.domain-table tbody tr').forEach(function (tr) {
+      tr.style.cursor = 'pointer';
+      tr.addEventListener('click', function () { scrollToDomainGroup(tr.dataset.domain); });
+    });
+  }
+
+  // stable per-domain DOM-safe id for sparkline mounts
+  var _sparkIds = {};
+  var _sparkIdSeq = 0;
+  function tableRows_i(domain) {
+    if (!(domain in _sparkIds)) _sparkIds[domain] = 'd' + (_sparkIdSeq++);
+    return _sparkIds[domain];
+  }
+
+  // ---- dropdown + tab wiring ----
   var VIEWS = { radial: renderRadialTree, force: renderForceClusters };
   var currentCleanup = null;
 
@@ -631,26 +947,53 @@ _JS = """
 
   var select = document.getElementById('view-select');
   select.addEventListener('change', function () { switchView(select.value); });
+
+  var activeTab = 'graph';
+  function switchTab(name) {
+    if (name === activeTab) return;
+    activeTab = name;
+    document.querySelectorAll('.tab-btn').forEach(function (b) { b.classList.toggle('active', b.dataset.tab === name); });
+    document.getElementById('graph-main').hidden = name !== 'graph';
+    document.getElementById('stats-main').hidden = name !== 'stats';
+    select.style.display = name === 'graph' ? '' : 'none';
+    descEl.hidden = name !== 'graph';
+    if (name === 'stats') {
+      renderStatsView();
+    } else if (!currentCleanup && DATA.nodes.length) {
+      switchView(select.value);
+    }
+  }
+  document.querySelectorAll('.tab-btn').forEach(function (b) {
+    b.addEventListener('click', function () { switchTab(b.dataset.tab); });
+  });
+
   switchView(select.value);
 
   window.addEventListener('resize', function () {
-    switchView(select.value);
+    if (activeTab === 'graph') switchView(select.value);
+    else if (activeTab === 'stats') renderStatsView();
   });
 })();
 """
 
 
 def render_html(graph: Graph, title: str = "brainny") -> str:
-    """Render graph.json as a navigable dashboard (D3, CDN-loaded): a
-    dropdown switches between a radial tree (domains branching from a
-    center, ideas as rim leaves) and a force-directed network with a
-    colored halo per domain group, alongside an itemized accordion list
-    (click a title to unfold summary/detail/trigger/tags). Clicking an
-    idea in either graph opens + scrolls to its entry in the list. Ideas
-    are sized/highlighted by growth state and kind — real fields, but
-    inert until v0.1 (dedup.py/stats.py) makes recurrence/state actually
-    vary. Falls back to the plain terminal tree if D3 can't load.
-    No server involved — a static, self-contained, git-shareable file."""
+    """Render graph.json as a navigable dashboard (D3, CDN-loaded) with two
+    tabs. Graph tab: a dropdown switches between a radial tree (domains
+    branching from a center, ideas as rim leaves) and a force-directed
+    network with a colored halo per domain group, alongside an itemized
+    accordion list (click a title to unfold summary/detail/trigger/tags).
+    Clicking an idea in either graph opens + scrolls to its entry in the
+    list. Ideas are sized/highlighted by growth state and kind — real
+    fields, but inert until v0.1 (dedup.py/stats.py) makes recurrence/
+    state actually vary. Stats tab: a domain treemap (size = idea count,
+    color = activity) plus a per-cluster table, kind breakdown, and a
+    newest-ideas feed — all derived from real timestamps/domains/kinds
+    (no fabricated data), with "growing"/"quiet" as an honest recency
+    proxy rather than the real decay/novelty model v0.1 will bring.
+    Clicking a cluster jumps to it in the Graph tab's idea list. Falls
+    back to the plain terminal tree if D3 can't load. No server involved
+    — a static, self-contained, git-shareable file."""
 
     payload = _build_payload(graph, title)
     data_json = json.dumps(payload, ensure_ascii=False).replace("</", "<\\/")
@@ -685,6 +1028,10 @@ def render_html(graph: Graph, title: str = "brainny") -> str:
 <header>
   <div class="row">
     <h1>{_esc(title)}</h1>
+    <nav id="tab-bar">
+      <button type="button" class="tab-btn active" data-tab="graph">Graph</button>
+      <button type="button" class="tab-btn" data-tab="stats">Stats</button>
+    </nav>
     <select id="view-select">
       <option value="radial">Radial tree</option>
       <option value="force">Force network with cluster halos</option>
@@ -693,7 +1040,7 @@ def render_html(graph: Graph, title: str = "brainny") -> str:
   <p id="view-desc"></p>
   <p class="note">{_esc(subtitle)} · sizing/highlighting uses the real <code>recurrence</code>/<code>state</code> fields, but v0.1 (dedup/stats) doesn't exist yet — every idea is currently <code>recurrence: 1</code>, <code>state: "seed"</code>, so nothing visibly stands out yet. Click any idea to jump to it in the list.</p>
 </header>
-<main>
+<main id="graph-main">
   <div id="panel">
     <h2>legend</h2>
     <div class="legend-row">{kind_legend}</div>
@@ -703,6 +1050,7 @@ def render_html(graph: Graph, title: str = "brainny") -> str:
   </div>
   <div id="viz"></div>
 </main>
+<main id="stats-main" hidden></main>
 <div id="tooltip"></div>
 <pre id="fallback" hidden>{_esc(render_tree(graph))}</pre>
 <script id="brainny-data" type="application/json">"""
