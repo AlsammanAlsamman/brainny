@@ -356,6 +356,17 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def main(argv: list[str] | None = None) -> int:
+    # The banner uses Unicode (braille art); Windows consoles default to a
+    # legacy codepage (cp1252 etc.) for non-UTF8-locale processes, which
+    # can't encode it and crashes with UnicodeEncodeError. Reconfigure
+    # defensively (errors="replace" so worst case is "?", never a crash);
+    # guarded because pytest's capsys stdout stand-in has no .reconfigure().
+    for stream in (sys.stdout, sys.stderr):
+        try:
+            stream.reconfigure(encoding="utf-8", errors="replace")
+        except (AttributeError, ValueError):
+            pass
+
     parser = build_parser()
     args = parser.parse_args(argv)
     if args.command is None:
