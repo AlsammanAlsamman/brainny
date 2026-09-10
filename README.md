@@ -215,3 +215,7 @@ OPERATIONS.md            how it actually runs day to day
 Read `SEED.md` for the constitution, architecture, and entry schema.
 Read `OPERATIONS.md` for the command surface, ambient capture, and the
 central/GitHub sync model in full.
+
+## 👥 Contributors
+- **Alsamman** - Alsamman-Alsamman@omrf.org
+- **Adeel**  - Muhammad-Adeel@omrf.org/ m.muzammal.adeel@outlook.com
