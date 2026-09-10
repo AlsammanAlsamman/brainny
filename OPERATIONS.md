@@ -664,5 +664,70 @@ permission-gated local check — see above.
       re-synced this repo's own dogfooded `graph.html` (local + central)
       with the fix afterward.
 
+19. `brainny central` — the actual merged, one-place-to-look central brain. ✅
+    - Real gap, surfaced by a real user pushing back on step 17's "central"
+      language: "we have foreach project a brain and we have a central
+      one" — their mental model (matching SEED.md §0/§2's own "per-project
+      graph + a central cross-project graph") was always a single unified
+      view, not a folder you have to open one project's subfolder at a
+      time. What existed through step 17 (onboarding, auto-mirror sync,
+      `brainny recall`) gave real cross-project value but never a single
+      merged *dashboard* — exactly the gap the user was naming.
+    - New `brainny/central.py`: `list_central_projects()` (every immediate
+      subfolder of the central folder with its own `graph.json`) and
+      `build_merged_graph()` (concatenates every synced project's nodes
+      into one `Graph`, node ids left untouched — see the module's own
+      docstring for why: they're only unique within one project's file,
+      and a merged Graph doesn't need to rewrite them, since the dashboard
+      derives its own DOM-safe key client-side). Deliberately NOT the full
+      v0.4 `central.py` from SEED.md's roadmap (dedup, cross-project
+      connections) — that needs a real semantic judgment call per SEED.md
+      principle #1, not a naive merge; doing it half-right here would be
+      worse than being honest that it isn't built yet. SEED.md §7 updated
+      to say so explicitly.
+    - New CLI command `brainny central` (summary: idea count per synced
+      project) / `--html` (writes one merged dashboard to
+      `<central-folder>/graph.html`) / `--open`.
+    - `viz.py` gained project-awareness for this to render sensibly: each
+      node's `project` (from its own `provenance[0].project`) flows into
+      the payload; a server-rendered `project` dropdown (only emitted when
+      more than one project is actually present, mirroring how the origin
+      filter behaves) narrows `filteredData()` the same way origin already
+      does, so it applies consistently across the item list and both graph
+      views. The itemized list gains a project-heading layer above the
+      existing per-domain grouping in this multi-project case. A new
+      `itemKey()` gives each idea a DOM/d3-safe identity
+      (`"<project>::<id>"`) distinct from its real `id` — necessary
+      because two different projects both number their own ideas
+      `idea_0001`, `idea_0002`, ... independently, so raw ids collide once
+      merged; attachment links still resolve against the real id + project
+      folder (`"<project>/attachments/<id>/<filename>"`), since that's
+      what's actually on disk.
+    - Along the way, `brainny central`'s own summary caught a genuine,
+      pre-existing data-hygiene bug in the maintainer's real dogfood data:
+      5 ideas physically sitting in this repo's own `brainny-out/`
+      actually carry `provenance.project: "sle-hispanic-gwas"` — clearly
+      captured for a different (GWAS/Snakemake) project while `brainny
+      capture` happened to be run from this repo's directory instead.
+      `brainny central` now detects and prints this class of mismatch
+      automatically (folder vs. the idea's own provenance disagreeing) so
+      it's visible without hand-inspecting `graph.json` — flagged to the
+      user rather than silently "fixed," since moving someone's real
+      captured ideas between projects is a data decision only they should
+      make.
+    - 16 new tests (`tests/test_central.py`: 5 for `list_central_projects`/
+      `build_merged_graph`, including the "ids collide across projects,
+      must not be silently dropped" case; `tests/test_cli.py`: 6 for the
+      `central` command's summary/`--html`/`--open` paths plus the
+      provenance-mismatch diagnostic) — 101 tests total. Verified for real
+      against the maintainer's actual central folder: ran `brainny central
+      --html`, confirmed the printed summary (28 ideas, 2 synced folders,
+      the 5-idea provenance mismatch correctly flagged), then screenshotted
+      the merged dashboard with headless Chrome — project dropdown showing
+      **3** projects (not 2 — it derives from real provenance, not folder
+      names, so the misattributed "sle-hispanic-gwas" ideas show up as
+      their own filterable group even though they were never synced as
+      their own folder), item list correctly grouped project-then-domain.
+
 Each step should land, get tested, and get dogfooded (per SEED.md §6
 Layer 7) before the next starts — same discipline as the v0 build.

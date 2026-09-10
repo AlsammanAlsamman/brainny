@@ -825,3 +825,106 @@ def test_attach_auto_mirrors_to_central_when_configured(tmp_path, capsys):
     out = capsys.readouterr().out
     assert "mirrored to central" in out
     assert (central / "myproj" / "attachments" / "idea_0001" / "manhattan.py").exists()
+
+
+# ---- step 19: `brainny central` -- the actual merged, one-place-to-look
+# central brain, not just a folder of separate per-project copies ----
+
+
+def test_central_fails_cleanly_without_central_configured(tmp_path, capsys):
+    code = main(["central"])
+    assert code == 1
+    assert "no central folder configured" in capsys.readouterr().err
+
+
+def test_central_reports_nothing_synced_yet(tmp_path, capsys):
+    central = tmp_path / "central"
+    main(["config", "set-central", str(central)])
+    capsys.readouterr()
+
+    code = main(["central"])
+    assert code == 0
+    assert "no projects synced" in capsys.readouterr().out
+
+
+def test_central_summarizes_multiple_projects(tmp_path, capsys):
+    central = tmp_path / "central"
+    main(["config", "set-central", str(central)])
+    capsys.readouterr()
+
+    for project in ("proj-a", "proj-b"):
+        out_dir = tmp_path / project
+        main([
+            "--out-dir", str(out_dir), "capture", str(FIXTURES / "sample_entries.json"),
+            "--project", project, "--session", "s1",
+        ])
+    capsys.readouterr()
+
+    code = main(["central"])
+    assert code == 0
+    out = capsys.readouterr().out
+    assert "4 idea(s) across 2 project(s)" in out
+    assert "proj-a: 2 idea(s)" in out
+    assert "proj-b: 2 idea(s)" in out
+
+
+def test_central_html_writes_merged_dashboard_with_project_filter(tmp_path, capsys):
+    central = tmp_path / "central"
+    main(["config", "set-central", str(central)])
+    capsys.readouterr()
+
+    for project in ("proj-a", "proj-b"):
+        out_dir = tmp_path / project
+        main([
+            "--out-dir", str(out_dir), "capture", str(FIXTURES / "sample_entries.json"),
+            "--project", project, "--session", "s1",
+        ])
+    capsys.readouterr()
+
+    code = main(["central", "--html"])
+    assert code == 0
+    path = central / "graph.html"
+    assert path.exists()
+    html = path.read_text(encoding="utf-8")
+    assert 'id="project-filter"' in html
+    assert "proj-a" in html and "proj-b" in html
+
+
+def test_central_html_omits_project_filter_for_a_single_project(tmp_path, capsys):
+    central = tmp_path / "central"
+    main(["config", "set-central", str(central)])
+    capsys.readouterr()
+
+    out_dir = tmp_path / "solo"
+    main([
+        "--out-dir", str(out_dir), "capture", str(FIXTURES / "sample_entries.json"),
+        "--project", "solo", "--session", "s1",
+    ])
+    capsys.readouterr()
+
+    main(["central", "--html"])
+    html = (central / "graph.html").read_text(encoding="utf-8")
+    assert 'id="project-filter"' not in html
+
+
+def test_central_flags_ideas_whose_provenance_disagrees_with_their_folder(tmp_path, capsys, isolated_config):
+    # a real bug this feature surfaced: `brainny capture --project X` run
+    # from inside a DIFFERENT project's directory silently lands ideas
+    # claiming project X inside that other project's own graph.json
+    from brainny.graph import save_graph
+    from brainny.schema import Graph, Node, ProvenanceEntry
+
+    central = tmp_path / "central"
+    main(["config", "set-central", str(central)])
+    capsys.readouterr()
+
+    misplaced = Node(
+        id="idea_0001", kind="precaution", title="t", summary="s", domain="d",
+        provenance=[ProvenanceEntry(project="other-project", session="s1")],
+    )
+    save_graph(Graph(nodes=[misplaced]), central / "brainny")
+
+    code = main(["central"])
+    assert code == 0
+    out = capsys.readouterr().out
+    assert "brainny/idea_0001 says its project is 'other-project'" in out

@@ -182,7 +182,7 @@ brainny/
 │   ├── stats.py                # embeddings, candidate neighbors, novelty band, recurrence, decay
 │   ├── dedup.py                # central match: grow existing vs. spawn new
 │   ├── graph.py                # node/edge model, read/write graph.json
-│   ├── central.py              # ~/.brainny/global.json, asymmetric sync
+│   ├── central.py              # merged read-only view across the configured central folder (real; the reconciliation/dedup half of this file is still open work — see §7)
 │   ├── viz.py                  # graph.html (terminal tree first, HTML later)
 │   └── serve.py                # Part 3 — MCP server (query_brain, surface_precautions, …)
 │
@@ -243,7 +243,7 @@ The trick to testing an LLM-in-the-loop system: **test the deterministic parts h
 - **v0.1 · sprouting** — `stats.py` (local embeddings, neighbors, novelty band, recurrence, decay), `dedup.py`, `neglected`. *Test:* Layers 2–3 green.
 - **v0.2** — `viz.py` `graph.html`, git hook (rebuild/summarize on commit). *Test:* Layer 6 smoke.
 - **v0.3** — `serve.py` MCP + proactive `surface_precautions`. *Test:* Layer 5 giant + trigger firing.
-- **v0.4 · mature** — `central.py`, asymmetric sync, cross-project connections. *Test:* multi-project dedup.
+- **v0.4 · mature** — `central.py` *reconciliation* (dedup, cross-project connections) — full multi-project dedup is still the open v0.4 work. Landed early, out of order, because a real user needed it sooner: asymmetric project→central sync (`brainny capture`/`attach` auto-mirror, OPERATIONS.md step 17) and `brainny central --html` (`brainny/central.py`, OPERATIONS.md step 19) — a genuine single merged dashboard across every synced project, concatenation only, deliberately no dedup yet (half-built dedup would be worse than an honest "not built"). *Test:* multi-project dedup (still pending — everything else in this bullet is real and tested).
 - **v1 · harvested** — `brainny install` across platforms, publish to PyPI. *Test:* Layer 7 review reads clean.
 
 **Do next:** build `schema.py`, drop the §3 prompt into `skills/brainny/SKILL.md`, hand-capture this design session, and run the v0 path end to end. Smallest loop that proves the whole shape.

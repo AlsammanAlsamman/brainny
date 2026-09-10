@@ -1,5 +1,6 @@
 """brainny CLI — entry: capture | attach | query | status | config |
-search | recall | recent | open | grow | neglected | install | serve | hook.
+search | recall | recent | open | central | grow | neglected | install |
+serve | hook.
 
 v0 (see SEED.md §7) implements capture + query for real. status/config/
 search/recent/open are OPERATIONS.md §6 step 2 — pure CLI surface on data
@@ -19,6 +20,7 @@ from collections import Counter, defaultdict
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
+from brainny import central as central_module
 from brainny import config
 from brainny._version import get_version
 from brainny.banner import render_banner
@@ -400,6 +402,55 @@ def cmd_open(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_central(args: argparse.Namespace) -> int:
+    """The actual "one central brain" (SEED.md §0/§2), not just a folder
+    holding separate per-project copies you browse one at a time: merges
+    every project synced into the central folder into a single dashboard.
+    Concatenation only, no dedup (see central.py's docstring -- that's
+    v0.4 territory) -- this is a place to LOOK at everything together,
+    not yet a reconciled brain."""
+    central = config.get_value("central-folder")
+    if not central:
+        print("brainny: no central folder configured - run `brainny config set-central <path>` first.", file=sys.stderr)
+        return 1
+    central_root = Path(central)
+    projects = central_module.list_central_projects(central_root)
+    if not projects:
+        print(f"brainny: no projects synced into {central_root} yet - run `brainny sync` from a project first.")
+        return 0
+
+    merged = central_module.build_merged_graph(central_root)
+    print(f"brainny central: {len(merged.nodes)} idea(s) across {len(projects)} project(s) at {central_root}")
+
+    # flag ideas whose own provenance names a different project than the
+    # folder they're actually sitting in -- almost always means `brainny
+    # capture --project X` got run from the wrong working directory at
+    # some point, silently mixing one project's ideas into another's.
+    mismatches: list[tuple[str, str, str]] = []
+    for project in projects:
+        folder_graph = load_graph(central_root / project)
+        print(f"  {project}: {len(folder_graph.nodes)} idea(s)")
+        for n in folder_graph.nodes:
+            claimed = n.provenance[0].project if n.provenance else None
+            if claimed and claimed != project:
+                mismatches.append((project, n.id, claimed))
+    if mismatches:
+        print(
+            "brainny: note - some ideas live in a project folder that doesn't match their own "
+            "provenance (likely `brainny capture` run from the wrong directory at some point):"
+        )
+        for folder, node_id, claimed in mismatches:
+            print(f"  {folder}/{node_id} says its project is '{claimed}'")
+
+    if args.html or args.open:
+        path = save_html(merged, central_root, title="brainny — central")
+        print(f"brainny: wrote {path} - open it in a browser.")
+        if args.open:
+            webbrowser.open(path.resolve().as_uri())
+            print(f"brainny: opened {path}")
+    return 0
+
+
 def _run_git(args: list[str], cwd: Path) -> subprocess.CompletedProcess:
     return subprocess.run(["git", *args], cwd=cwd, capture_output=True, text=True)
 
@@ -586,6 +637,13 @@ def build_parser() -> argparse.ArgumentParser:
         "--project", help="which project's central copy to open with --central (default: inferred from the local graph)"
     )
     p_open.set_defaults(func=cmd_open)
+
+    p_central = sub.add_parser(
+        "central", help="merged, read-only view across every project synced into the central folder"
+    )
+    p_central.add_argument("--html", action="store_true", help="write the merged dashboard to <central-folder>/graph.html")
+    p_central.add_argument("--open", action="store_true", help="also open it in the default browser (implies --html)")
+    p_central.set_defaults(func=cmd_central)
 
     for name in NOT_YET:
         p = sub.add_parser(name, help=f"(not yet implemented - {NOT_YET[name]})")

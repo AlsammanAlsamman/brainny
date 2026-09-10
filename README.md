@@ -256,11 +256,29 @@ tracks how long it's been since the last push and flags it as due once
 `sync-interval-days` has passed (default **1 day**) —
 `brainny-sync-check` asks before pushing.
 
+**See everything together, not one project at a time:**
+
+```bash
+brainny central              # summary: idea count per project, across the whole central folder
+brainny central --html       # one merged dashboard: <central-folder>/graph.html
+brainny central --open       # ...and open it
+```
+
+This is the actual "one central brain" — every project synced into the
+central folder, shown together in a single dashboard with a **project**
+filter alongside the existing origin filter (only appears once there's
+more than one project to distinguish). It's a merge, not a reconciliation:
+ideas are concatenated as-is, not deduplicated — full cross-project dedup
+is still open work (SEED.md's v0.4 milestone). `brainny central` also
+flags any idea whose own provenance names a different project than the
+folder it's sitting in — a real, if uncommon, sign that `brainny capture`
+got run from the wrong directory at some point.
+
 ---
 
 ## Status
 
-**v0 · seed** — the core loop above is real and tested (90 tests).
+**v0 · seed** — the core loop above is real and tested (101 tests).
 Capture *and* proactive recall (`brainny recall` + the `brainny-recall`
 skill) both work today. Not yet built: automatic dedup/novelty scoring so
 `recurrence`/`state` truly evolve over time, decay for neglected ideas,
@@ -277,7 +295,7 @@ for the full build order and `SEED.md` for the complete design rationale
 brainny/                 the CLI + engine (Python, assistant-agnostic)
 skills/brainny/          the capture skills (assistant-facing prompts)
 prompts/                 entry + project-nature templates
-tests/                   90 tests, see SEED.md §6 for the testing philosophy
+tests/                   101 tests, see SEED.md §6 for the testing philosophy
 brainny-out/             where captures land when you use brainny *on*
                          this repo (gitignored — same as in any project;
                          not shipped, this is per-user local data)

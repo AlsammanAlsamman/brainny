@@ -155,6 +155,7 @@ def _build_payload(graph: Graph, title: str) -> dict:
                 "lastTouched": n.last_touched,
                 "session": prov.session if prov else None,
                 "sessionTs": prov.ts if prov else "",
+                "project": prov.project if prov else None,
                 "attachments": [
                     {"type": a.type, "filename": a.filename, "description": a.description}
                     for a in n.attachments
@@ -174,11 +175,13 @@ def _build_payload(graph: Graph, title: str) -> dict:
         if prov.ts < entry["ts"]:
             entry["ts"] = prov.ts
     sessions = sorted(sessions_by_id.values(), key=lambda s: s["ts"])
+    projects = sorted({n["project"] for n in nodes if n["project"]})
 
     return {
         "title": title,
         "nodes": nodes,
         "sessions": sessions,
+        "projects": projects,
         "domainCount": len({n.domain for n in graph.nodes}),
         "kindColor": KIND_COLOR,
         "stateMeta": STATE_META,
@@ -237,6 +240,21 @@ _CSS = """
   .origin-btn:hover { background: rgba(255,255,255,0.09); }
   .origin-btn .dot { width: 8px; height: 8px; border-radius: 50%; flex: none; }
   .origin-btn.active { font-weight: 600; }
+
+  /* project filter -- only present on the merged central view (brainny
+     central --html) spanning more than one project */
+  #project-filter-row { display: flex; align-items: center; gap: 0.4rem; margin-left: 0.6rem; }
+  #project-filter {
+    background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.16); color: #eef3ea;
+    padding: 0.25rem 0.55rem; border-radius: 8px; font: inherit; font-size: 0.82rem; cursor: pointer;
+  }
+  #project-filter option { color: #111; background: #fff; }
+  .item-project-group { margin-bottom: 1.1rem; }
+  .item-project-group:last-child { margin-bottom: 0; }
+  .item-project-heading {
+    font-size: 0.82rem; font-weight: 600; color: #eef3ea; margin: 0 0 0.5rem; padding: 0.3rem 0.5rem;
+    background: rgba(232,178,61,0.1); border: 1px solid rgba(232,178,61,0.25); border-radius: 6px;
+  }
 
   main { flex: 1; display: grid; grid-template-columns: 300px 1fr; min-height: 0; }
   main#stats-main { display: block; overflow-y: auto; padding: 1.1rem 1.4rem 2rem; }
@@ -398,6 +416,18 @@ _JS = """
     return idea.recurrence > 1 || idea.state !== 'seed';
   }
 
+  // ---- merged central view (brainny central --html): ids like "idea_0001"
+  // are only unique WITHIN one project's own graph.json, so a dashboard
+  // merging several projects needs a project-qualified key for DOM/d3 node
+  // identity -- itemKey() is that key. idea.id itself stays the real,
+  // original id everywhere else (attachment folder names, the id shown to
+  // the user, growth_log/edges), since that's what's actually on disk. ----
+  var MULTI_PROJECT = (DATA.projects || []).length > 1;
+
+  function itemKey(idea) {
+    return MULTI_PROJECT && idea.project ? idea.project + '::' + idea.id : idea.id;
+  }
+
   // ---- origin filter: who actually originated each idea (human / AI /
   // collaborative / unclassified) -- independent of kind/state, and
   // applied consistently across every view (list, both graphs, stats) ----
@@ -419,11 +449,19 @@ _JS = """
     return idea.origin === activeOrigin;
   }
 
+  // ---- project filter: only present (and only rendered by the server)
+  // when this is a merged central view spanning more than one project ----
+  var activeProject = 'all';
+
+  function matchesProjectFilter(idea) {
+    return activeProject === 'all' || idea.project === activeProject;
+  }
+
   function filteredData() {
-    if (activeOrigin === 'all') return DATA;
+    if (activeOrigin === 'all' && activeProject === 'all') return DATA;
     var filtered = {};
     for (var k in DATA) { if (Object.prototype.hasOwnProperty.call(DATA, k)) filtered[k] = DATA[k]; }
-    filtered.nodes = DATA.nodes.filter(matchesOriginFilter);
+    filtered.nodes = DATA.nodes.filter(function (n) { return matchesOriginFilter(n) && matchesProjectFilter(n); });
     return filtered;
   }
 
@@ -456,7 +494,7 @@ _JS = """
       var parts = idea.domain.split('/').map(function (p) { return p.trim(); }).filter(Boolean);
       var parent = parts.length ? ensureBranch(parts) : root;
       parent.children.push({
-        id: idea.id, name: idea.title, kind: 'idea', idea: idea,
+        id: itemKey(idea), name: idea.title, kind: 'idea', idea: idea,
         value: potentialScore(idea), children: [],
       });
     });
@@ -470,22 +508,10 @@ _JS = """
   }
 
   // ---- itemized accordion list (click a title to unfold) ----
-  function renderItemList(container, data) {
-    if (!data.nodes.length) {
-      var empty = document.createElement('p');
-      empty.className = 'empty-note';
-      empty.textContent = (DATA.nodes.length && activeOrigin !== 'all')
-        ? 'No ' + activeOrigin + ' ideas yet \\u2014 try a different filter, or "All".'
-        : 'No ideas captured yet. Run `brainny capture <entries.json>`.';
-      container.appendChild(empty);
-      return;
-    }
-
+  function renderDomainGroups(container, ideas) {
     var byDomain = {};
-    data.nodes.forEach(function (n) { (byDomain[n.domain] = byDomain[n.domain] || []).push(n); });
+    ideas.forEach(function (n) { (byDomain[n.domain] = byDomain[n.domain] || []).push(n); });
 
-    var wrap = document.createElement('div');
-    wrap.className = 'item-list';
     Object.keys(byDomain).sort().forEach(function (domain) {
       var group = document.createElement('div');
       group.className = 'item-group';
@@ -498,13 +524,13 @@ _JS = """
       byDomain[domain].forEach(function (idea) {
         var item = document.createElement('div');
         item.className = 'item' + (isPromising(idea) ? ' item-promising' : '');
-        item.dataset.itemId = idea.id;
+        item.dataset.itemId = itemKey(idea);
 
         var attachments = idea.attachments || [];
         var signBadges = attachments.map(function (a) {
           return '<span class="item-sign item-sign-' + escapeHtml(a.type) + '" title="' +
-            escapeHtml((data.attachmentLabel[a.type] || a.type) + ': ' + a.filename) + '">' +
-            escapeHtml(data.attachmentIcon[a.type] || '?') + '</span>';
+            escapeHtml((DATA.attachmentLabel[a.type] || a.type) + ': ' + a.filename) + '">' +
+            escapeHtml(DATA.attachmentIcon[a.type] || '?') + '</span>';
         }).join('') + (idea.snippet
           ? '<span class="item-sign item-sign-snippet" title="inline snippet">\\u270e</span>'
           : '');
@@ -513,7 +539,7 @@ _JS = """
         titleRow.type = 'button';
         titleRow.className = 'item-title-row';
         titleRow.innerHTML =
-          '<span class="item-dot" style="background:' + (data.kindColor[idea.kind] || '#8a8f98') + '"></span>' +
+          '<span class="item-dot" style="background:' + (DATA.kindColor[idea.kind] || '#8a8f98') + '"></span>' +
           '<span class="item-dot" style="background:' + originColor(idea) + '" title="' + escapeHtml(originLabel(idea)) + '"></span>' +
           '<span class="item-title">' + escapeHtml(idea.title) + '</span>' +
           (signBadges ? '<span class="item-signs">' + signBadges + '</span>' : '') +
@@ -523,25 +549,32 @@ _JS = """
         body.className = 'item-body';
         body.hidden = true;
         var tags = (idea.tags || []).map(function (t) { return '<span class="item-tag">' + escapeHtml(t) + '</span>'; }).join('');
+        // attachments physically live under <that project's own out_dir>/attachments/<id>/ --
+        // in a single-project dashboard that's right alongside this file (attachments/<id>/...),
+        // but the merged central view lives one level up from each project's own folder, so the
+        // path needs that project segment too.
+        var attachmentBase = (MULTI_PROJECT && idea.project ? encodeURIComponent(idea.project) + '/' : '') + 'attachments/';
         var evidence = attachments.map(function (a) {
-          var href = 'attachments/' + encodeURIComponent(idea.id) + '/' + encodeURIComponent(a.filename);
-          var label = (data.attachmentLabel[a.type] || a.type) + ': ' + a.filename + (a.description ? ' \\u2014 ' + a.description : '');
+          var href = attachmentBase + encodeURIComponent(idea.id) + '/' + encodeURIComponent(a.filename);
+          var label = (DATA.attachmentLabel[a.type] || a.type) + ': ' + a.filename + (a.description ? ' \\u2014 ' + a.description : '');
           var preview = a.type === 'plot'
             ? '<a href="' + href + '" target="_blank" rel="noopener"><img class="item-evidence-thumb" src="' + href + '" alt="' + escapeHtml(a.filename) + '" loading="lazy"></a>'
             : '';
           return '<div class="item-evidence-row">' +
-            '<span class="item-sign item-sign-' + escapeHtml(a.type) + '">' + escapeHtml(data.attachmentIcon[a.type] || '?') + '</span>' +
+            '<span class="item-sign item-sign-' + escapeHtml(a.type) + '">' + escapeHtml(DATA.attachmentIcon[a.type] || '?') + '</span>' +
             '<a href="' + href + '" target="_blank" rel="noopener">' + escapeHtml(label) + '</a>' +
             preview +
             '</div>';
         }).join('');
+        var metaBits = [idea.kind, idea.state, originLabel(idea)];
+        if (MULTI_PROJECT && idea.project) metaBits.push('project: ' + idea.project);
+        metaBits.push(idea.id);
         body.innerHTML =
           '<p class="item-summary">' + escapeHtml(idea.summary) + '</p>' +
           (idea.detail ? '<p class="item-detail">' + escapeHtml(idea.detail) + '</p>' : '') +
           (idea.snippet ? '<pre class="item-snippet"><code>' + escapeHtml(idea.snippet) + '</code></pre>' : '') +
           (idea.trigger ? '<p class="item-trigger"><strong>trigger:</strong> ' + escapeHtml(idea.trigger) + '</p>' : '') +
-          '<p class="item-meta">' + escapeHtml(idea.kind) + ' \\u00b7 ' + escapeHtml(idea.state) +
-          ' \\u00b7 ' + escapeHtml(originLabel(idea)) + ' \\u00b7 ' + escapeHtml(idea.id) + '</p>' +
+          '<p class="item-meta">' + metaBits.map(escapeHtml).join(' \\u00b7 ') + '</p>' +
           '<div class="item-tags">' + tags + '</div>' +
           (evidence ? '<div class="item-evidence">' + evidence + '</div>' : '');
 
@@ -555,8 +588,40 @@ _JS = """
         group.appendChild(item);
       });
 
-      wrap.appendChild(group);
+      container.appendChild(group);
     });
+  }
+
+  function renderItemList(container, data) {
+    if (!data.nodes.length) {
+      var empty = document.createElement('p');
+      empty.className = 'empty-note';
+      empty.textContent = (DATA.nodes.length && (activeOrigin !== 'all' || activeProject !== 'all'))
+        ? 'No ideas match this filter \\u2014 try a different one, or "All".'
+        : 'No ideas captured yet. Run `brainny capture <entries.json>`.';
+      container.appendChild(empty);
+      return;
+    }
+
+    var wrap = document.createElement('div');
+    wrap.className = 'item-list';
+
+    if (MULTI_PROJECT) {
+      var byProject = {};
+      data.nodes.forEach(function (n) { var p = n.project || 'unknown'; (byProject[p] = byProject[p] || []).push(n); });
+      Object.keys(byProject).sort().forEach(function (project) {
+        var projGroup = document.createElement('div');
+        projGroup.className = 'item-project-group';
+        var projHeading = document.createElement('div');
+        projHeading.className = 'item-project-heading';
+        projHeading.textContent = project + ' (' + byProject[project].length + ')';
+        projGroup.appendChild(projHeading);
+        renderDomainGroups(projGroup, byProject[project]);
+        wrap.appendChild(projGroup);
+      });
+    } else {
+      renderDomainGroups(wrap, data.nodes);
+    }
 
     container.appendChild(wrap);
   }
@@ -1222,6 +1287,16 @@ _JS = """
   });
   applyOriginFilterUI();
 
+  var projectSelect = document.getElementById('project-filter');
+  if (projectSelect) {
+    projectSelect.addEventListener('change', function () {
+      activeProject = projectSelect.value;
+      refreshItemList();
+      if (activeTab === 'stats') renderStatsView();
+      else switchView(select.value);
+    });
+  }
+
   switchView(select.value);
 
   window.addEventListener('resize', function () {
@@ -1277,11 +1352,29 @@ def render_html(graph: Graph, title: str = "brainny") -> str:
     )
     origin_filter_html = "".join(origin_buttons)
 
+    projects = payload["projects"]
+    multi_project = len(projects) > 1
+    project_filter_html = ""
+    if multi_project:
+        project_options = "".join(f'<option value="{_esc(p)}">{_esc(p)}</option>' for p in projects)
+        project_filter_html = (
+            '<label for="project-filter" style="color:#9aab97;font-size:0.82rem">project</label>'
+            f'<select id="project-filter"><option value="all">All ({len(projects)})</option>{project_options}</select>'
+        )
+
     subtitle = (
         f"{len(graph.nodes)} idea(s) · {payload['domainCount']} branch(es), "
         f"grown over {len(payload['sessions'])} session(s)"
+        + (f" across {len(projects)} project(s)" if multi_project else "")
         if graph.nodes
         else "No ideas captured yet — just the mother tree."
+    )
+    project_note = (
+        " This is the merged central view — every project synced into the central folder, "
+        "shown together (concatenated, not deduplicated yet; that's still v0.4 work per SEED.md). "
+        "Use the <strong>project</strong> dropdown above to narrow to one."
+        if multi_project
+        else ""
     )
 
     head = f"""<!doctype html>
@@ -1311,9 +1404,10 @@ def render_html(graph: Graph, title: str = "brainny") -> str:
   </div>
   <div class="row" style="margin-top:0.5rem">
     <nav id="origin-filter">{origin_filter_html}</nav>
+    {f'<div id="project-filter-row">{project_filter_html}</div>' if project_filter_html else ""}
   </div>
   <p id="view-desc"></p>
-  <p class="note">{_esc(subtitle)} · sizing/highlighting uses the real <code>recurrence</code>/<code>state</code> fields, but v0.1 (dedup/stats) doesn't exist yet — every idea is currently <code>recurrence: 1</code>, <code>state: "seed"</code>, so nothing visibly stands out yet. Click any idea to jump to it in the list. The <strong>human / AI / collaborative</strong> filter above shows who actually originated each idea — the human supplies direction and innovation, the AI supplies collective/pattern knowledge, and a lot of real work is both.</p>
+  <p class="note">{_esc(subtitle)} · sizing/highlighting uses the real <code>recurrence</code>/<code>state</code> fields, but v0.1 (dedup/stats) doesn't exist yet — every idea is currently <code>recurrence: 1</code>, <code>state: "seed"</code>, so nothing visibly stands out yet. Click any idea to jump to it in the list. The <strong>human / AI / collaborative</strong> filter above shows who actually originated each idea — the human supplies direction and innovation, the AI supplies collective/pattern knowledge, and a lot of real work is both.{project_note}</p>
 </header>
 <main id="graph-main">
   <div id="panel">
