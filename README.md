@@ -118,14 +118,21 @@ can drive brainny the same way.
   <img src="assets/screenshot-stats.png" alt="brAInny dashboard Stats tab: domain treemap, per-cluster activity table, kind breakdown, origin breakdown, and newest ideas" width="100%">
 </p>
 
-<p align="center"><sub>Stats tab — domain treemap, growth trends, kind + origin breakdown. Both from <code>brainny query --html</code>, on this project's own real, dogfooded ideas.</sub></p>
+<p align="center"><sub>Stats tab — domain treemap, growth trends, kind + origin breakdown.</sub></p>
 
-**Want to click around it yourself, not just look at screenshots?**
+<p align="center">
+  <img src="assets/screenshot-opportunities.png" alt="brAInny dashboard Opportunities tab: three AI-proposed combinations of ideas, each with a kind badge, a confidence-weight bar, a summary and rationale, and links back to the ideas they're built from" width="100%">
+</p>
+
+<p align="center"><sub>Opportunities tab — AI-proposed combinations, sorted by confidence weight, linked back to the ideas each one draws from.</sub></p>
+
+All three screenshots are from the same fabricated example dataset (16
+ideas across 7 domains, every kind/origin, attachments, snippets, and 3
+proposed Opportunities) — built to show the full dashboard, not the
+maintainer's real ideas. **Want to click around it yourself, not just
+look at screenshots?**
 [Open the live example dashboard](https://htmlpreview.github.io/?https://raw.githubusercontent.com/AlsammanAlsamman/brainny/master/examples/demo/graph.html) —
-entirely fabricated data (16 ideas across 7 domains, every kind/origin,
-attachments, snippets, and 3 proposed Opportunities), built specifically
-to show the full dashboard, not the maintainer's real ideas. See
-[`examples/demo/`](examples/demo/).
+see [`examples/demo/`](examples/demo/).
 
 ---
 
