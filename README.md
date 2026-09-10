@@ -223,7 +223,7 @@ moment, every time.
 
 | Command | Runs | What it does |
 |---|---|---|
-| `/brainny` | manually, end of a session | full two-pass review of the whole session (project-aware + project-blind); project-local only — copy `skills/brainny/SKILL.md` into a project to use it there |
+| `/brainny` | manually, end of a session | full two-pass review of the whole session (project-aware + project-blind) |
 | `/brainny-catch` | manually, or every ~25 min in the background | lightweight scan of the last ~25 min for anything worth keeping; silent when it finds nothing |
 | `/brainny-catch-this <description>` | manually, whenever you point at something | searches the *whole* session for what you describe and captures it; always tells you what it did |
 | `/brainny-catch-skill <description>` | manually, whenever you point at a reusable procedure | same as above, but captures `kind: skill` and attaches evidence (code/plot/table) via `brainny attach` |
@@ -231,7 +231,7 @@ moment, every time.
 | `/brainny-onboarding` | automatically, once ever per machine | offers to set up a new central folder, or download an existing one, plus optional GitHub, on first use |
 | `/brainny-recall` | automatically, once per session, after your first message | surfaces anything relevant you've captured before — in this project or any other one — before the task starts |
 
-All but `/brainny` are installed globally, once, and then work in any project.
+All of these are installed globally, once, and then work in any project.
 
 **4. Optionally, keep one brain across every project** (the onboarding
 skill above offers to do this for you on first run — or by hand):

@@ -764,5 +764,25 @@ permission-gated local check — see above.
       is gone) with the 5 moved ideas now clustered under
       `hispanic-yuc-sle-gwas`'s own `GWAS` branch.
 
+21. `/brainny` given a global mirror too. ✅
+    - Real inconsistency, caught by a real user hitting it: every other
+      capture skill (`catch`, `catch-this`, `catch-skill`, `sync-check`,
+      `onboarding`, `recall`) got installed to `~/.claude/skills/` so it
+      works in any project; the original, full end-of-session review
+      skill (`skills/brainny/SKILL.md`, `/brainny`) never did — it stayed
+      project-local, needing `skills/brainny/SKILL.md` copied by hand into
+      each project to use there, undocumented as a deliberate constraint
+      because it wasn't one. It simply predates the "install globally"
+      pattern the other skills adopted later and was never revisited.
+      Nothing about what it does (review the current session, already in
+      context) requires project-locality.
+    - Fixed the same way as every other skill: mirrored to
+      `~/.claude/skills/brainny/SKILL.md`, wired into the global
+      `CLAUDE.md`'s ambient section and its "Full skill instructions"
+      list. README's command table and the "All but `/brainny`" line
+      (now just "All of these") updated to match — `/brainny` now works
+      in any project without copying anything by hand, same as its
+      siblings.
+
 Each step should land, get tested, and get dogfooded (per SEED.md §6
 Layer 7) before the next starts — same discipline as the v0 build.
