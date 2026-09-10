@@ -1030,3 +1030,50 @@ def test_reassign_moves_attachments_too(tmp_path, capsys):
     moved = target.nodes[0]
     assert len(moved.attachments) == 1
     assert (central / "other-project" / "attachments" / moved.id / "script.py").exists()
+
+
+# ---- step 22: `brainny badge` -- a small, optional SVG for a GitHub
+# profile README ----
+
+
+def test_badge_requires_central_or_local(tmp_path, capsys):
+    code = main(["--out-dir", str(tmp_path / "out"), "badge"])
+    assert code == 1
+    assert "no central folder configured" in capsys.readouterr().err
+
+
+def test_badge_local_requires_local_ideas(tmp_path, capsys):
+    code = main(["--out-dir", str(tmp_path / "out"), "badge", "--local"])
+    assert code == 1
+    assert "nothing to show yet" in capsys.readouterr().err
+
+
+def test_badge_local_writes_svg_from_current_directory(tmp_path, capsys):
+    out_dir = tmp_path / "out"
+    capture(FIXTURES / "sample_entries.json", project="myproj", session="s1", out_dir=out_dir)
+    out_svg = tmp_path / "badge.svg"
+
+    code = main(["--out-dir", str(out_dir), "badge", "--local", "--out", str(out_svg)])
+    assert code == 0
+    assert out_svg.exists()
+    assert out_svg.read_text(encoding="utf-8").strip().startswith("<svg")
+
+
+def test_badge_uses_merged_central_view_by_default(tmp_path, capsys):
+    central = tmp_path / "central"
+    main(["config", "set-central", str(central)])
+    capsys.readouterr()
+
+    for project in ("proj-a", "proj-b"):
+        out_dir = tmp_path / project
+        main([
+            "--out-dir", str(out_dir), "capture", str(FIXTURES / "sample_entries.json"),
+            "--project", project, "--session", "s1",
+        ])
+    capsys.readouterr()
+
+    out_svg = tmp_path / "badge.svg"
+    code = main(["badge", "--out", str(out_svg)])
+    assert code == 0
+    svg = out_svg.read_text(encoding="utf-8")
+    assert "4 idea(s) captured" in svg  # 2 ideas from each of 2 projects, merged

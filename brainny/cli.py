@@ -1,6 +1,6 @@
 """brainny CLI — entry: capture | attach | query | status | config |
-search | recall | recent | open | central | reassign | grow | neglected |
-install | serve | hook.
+search | recall | recent | open | central | reassign | badge | grow |
+neglected | install | serve | hook.
 
 v0 (see SEED.md §7) implements capture + query for real. status/config/
 search/recent/open are OPERATIONS.md §6 step 2 — pure CLI surface on data
@@ -22,6 +22,7 @@ from pathlib import Path
 
 from brainny import central as central_module
 from brainny import config
+from brainny.badge import render_badge_svg
 from brainny._version import get_version
 from brainny.banner import render_banner
 from brainny.capture import capture as do_capture
@@ -451,6 +452,47 @@ def cmd_central(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_badge(args: argparse.Namespace) -> int:
+    """A small, optional SVG activity badge -- meant to be embedded
+    somewhere public like a GitHub profile README, not the dashboard.
+    Shows counts/shape only (kind breakdown, projects, recent activity),
+    never idea content. Uses the merged central view by default (see
+    central.py) so it reflects activity across every project, not just
+    whichever one you happen to be standing in; --local badges only the
+    current directory's own graph instead."""
+    if args.local:
+        graph = load_graph(Path(args.out_dir))
+        if not graph.nodes:
+            print("brainny: nothing to show yet - no ideas captured.", file=sys.stderr)
+            return 1
+    else:
+        central = config.get_value("central-folder")
+        if not central:
+            print(
+                "brainny: no central folder configured - run `brainny config set-central <path>` first, "
+                "or pass --local to badge just the current directory's own graph.",
+                file=sys.stderr,
+            )
+            return 1
+        central_root = Path(central)
+        graph = central_module.build_merged_graph(central_root)
+        if not graph.nodes:
+            print(f"brainny: no projects synced into {central_root} yet.", file=sys.stderr)
+            return 1
+
+    svg = render_badge_svg(graph)
+    out_path = Path(args.out) if args.out else Path("brainny-badge.svg")
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    out_path.write_text(svg, encoding="utf-8")
+    print(f"brainny: wrote {out_path}")
+    print(
+        "brainny: nothing was pushed anywhere -- host this file somewhere GitHub can serve it raw "
+        "(e.g. commit it to a public repo), then embed it in a README with:\n"
+        f"  ![brainny activity](https://raw.githubusercontent.com/<user>/<repo>/<branch>/{out_path.name})"
+    )
+    return 0
+
+
 def cmd_reassign(args: argparse.Namespace) -> int:
     """Fix the exact mistake `brainny central`'s mismatch check flags:
     idea(s) that ended up in the wrong project's graph.json because
@@ -739,6 +781,16 @@ def build_parser() -> argparse.ArgumentParser:
     p_reassign.add_argument("--to", required=True, help="the project these ideas actually belong to")
     p_reassign.add_argument("--session", help="session id for the growth-log entry (default: unknown)")
     p_reassign.set_defaults(func=cmd_reassign)
+
+    p_badge = sub.add_parser(
+        "badge", help="write a small SVG activity badge (e.g. for a GitHub profile README)"
+    )
+    p_badge.add_argument(
+        "--local", action="store_true",
+        help="badge only the current directory's own graph instead of the merged central view",
+    )
+    p_badge.add_argument("--out", help="output path (default: ./brainny-badge.svg)")
+    p_badge.set_defaults(func=cmd_badge)
 
     for name in NOT_YET:
         p = sub.add_parser(name, help=f"(not yet implemented - {NOT_YET[name]})")

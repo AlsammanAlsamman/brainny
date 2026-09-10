@@ -288,11 +288,35 @@ project's actual working directory lives on disk, so its own local
 `brainny-out/` is left alone (and stays that way; central never writes
 back into a project's local copy, per the asymmetric sync rule above).
 
+**A small, optional activity badge for somewhere public** (a GitHub
+profile README, say) — counts and shape only, never idea content:
+
+```bash
+brainny badge                        # merged across every synced project -> ./brainny-badge.svg
+brainny badge --local                # just the current directory's own graph
+brainny badge --out assets/badge.svg # write it somewhere specific
+```
+
+<p align="center">
+  <img src="assets/badge-example.svg" alt="brAInny activity badge: a brain icon with curved branches leading to small labeled counts for skills, techniques, precautions, projects, and recent activity" width="70%">
+</p>
+
+Nothing gets uploaded anywhere — `brainny badge` only ever writes a local
+`.svg` file, same "no silent push" rule as everything else here. To
+actually show it on a GitHub profile: commit the file somewhere public
+(this repo, or your profile's own special `<username>/<username>` repo)
+and embed it with `![brainny activity](https://raw.githubusercontent.com/<user>/<repo>/<branch>/badge.svg)`.
+Shows: idea count, kind breakdown (skills/techniques/precautions),
+domains, project count, and how many ideas were touched in the last 3
+days — not "novelty," since that scoring model isn't built yet (see
+Status below); this recency count uses the same honest proxy the
+dashboard's own Stats tab already does.
+
 ---
 
 ## Status
 
-**v0 · seed** — the core loop above is real and tested (106 tests).
+**v0 · seed** — the core loop above is real and tested (116 tests).
 Capture *and* proactive recall (`brainny recall` + the `brainny-recall`
 skill) both work today. Not yet built: automatic dedup/novelty scoring so
 `recurrence`/`state` truly evolve over time, decay for neglected ideas,
@@ -309,7 +333,7 @@ for the full build order and `SEED.md` for the complete design rationale
 brainny/                 the CLI + engine (Python, assistant-agnostic)
 skills/brainny/          the capture skills (assistant-facing prompts)
 prompts/                 entry + project-nature templates
-tests/                   106 tests, see SEED.md §6 for the testing philosophy
+tests/                   116 tests, see SEED.md §6 for the testing philosophy
 brainny-out/             where captures land when you use brainny *on*
                          this repo (gitignored — same as in any project;
                          not shipped, this is per-user local data)

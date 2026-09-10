@@ -784,5 +784,47 @@ permission-gated local check — see above.
       in any project without copying anything by hand, same as its
       siblings.
 
+22. `brainny badge` — a small, optional SVG activity badge. ✅
+    - User's ask: something small and optional for a public page (a
+      GitHub profile README) showing brainny activity — not the ideas
+      themselves, a visual summary — "a brain where different beautiful
+      branches coming out of it like stats."
+    - New `brainny/badge.py`: `compute_badge_stats()` (total ideas, kind
+      breakdown, distinct domains/projects, a "recent" count) and
+      `render_badge_svg()` (a hand-built SVG — brand icon as a hub, curved
+      branch paths to small labeled/colored stat circles, reusing
+      `viz.py`'s `KIND_COLOR` palette so it matches the dashboard). New
+      CLI command `brainny badge [--local] [--out <path>]`, defaulting to
+      the merged central view (`central.py`, so it reflects the whole
+      user's activity, not one project) with `--local` to badge just the
+      current directory instead.
+    - Deliberately does NOT show a "novelty" number, even though the user
+      asked for one — `stats.py`'s decay/novelty model is still unbuilt
+      (v0.1, see SEED.md §7); fabricating one would be dishonest. Shows
+      "active (3d)" instead — the same real, honest 3-day recency window
+      `viz.py`'s own Stats tab already uses for its growing/quiet trend
+      badges, so the two stay consistent rather than inventing a second,
+      different notion of "recent." Flagged this substitution to the user
+      directly rather than silently swapping it in.
+    - Never touches git — same "no silent push" discipline as everything
+      else: writes a local `.svg` file only, with instructions for the
+      user to host and embed it themselves. A real example lives at
+      `assets/badge-example.svg`, generated from this repo's own real
+      (public — counts only, no titles) central data, referenced from the
+      README.
+    - 10 new tests (`test_badge.py`: kind/domain/project counting, the
+      3-day recency window, empty-graph handling, valid SVG shape,
+      confirmed idea *content* never leaks into the output even though
+      counts do, title escaping; `test_cli.py`: requires central or
+      `--local`, `--local` needs local ideas first, `--local` writes a
+      real file, default path correctly merges multiple projects) — 116
+      tests total. Verified for real: generated an actual badge from the
+      maintainer's real central folder (34 ideas across 2 projects) and
+      screenshotted it with headless Chrome — branches, counts, and
+      colors all rendered correctly; confirmed the "active (3d)" number
+      matching the total isn't a bug, just an honest reflection of the
+      tool being two days old (every real idea's `last_touched` is
+      genuinely within the last 3 days right now).
+
 Each step should land, get tested, and get dogfooded (per SEED.md §6
 Layer 7) before the next starts — same discipline as the v0 build.
