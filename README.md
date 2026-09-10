@@ -131,6 +131,7 @@ brainny query --html          # a browsable dashboard: brainny-out/graph.html
                                 #   Stats tab: domain treemap, growth trends, kind breakdown
 brainny open                  # open that dashboard in your browser
 brainny search "docker"        # find anything by keyword, tag, domain, kind
+brainny recall retry api client  # search THIS project + every project in your central folder
 brainny recent --days 7          # what you've captured lately
 ```
 
@@ -145,7 +146,12 @@ brainny recent --days 7          # what you've captured lately
   keeping, and file it without interrupting you — most cycles catch
   nothing, and that's correct;
 - once, at the start of the session, check whether anything's drifted
-  from your shared central brain and ask before syncing it.
+  from your shared central brain and ask before syncing it;
+- right after your first message, quietly check whether anything you've
+  captured before — in *this* project or any other one synced to your
+  central brain — is relevant to what you're about to do, and mention it
+  briefly if so. This is the proactive-recall half: everything else here
+  only captures, this is what actually feeds it back to you.
 
 Nothing is ever pushed to GitHub without you asking for it, in that
 moment, every time.
@@ -159,6 +165,7 @@ moment, every time.
 | `/brainny-catch-this <description>` | manually, whenever you point at something | searches the *whole* session for what you describe and captures it; always tells you what it did |
 | `/brainny-sync-check` | automatically, once per session | checks for drift against your central folder and asks before syncing |
 | `/brainny-onboarding` | automatically, once ever per machine | offers to set up a central folder (and optionally GitHub) on first use |
+| `/brainny-recall` | automatically, once per session, after your first message | surfaces anything relevant you've captured before — in this project or any other one — before the task starts |
 
 All but `/brainny` are installed globally, once, and then work in any project.
 
@@ -178,11 +185,14 @@ project's own copy unless you explicitly ask for that.
 
 ## Status
 
-**v0 · seed** — the core loop above is real and tested (57 tests). Not
-yet built: automatic dedup/novelty scoring so `recurrence`/`state` truly
-evolve over time, decay for neglected ideas, and an MCP server for direct
-AI access to your brain. See `OPERATIONS.md` for the full build order and
-`SEED.md` for the complete design rationale — both are as honest about
+**v0 · seed** — the core loop above is real and tested (60 tests).
+Capture *and* proactive recall (`brainny recall` + the `brainny-recall`
+skill) both work today. Not yet built: automatic dedup/novelty scoring so
+`recurrence`/`state` truly evolve over time, decay for neglected ideas,
+and an MCP server for tighter, tool-level AI access (recall today goes
+through the CLI via a skill, not a direct protocol). See `OPERATIONS.md`
+for the full build order and `SEED.md` for the complete design rationale
+— both are as honest about
 what's *not* built yet as what is.
 
 ---
@@ -193,7 +203,7 @@ what's *not* built yet as what is.
 brainny/                 the CLI + engine (Python, assistant-agnostic)
 skills/brainny/          the capture skills (assistant-facing prompts)
 prompts/                 entry + project-nature templates
-tests/                   57 tests, see SEED.md §6 for the testing philosophy
+tests/                   60 tests, see SEED.md §6 for the testing philosophy
 brainny-out/             where captures land when you use brainny *on*
                          this repo (gitignored — same as in any project;
                          not shipped, this is per-user local data)

@@ -364,5 +364,37 @@ permission-gated local check — see above.
       correctly found that technique in the session, wrote it up, and
       captured it as `idea_0023`.
 
+11. Proactive recall: `brainny recall` + the `brainny-recall` skill. ✅
+    - Every skill up to this point only *captures*. Nothing fed captured
+      knowledge back into a *new* session — a precaution learned in one
+      project never resurfaced when starting similar work in another,
+      unless the user remembered to run `brainny search` themselves. This
+      is genuinely the missing half of the tool's value (see the
+      "is brainny useful at all" discussion this step came out of): a
+      well-organized journal you have to remember to read isn't a memory
+      that resurfaces itself.
+    - New CLI command `brainny recall <term> [term...]` (OR-matched):
+      searches the current project's own `graph.json` *and* every other
+      project synced into the configured central folder, labeling each
+      hit with its source project so a cross-project match (the
+      interesting case) is obviously not local. Falls back to local-only
+      search with a clear note when no central folder is configured.
+      Covered by 3 new tests (local-only, cross-project, no-match) —
+      60 tests total now.
+    - New skill `brainny-recall`: fires once per session, right after the
+      user's *first* substantive message (not before — nothing to match
+      against yet; not on every message — too noisy). Pulls a few
+      concrete keywords out of that message, runs `brainny recall`, and
+      — using real judgment, not raw keyword-match — mentions anything
+      genuinely relevant before proceeding with the task, naming the
+      source project when it's a cross-project hit. Silent when nothing
+      relevant turns up, same silence-by-default discipline as catch.
+    - Verified for real against the maintainer's actual central folder
+      (`brainny recall pip windows` correctly surfaced 8 real precautions
+      captured earlier in this same session/project). Not yet verified:
+      the skill's own auto-trigger firing on a *fresh* session's first
+      message — same caveat as every other ambient skill here, since this
+      session's CLAUDE.md was already loaded before the edit landed.
+
 Each step should land, get tested, and get dogfooded (per SEED.md §6
 Layer 7) before the next starts — same discipline as the v0 build.

@@ -1,5 +1,5 @@
 """brainny CLI — entry: capture | query | status | config | search |
-recent | open | grow | neglected | install | serve | hook.
+recall | recent | open | grow | neglected | install | serve | hook.
 
 v0 (see SEED.md §7) implements capture + query for real. status/config/
 search/recent/open are OPERATIONS.md §6 step 2 — pure CLI surface on data
@@ -163,6 +163,59 @@ def cmd_search(args: argparse.Namespace) -> int:
     print(f"brainny: {len(hits)} match(es) for '{args.term}'")
     for n in hits:
         print(f"  [{n.kind}] {n.title} ({n.id}) - {n.domain}")
+    return 0
+
+
+def cmd_recall(args: argparse.Namespace) -> int:
+    """Cross-project recall (OPERATIONS.md step 11): search this project's
+    ideas AND every other project synced into the configured central
+    folder, so a precaution learned in project A can actually surface
+    when starting similar work in project B — the "recall" half of
+    SEED.md's design that pure capture (search/catch/catch-this) doesn't
+    provide on its own. Local-only if no central folder is set up.
+    """
+    out_dir = Path(args.out_dir)
+    terms = [t.lower() for t in args.terms]
+
+    def matches(n) -> bool:
+        haystacks = [n.title, n.summary, n.detail or "", n.domain, n.kind, n.state, *n.tags]
+        return any(term in h.lower() for term in terms for h in haystacks)
+
+    results: list[tuple[str, object]] = []
+    local_graph = load_graph(out_dir)
+    for n in local_graph.nodes:
+        if matches(n):
+            results.append(("this project", n))
+
+    central = config.get_value("central-folder")
+    searched_central = False
+    if central:
+        central_path = Path(central)
+        if central_path.is_dir():
+            searched_central = True
+            local_project = _infer_project_name(local_graph)
+            for sub in sorted(p for p in central_path.iterdir() if p.is_dir()):
+                if local_project and sub.name == local_project:
+                    continue  # already covered by the local graph above
+                for n in load_graph(sub).nodes:
+                    if matches(n):
+                        results.append((sub.name, n))
+
+    query = " ".join(args.terms)
+    if not results:
+        print(f"brainny: no matches for '{query}'")
+        if not central:
+            print("  (no central folder configured - only this project was searched; see `brainny config set-central <path>`)")
+        elif not searched_central:
+            print(f"  (central folder {central} doesn't exist yet - only this project was searched)")
+        return 0
+
+    scope = "this project + central" if searched_central else "this project only"
+    print(f"brainny: {len(results)} match(es) for '{query}' ({scope})")
+    for source, n in results:
+        print(f"  [{n.kind}] {n.title} ({source}) - {n.domain}")
+        if n.trigger:
+            print(f"      trigger: {n.trigger}")
     return 0
 
 
@@ -340,6 +393,12 @@ def build_parser() -> argparse.ArgumentParser:
     p_search = sub.add_parser("search", help="find ideas by keyword/tag/kind/domain")
     p_search.add_argument("term")
     p_search.set_defaults(func=cmd_search)
+
+    p_recall = sub.add_parser(
+        "recall", help="search this project AND every other project in the central folder"
+    )
+    p_recall.add_argument("terms", nargs="+", help="one or more keywords (matched OR-wise)")
+    p_recall.set_defaults(func=cmd_recall)
 
     p_recent = sub.add_parser("recent", help="ideas captured in the last N days")
     p_recent.add_argument("--days", type=int, default=7)

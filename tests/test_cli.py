@@ -147,6 +147,53 @@ def test_search_no_match(tmp_path, capsys):
     assert "no matches" in capsys.readouterr().out
 
 
+def test_recall_without_central_searches_local_only(tmp_path, capsys, isolated_config):
+    out_dir = tmp_path / "out"
+    capture(FIXTURES / "sample_entries.json", project="myproj", session="s1", out_dir=out_dir)
+
+    assert main(["--out-dir", str(out_dir), "recall", "dedup"]) == 0
+    out = capsys.readouterr().out
+    assert "this project only" in out
+    assert "Never let a similarity threshold" in out
+    assert "no central folder configured" in out.lower() or "1 match" in out
+
+
+def test_recall_searches_this_project_and_central_projects(tmp_path, capsys, isolated_config):
+    out_dir = tmp_path / "out"
+    capture(FIXTURES / "sample_entries.json", project="myproj", session="s1", out_dir=out_dir)
+
+    central = tmp_path / "central"
+    main(["config", "set-central", str(central)])
+    capsys.readouterr()
+    assert main(["--out-dir", str(out_dir), "sync"]) == 0
+    capsys.readouterr()
+
+    other_out = tmp_path / "other-out"
+    capture(FIXTURES / "sample_entries.json", project="otherproj", session="s1", out_dir=other_out)
+    assert main(["--out-dir", str(other_out), "config", "set-central", str(central)]) == 0
+    capsys.readouterr()
+    assert main(["--out-dir", str(other_out), "sync"]) == 0
+    capsys.readouterr()
+
+    code = main(["--out-dir", str(out_dir), "recall", "dedup"])
+    assert code == 0
+    out = capsys.readouterr().out
+    assert "this project + central" in out
+    assert "(this project)" in out
+    assert "(otherproj)" in out
+    assert out.count("Never let a similarity threshold") == 2
+
+
+def test_recall_no_matches_anywhere(tmp_path, capsys, isolated_config):
+    out_dir = tmp_path / "out"
+    capture(FIXTURES / "sample_entries.json", project="myproj", session="s1", out_dir=out_dir)
+    main(["config", "set-central", str(tmp_path / "central")])
+    capsys.readouterr()
+
+    assert main(["--out-dir", str(out_dir), "recall", "zzz-nope"]) == 0
+    assert "no matches" in capsys.readouterr().out
+
+
 def test_recent_respects_day_window(tmp_path, capsys):
     out_dir = tmp_path / "out"
     capture(FIXTURES / "sample_entries.json", project="p", session="s1", out_dir=out_dir)
