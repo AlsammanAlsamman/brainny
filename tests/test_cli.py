@@ -928,3 +928,105 @@ def test_central_flags_ideas_whose_provenance_disagrees_with_their_folder(tmp_pa
     assert code == 0
     out = capsys.readouterr().out
     assert "brainny/idea_0001 says its project is 'other-project'" in out
+
+
+# ---- step 20: `brainny reassign` -- fix the exact mistake `central`'s
+# mismatch check flags ----
+
+
+def test_reassign_rejects_unknown_idea_id(tmp_path, capsys):
+    out_dir = tmp_path / "out"
+    capture(FIXTURES / "sample_entries.json", project="myproj", session="s1", out_dir=out_dir)
+    main(["config", "set-central", str(tmp_path / "central")])
+    capsys.readouterr()
+
+    code = main(["--out-dir", str(out_dir), "reassign", "idea_9999", "--to", "other"])
+    assert code == 1
+    assert "no idea(s) idea_9999" in capsys.readouterr().err
+
+
+def test_reassign_requires_central_configured(tmp_path, capsys):
+    out_dir = tmp_path / "out"
+    capture(FIXTURES / "sample_entries.json", project="myproj", session="s1", out_dir=out_dir)
+
+    code = main(["--out-dir", str(out_dir), "reassign", "idea_0001", "--to", "other"])
+    assert code == 1
+    assert "no central folder configured" in capsys.readouterr().err
+
+
+def test_reassign_moves_idea_out_of_local_and_into_target_central(tmp_path, capsys):
+    out_dir = tmp_path / "out"
+    capture(FIXTURES / "sample_entries.json", project="myproj", session="s1", out_dir=out_dir)
+    central = tmp_path / "central"
+    main(["config", "set-central", str(central)])
+    main(["--out-dir", str(out_dir), "sync"])
+    capsys.readouterr()
+
+    code = main(["--out-dir", str(out_dir), "reassign", "idea_0001", "--to", "other-project", "--session", "s2"])
+    assert code == 0
+    out = capsys.readouterr().out
+    assert "reassigned 1 idea(s) from 'myproj' to 'other-project'" in out
+
+    from brainny.graph import load_graph
+
+    local = load_graph(out_dir)
+    assert "idea_0001" not in {n.id for n in local.nodes}
+
+    source_central = load_graph(central / "myproj")
+    assert "idea_0001" not in {n.id for n in source_central.nodes}
+
+    target = load_graph(central / "other-project")
+    assert len(target.nodes) == 1
+    moved = target.nodes[0]
+    assert moved.id == "idea_0001"  # renumbered into the (empty) target's own sequence
+    assert moved.provenance[0].project == "other-project"
+    assert moved.growth_log[-1].event == "reassigned"
+
+
+def test_reassign_renumbers_to_avoid_id_collision_in_target(tmp_path, capsys):
+    out_dir = tmp_path / "out"
+    capture(FIXTURES / "sample_entries.json", project="myproj", session="s1", out_dir=out_dir)
+    central = tmp_path / "central"
+    main(["config", "set-central", str(central)])
+    capsys.readouterr()
+
+    # target already has its own idea_0001
+    target_dir = tmp_path / "other-out"
+    capture(FIXTURES / "sample_entries.json", project="other-project", session="s1", out_dir=target_dir)
+    main(["--out-dir", str(target_dir), "sync"])
+    capsys.readouterr()
+
+    code = main(["--out-dir", str(out_dir), "reassign", "idea_0001", "--to", "other-project"])
+    assert code == 0
+
+    from brainny.graph import load_graph
+
+    target = load_graph(central / "other-project")
+    ids = [n.id for n in target.nodes]
+    assert len(ids) == len(set(ids))  # no collision
+    assert len(target.nodes) == 3  # 2 original + 1 moved in
+
+
+def test_reassign_moves_attachments_too(tmp_path, capsys):
+    out_dir = tmp_path / "out"
+    capture(FIXTURES / "sample_entries.json", project="myproj", session="s1", out_dir=out_dir)
+    central = tmp_path / "central"
+    main(["config", "set-central", str(central)])
+    capsys.readouterr()
+
+    src = tmp_path / "script.py"
+    src.write_text("# code")
+    main(["--out-dir", str(out_dir), "attach", "idea_0001", str(src), "--type", "code"])
+    capsys.readouterr()
+
+    main(["--out-dir", str(out_dir), "reassign", "idea_0001", "--to", "other-project"])
+    capsys.readouterr()
+
+    assert not (out_dir / "attachments" / "idea_0001").exists()
+
+    from brainny.graph import load_graph
+
+    target = load_graph(central / "other-project")
+    moved = target.nodes[0]
+    assert len(moved.attachments) == 1
+    assert (central / "other-project" / "attachments" / moved.id / "script.py").exists()

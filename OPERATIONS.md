@@ -729,5 +729,40 @@ permission-gated local check — see above.
       their own filterable group even though they were never synced as
       their own folder), item list correctly grouped project-then-domain.
 
+20. `brainny reassign` — fixing what `central`'s mismatch check finds. ✅
+    - Direct follow-on to step 19: flagging a misattributed idea is only
+      half the job if there's no way to actually fix it short of
+      hand-editing `graph.json`. New CLI command `brainny reassign
+      <idea-id...> --to <project>`: removes the given idea(s) from the
+      *current directory's* local graph (and that project's central
+      mirror, if synced), and adds them into the target project's central
+      copy — renumbered via `graph.py`'s existing `next_id()` to avoid
+      colliding with ids already there (ids are only unique within one
+      project's own file), with `provenance` rewritten to the target
+      project and a `growth_log` entry recording the move (source
+      project/id, so the history stays auditable, not silently rewritten).
+      Moves any attachment files along with the node.
+    - Deliberately can only write the target's *central* copy, never its
+      local `brainny-out/` — this command has no way to know where that
+      project's real working directory lives on disk, and never invents
+      one. Consistent with the asymmetric-sync rule (SEED.md §1.7):
+      central already never writes back into a project's local copy, so
+      this doesn't need special-casing to respect that.
+    - 6 new tests (unknown id rejected, no central configured rejected,
+      moves out of local + source central into target central with
+      renumbering + provenance/growth_log rewritten, renumbering actually
+      avoids an id collision when the target already has its own
+      `idea_0001`, attachments move too) — 106 tests total.
+    - Dogfooded on the exact real bug step 19 found: ran `brainny reassign
+      idea_0004 idea_0005 idea_0006 idea_0007 idea_0008 --to
+      hispanic-yuc-sle-gwas` for real from this repo's own directory.
+      Verified for real afterward: `brainny central` no longer reports any
+      mismatch, `brainny status` shows this repo down to 19 ideas (from
+      24), the target's central copy now correctly holds 9, and the
+      merged dashboard screenshot shows the project dropdown correctly
+      back down to 2 projects (the phantom third, `sle-hispanic-gwas`,
+      is gone) with the 5 moved ideas now clustered under
+      `hispanic-yuc-sle-gwas`'s own `GWAS` branch.
+
 Each step should land, get tested, and get dogfooded (per SEED.md §6
 Layer 7) before the next starts — same discipline as the v0 build.

@@ -1,6 +1,6 @@
 """brainny CLI — entry: capture | attach | query | status | config |
-search | recall | recent | open | central | grow | neglected | install |
-serve | hook.
+search | recall | recent | open | central | reassign | grow | neglected |
+install | serve | hook.
 
 v0 (see SEED.md §7) implements capture + query for real. status/config/
 search/recent/open are OPERATIONS.md §6 step 2 — pure CLI surface on data
@@ -25,8 +25,8 @@ from brainny import config
 from brainny._version import get_version
 from brainny.banner import render_banner
 from brainny.capture import capture as do_capture
-from brainny.graph import DEFAULT_OUT_DIR, graph_path, html_path, load_graph, save_graph
-from brainny.schema import Attachment, Graph, GrowthLogEntry, now_iso
+from brainny.graph import DEFAULT_OUT_DIR, graph_path, html_path, load_graph, next_id, save_graph
+from brainny.schema import Attachment, Graph, GrowthLogEntry, ProvenanceEntry, now_iso
 from brainny.viz import render_tree, save_html
 
 ATTACHMENTS_DIRNAME = "attachments"
@@ -451,6 +451,93 @@ def cmd_central(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_reassign(args: argparse.Namespace) -> int:
+    """Fix the exact mistake `brainny central`'s mismatch check flags:
+    idea(s) that ended up in the wrong project's graph.json because
+    `brainny capture` was run from the wrong working directory at some
+    point. Moves node(s) OUT of the current directory's local graph (and
+    its central mirror, if synced) and INTO the target project's central
+    copy, renumbering ids to that project's own sequence (ids are only
+    unique within one project's file -- see central.py) and rewriting
+    provenance/growth_log so the move is auditable, not silent. Can only
+    write the target's CENTRAL copy, not its own local brainny-out/ --
+    this command has no way to know where that project's actual working
+    directory lives on disk, and never invents one. A future `brainny
+    sync` run from inside that project won't remove them either --
+    central never overwrites a project's local copy (SEED.md §1.7)."""
+    out_dir = Path(args.out_dir)
+    graph = load_graph(out_dir)
+    ids = list(dict.fromkeys(args.idea_ids))  # de-dup, keep order
+    to_move = [n for n in graph.nodes if n.id in ids]
+    found_ids = {n.id for n in to_move}
+    missing = [i for i in ids if i not in found_ids]
+    if missing:
+        print(f"brainny: no idea(s) {', '.join(missing)} in {graph_path(out_dir)}", file=sys.stderr)
+        return 1
+
+    central = config.get_value("central-folder")
+    if not central:
+        print("brainny: no central folder configured - run `brainny config set-central <path>` first.", file=sys.stderr)
+        return 1
+    central_root = Path(central)
+
+    source_project = _infer_project_name(graph)
+
+    # remove from local
+    graph.nodes = [n for n in graph.nodes if n.id not in ids]
+    save_graph(graph, out_dir)
+    save_html(graph, out_dir)
+
+    # remove from the source project's central mirror too, if it was ever synced
+    if source_project:
+        source_central = central_root / source_project
+        if graph_path(source_central).exists():
+            source_central_graph = load_graph(source_central)
+            source_central_graph.nodes = [n for n in source_central_graph.nodes if n.id not in ids]
+            save_graph(source_central_graph, source_central)
+            save_html(source_central_graph, source_central)
+
+    # add to the target project's central copy, renumbered + re-attributed
+    target_out = central_root / args.to
+    target_graph = load_graph(target_out)
+    ts = now_iso()
+    moved: list[tuple[str, str]] = []
+    for node in to_move:
+        old_id = node.id
+        new_id = next_id(target_graph)
+        note = f"reassigned from '{source_project or 'unknown'}'/{old_id} (was misattributed there)"
+        updated = node.model_copy(
+            update={
+                "id": new_id,
+                "provenance": [ProvenanceEntry(project=args.to, session=p.session, ts=p.ts) for p in node.provenance]
+                or [ProvenanceEntry(project=args.to, session=args.session or "unknown")],
+                "growth_log": [*node.growth_log, GrowthLogEntry(session=args.session or "unknown", ts=ts, event="reassigned", note=note)],
+                "last_touched": ts,
+            }
+        )
+        target_graph.nodes.append(updated)
+        moved.append((old_id, new_id))
+
+        old_attachments = out_dir / ATTACHMENTS_DIRNAME / old_id
+        if old_attachments.is_dir():
+            new_attachments = target_out / ATTACHMENTS_DIRNAME / new_id
+            new_attachments.mkdir(parents=True, exist_ok=True)
+            shutil.copytree(old_attachments, new_attachments, dirs_exist_ok=True)
+            shutil.rmtree(old_attachments)
+
+    save_graph(target_graph, target_out)
+    save_html(target_graph, target_out)
+
+    print(f"brainny: reassigned {len(moved)} idea(s) from '{source_project or 'unknown'}' to '{args.to}':")
+    for old_id, new_id in moved:
+        print(f"  {old_id} -> {target_out} / {new_id}")
+    print(
+        f"brainny: note - only {target_out} (the central copy) was updated. "
+        f"The '{args.to}' project's own local brainny-out/ is unaffected; its next `brainny sync` won't touch this."
+    )
+    return 0
+
+
 def _run_git(args: list[str], cwd: Path) -> subprocess.CompletedProcess:
     return subprocess.run(["git", *args], cwd=cwd, capture_output=True, text=True)
 
@@ -644,6 +731,14 @@ def build_parser() -> argparse.ArgumentParser:
     p_central.add_argument("--html", action="store_true", help="write the merged dashboard to <central-folder>/graph.html")
     p_central.add_argument("--open", action="store_true", help="also open it in the default browser (implies --html)")
     p_central.set_defaults(func=cmd_central)
+
+    p_reassign = sub.add_parser(
+        "reassign", help="move idea(s) out of this project's graph and into another project's central copy"
+    )
+    p_reassign.add_argument("idea_ids", nargs="+", help="idea id(s) to move, e.g. idea_0004")
+    p_reassign.add_argument("--to", required=True, help="the project these ideas actually belong to")
+    p_reassign.add_argument("--session", help="session id for the growth-log entry (default: unknown)")
+    p_reassign.set_defaults(func=cmd_reassign)
 
     for name in NOT_YET:
         p = sub.add_parser(name, help=f"(not yet implemented - {NOT_YET[name]})")

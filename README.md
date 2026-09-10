@@ -274,11 +274,25 @@ flags any idea whose own provenance names a different project than the
 folder it's sitting in — a real, if uncommon, sign that `brainny capture`
 got run from the wrong directory at some point.
 
+Found one of those? Fix it:
+
+```bash
+brainny reassign idea_0004 idea_0005 --to the-right-project
+```
+
+Moves the given idea(s) out of the current directory's local graph (and
+its own central mirror) and into the target project's central copy,
+renumbered to avoid colliding with ids already there. Only the target's
+*central* copy gets written — there's no way to know where that
+project's actual working directory lives on disk, so its own local
+`brainny-out/` is left alone (and stays that way; central never writes
+back into a project's local copy, per the asymmetric sync rule above).
+
 ---
 
 ## Status
 
-**v0 · seed** — the core loop above is real and tested (101 tests).
+**v0 · seed** — the core loop above is real and tested (106 tests).
 Capture *and* proactive recall (`brainny recall` + the `brainny-recall`
 skill) both work today. Not yet built: automatic dedup/novelty scoring so
 `recurrence`/`state` truly evolve over time, decay for neglected ideas,
@@ -295,7 +309,7 @@ for the full build order and `SEED.md` for the complete design rationale
 brainny/                 the CLI + engine (Python, assistant-agnostic)
 skills/brainny/          the capture skills (assistant-facing prompts)
 prompts/                 entry + project-nature templates
-tests/                   101 tests, see SEED.md §6 for the testing philosophy
+tests/                   106 tests, see SEED.md §6 for the testing philosophy
 brainny-out/             where captures land when you use brainny *on*
                          this repo (gitignored — same as in any project;
                          not shipped, this is per-user local data)
