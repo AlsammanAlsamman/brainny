@@ -19,16 +19,15 @@
 > and watch what you know actually compound, session after session.**
 
 <p align="center">
-  <img src="assets/screenshot-dashboard.png" alt="brAInny dashboard: force-directed network of captured ideas with a colored halo per domain cluster, plus an itemized list alongside" width="100%">
+  <img src="assets/flowchart.jpg" alt="brAInny flow: an AI session generates an idea, brAInny catches it, saves it locally, syncs it to your private GitHub repo, and a future AI session recalls it automatically" width="100%">
 </p>
 
-<p align="center"><sub>Graph tab — force network with cluster halos.</sub></p>
-
-<p align="center">
-  <img src="assets/screenshot-stats.png" alt="brAInny dashboard Stats tab: domain treemap, per-cluster activity table, kind breakdown, and newest ideas" width="100%">
-</p>
-
-<p align="center"><sub>Stats tab — domain treemap, growth trends, kind breakdown. Both from <code>brainny query --html</code>, on this project's own real, dogfooded ideas.</sub></p>
+**[What it does](#the-problem-this-solves) ·
+[How it works](#how-it-works-in-one-picture) ·
+[Install](#install) ·
+[Use it](#use-it) ·
+[Status](#status) ·
+[Layout](#layout)**
 
 ---
 
@@ -62,6 +61,8 @@ whether you write code, contracts, prose, or research.
 
 ## How it works, in one picture
 
+The diagram above is the pitch; this is the literal mechanics:
+
 ```
 [ your AI session ]
         │  a lightweight skill watches for reusable moments and emits them
@@ -84,6 +85,18 @@ just markdown instructions plus shell commands. The ones built and tested
 so far target Claude Code, but nothing about the design is Claude-only:
 any assistant that can read an instruction file and run a shell command
 can drive brainny the same way.
+
+<p align="center">
+  <img src="assets/screenshot-dashboard.png" alt="brAInny dashboard: force-directed network of captured ideas with a colored halo per domain cluster, plus an itemized list alongside" width="100%">
+</p>
+
+<p align="center"><sub>Graph tab — force network with cluster halos.</sub></p>
+
+<p align="center">
+  <img src="assets/screenshot-stats.png" alt="brAInny dashboard Stats tab: domain treemap, per-cluster activity table, kind breakdown, and newest ideas" width="100%">
+</p>
+
+<p align="center"><sub>Stats tab — domain treemap, growth trends, kind breakdown. Both from <code>brainny query --html</code>, on this project's own real, dogfooded ideas.</sub></p>
 
 ---
 
@@ -201,8 +214,7 @@ skill) both work today. Not yet built: automatic dedup/novelty scoring so
 and an MCP server for tighter, tool-level AI access (recall today goes
 through the CLI via a skill, not a direct protocol). See `OPERATIONS.md`
 for the full build order and `SEED.md` for the complete design rationale
-— both are as honest about
-what's *not* built yet as what is.
+— both are as honest about what's *not* built yet as what is.
 
 ---
 
@@ -224,6 +236,8 @@ OPERATIONS.md            how it actually runs day to day
 Read `SEED.md` for the constitution, architecture, and entry schema.
 Read `OPERATIONS.md` for the command surface, ambient capture, and the
 central/GitHub sync model in full.
+
+---
 
 ## Contributors
 
