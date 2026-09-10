@@ -228,6 +228,62 @@ def test_open_launches_browser(tmp_path, capsys, monkeypatch):
     assert "opened" in capsys.readouterr().out
 
 
+def test_open_central_fails_cleanly_when_not_configured(tmp_path, capsys, isolated_config):
+    code = main(["--out-dir", str(tmp_path / "out"), "open", "--central"])
+    assert code == 1
+    assert "no central folder configured" in capsys.readouterr().err
+
+
+def test_open_central_fails_cleanly_when_project_has_no_central_copy(tmp_path, capsys, isolated_config):
+    out_dir = tmp_path / "out"
+    capture(FIXTURES / "sample_entries.json", project="myproj", session="s1", out_dir=out_dir)
+    main(["config", "set-central", str(tmp_path / "central")])
+    capsys.readouterr()
+
+    code = main(["--out-dir", str(out_dir), "open", "--central"])
+    assert code == 1
+    err = capsys.readouterr().err
+    assert "doesn't exist yet" in err
+    assert "brainny sync" in err
+
+
+def test_open_central_launches_browser_for_inferred_project(tmp_path, capsys, isolated_config, monkeypatch):
+    out_dir = tmp_path / "out"
+    capture(FIXTURES / "sample_entries.json", project="myproj", session="s1", out_dir=out_dir)
+    central = tmp_path / "central"
+    main(["config", "set-central", str(central)])
+    capsys.readouterr()
+    assert main(["--out-dir", str(out_dir), "sync"]) == 0
+    capsys.readouterr()
+
+    opened = {}
+    monkeypatch.setattr("webbrowser.open", lambda url: opened.setdefault("url", url))
+
+    code = main(["--out-dir", str(out_dir), "open", "--central"])
+    assert code == 0
+    assert opened["url"].startswith("file:")
+    out = capsys.readouterr().out
+    assert "myproj" in out
+
+
+def test_open_central_with_explicit_project_flag(tmp_path, capsys, isolated_config, monkeypatch):
+    central = tmp_path / "central"
+    other_out = tmp_path / "other-out"
+    capture(FIXTURES / "sample_entries.json", project="otherproj", session="s1", out_dir=other_out)
+    main(["--out-dir", str(other_out), "config", "set-central", str(central)])
+    capsys.readouterr()
+    assert main(["--out-dir", str(other_out), "sync"]) == 0
+    capsys.readouterr()
+
+    opened = {}
+    monkeypatch.setattr("webbrowser.open", lambda url: opened.setdefault("url", url))
+
+    # run from an unrelated (empty) local out-dir but name the project explicitly
+    code = main(["--out-dir", str(tmp_path / "empty-out"), "open", "--central", "--project", "otherproj"])
+    assert code == 0
+    assert "otherproj" in opened["url"]
+
+
 # ---- step 4: config set-central / sync ----
 
 

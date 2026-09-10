@@ -396,5 +396,25 @@ permission-gated local check — see above.
       message — same caveat as every other ambient skill here, since this
       session's CLAUDE.md was already loaded before the edit landed.
 
+12. `brainny open --central`. ✅
+    - Real gap, found by a real user hitting it: `brainny open` only ever
+      looked at `./brainny-out/graph.html` in the current directory, with
+      no path to the central folder at all — even with one fully
+      configured, there was no way to open it short of navigating to
+      `<central>/<project>/graph.html` by hand.
+    - `brainny open --central` opens `<central-folder>/<project>/
+      graph.html` instead, where `<project>` defaults to the current
+      directory's inferred project name, or an explicit `--project <name>`
+      (works from *anywhere*, including a directory with no local
+      `brainny-out/` at all — e.g. straight from the home directory).
+      Clear, distinct errors for each failure mode: no central folder
+      configured, no project name inferable, or that project never
+      synced yet (points at `brainny sync`).
+    - 4 new tests (not configured, no central copy yet, inferred project,
+      explicit `--project`) — 64 tests total. Verified for real too, from
+      both the project directory and cold from the home directory
+      (`C:\Users\...>` with no local graph at all), matching exactly the
+      scenario that surfaced the gap.
+
 Each step should land, get tested, and get dogfooded (per SEED.md §6
 Layer 7) before the next starts — same discipline as the v0 build.

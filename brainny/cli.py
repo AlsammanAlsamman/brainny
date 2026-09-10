@@ -236,6 +236,31 @@ def cmd_recent(args: argparse.Namespace) -> int:
 
 def cmd_open(args: argparse.Namespace) -> int:
     out_dir = Path(args.out_dir)
+
+    if args.central:
+        central = config.get_value("central-folder")
+        if not central:
+            print("brainny: no central folder configured - run `brainny config set-central <path>` first.", file=sys.stderr)
+            return 1
+        project = args.project or _infer_project_name(load_graph(out_dir))
+        if not project:
+            print(
+                "brainny: couldn't infer a project name from the local graph - pass one explicitly: "
+                "`brainny open --central --project <name>`.",
+                file=sys.stderr,
+            )
+            return 1
+        path = html_path(Path(central) / project)
+        if not path.exists():
+            print(
+                f"brainny: {path} doesn't exist yet - run `brainny sync` from the '{project}' project first.",
+                file=sys.stderr,
+            )
+            return 1
+        webbrowser.open(path.resolve().as_uri())
+        print(f"brainny: opened {path} (central copy of '{project}')")
+        return 0
+
     path = html_path(out_dir)
     if not path.exists():
         print(f"brainny: {path} doesn't exist yet - run `brainny query --html` first.", file=sys.stderr)
@@ -405,6 +430,13 @@ def build_parser() -> argparse.ArgumentParser:
     p_recent.set_defaults(func=cmd_recent)
 
     p_open = sub.add_parser("open", help="open graph.html in the default browser")
+    p_open.add_argument(
+        "--central", action="store_true",
+        help="open the configured central folder's copy instead of the local one",
+    )
+    p_open.add_argument(
+        "--project", help="which project's central copy to open with --central (default: inferred from the local graph)"
+    )
     p_open.set_defaults(func=cmd_open)
 
     for name in NOT_YET:

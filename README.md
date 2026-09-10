@@ -137,6 +137,8 @@ brainny query --html          # a browsable dashboard: brainny-out/graph.html
                                 #   Graph tab: radial tree / force network, click-to-inspect
                                 #   Stats tab: domain treemap, growth trends, kind breakdown
 brainny open                  # open that dashboard in your browser
+brainny open --central          # ...or the central folder's copy of this project instead
+brainny open --central --project X  # ...or an explicit project's central copy, from anywhere
 brainny search "docker"        # find anything by keyword, tag, domain, kind
 brainny recall retry api client  # search THIS project + every project in your central folder
 brainny recent --days 7          # what you've captured lately
