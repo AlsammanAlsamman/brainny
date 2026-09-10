@@ -216,6 +216,9 @@ Read `SEED.md` for the constitution, architecture, and entry schema.
 Read `OPERATIONS.md` for the command surface, ambient capture, and the
 central/GitHub sync model in full.
 
-## 👥 Contributors
-- **Alsamman** - Alsamman-Alsamman@omrf.org
-- **Adeel**  - Muhammad-Adeel@omrf.org/ m.muzammal.adeel@outlook.com
+## Contributors
+
+| Name | Contact |
+|---|---|
+| Samman Mahmoud | [aalsamman100@gmail.com](mailto:aalsamman100@gmail.com) |
+| M. M. Adeel | [m.muzammal.adeel@outlook.com](mailto:m.muzammal.adeel@outlook.com) |
