@@ -4,44 +4,89 @@
       "title": "Data pipeline reliability toolkit",
       "kind": "tool",
       "weight": 0.78,
-      "summary": "Package the retry-with-backoff pattern, idempotency-key discipline, and safe API-key rotation into one reusable reliability layer for data pipelines.",
+      "summary": "Package retry-with-backoff, idempotency-key discipline, and schema-drift contract checks into one reusable reliability layer for data pipelines.",
       "idea_ids": [
-        "idea_0004",
         "idea_0005",
-        "idea_0013"
+        "idea_0006",
+        "idea_0009"
       ],
-      "rationale": "All three showed up solving the same underlying problem -- failures and retries in long-running pipelines -- from three different angles.",
+      "rationale": "All three solve the same underlying problem -- failures and drift in long-running pipelines -- from different angles.",
       "id": "opp_0001",
-      "created": "2026-09-10T22:10:04+00:00",
+      "created": "2026-09-10T22:24:58+00:00",
       "session": "example-build"
     },
     {
       "title": "Bioinformatics plotting library with sane defaults",
       "kind": "tool",
       "weight": 0.66,
-      "summary": "A small plotting package that bakes in the Manhattan-plot layout and a color-blind-safe palette as defaults, so neither has to be re-derived per project.",
+      "summary": "A small plotting package baking in the Manhattan-plot layout and a color-blind-safe palette as defaults.",
       "idea_ids": [
-        "idea_0007",
-        "idea_0008"
+        "idea_0010",
+        "idea_0011",
+        "idea_0012"
       ],
       "rationale": "Both are visualization decisions that get re-solved from scratch on nearly every project that needs them.",
       "id": "opp_0002",
-      "created": "2026-09-10T22:10:04+00:00",
+      "created": "2026-09-10T22:24:58+00:00",
       "session": "example-build"
     },
     {
-      "title": "\"Don't ship this mistake\" checklist product",
+      "title": "\"Don't ship this mistake\" pre-launch checklist product",
       "kind": "business-idea",
       "weight": 0.42,
-      "summary": "A short, paid pre-launch checklist product (client-side-only validation, test-set leakage, hyperparameter tuning against the test set) aimed at small teams without a dedicated reviewer.",
+      "summary": "A short, paid pre-launch checklist (client-side-only validation, SQL injection in admin tools, test-set leakage) for small teams without a dedicated reviewer.",
       "idea_ids": [
         "idea_0002",
-        "idea_0009",
-        "idea_0010"
+        "idea_0014",
+        "idea_0026"
       ],
-      "rationale": "Speculative -- these precautions are real and recurring, but it's unclear anyone would pay for a checklist rather than just writing one down themselves.",
+      "rationale": "Speculative -- these precautions are real and recurring, but unclear anyone would pay for a checklist rather than writing one themselves.",
       "id": "opp_0003",
-      "created": "2026-09-10T22:10:04+00:00",
+      "created": "2026-09-10T22:24:58+00:00",
+      "session": "example-build"
+    },
+    {
+      "title": "Backend reliability lint rules",
+      "kind": "tool",
+      "weight": 0.71,
+      "summary": "Static-analysis rules catching N+1 query loops, unbounded connection pools, and health checks that depend on the thing they check -- before code review has to.",
+      "idea_ids": [
+        "idea_0035",
+        "idea_0034",
+        "idea_0022"
+      ],
+      "rationale": "All three are backend reliability mistakes with a recognizable code shape, which is exactly what a lint rule is good at catching.",
+      "id": "opp_0004",
+      "created": "2026-09-10T22:24:58+00:00",
+      "session": "example-build"
+    },
+    {
+      "title": "Mobile offline-resilience starter kit",
+      "kind": "tool",
+      "weight": 0.6,
+      "summary": "A starter module combining on-device response caching, battery-aware polling, and offline-first state handling for mobile apps.",
+      "idea_ids": [
+        "idea_0038",
+        "idea_0039",
+        "idea_0040"
+      ],
+      "rationale": "These three consistently show up together on mobile projects and are each easy to under-build in isolation.",
+      "id": "opp_0005",
+      "created": "2026-09-10T22:24:58+00:00",
+      "session": "example-build"
+    },
+    {
+      "title": "Performance-tail dashboard product",
+      "kind": "website",
+      "weight": 0.55,
+      "summary": "A hosted dashboard surfacing P99/GC-pause tail latency and profiler hotspots side by side, instead of the average-latency view most APM tools lead with.",
+      "idea_ids": [
+        "idea_0048",
+        "idea_0049"
+      ],
+      "rationale": "Both ideas point at the same blind spot -- tools that show averages hide exactly the tail behavior that actually hurts users.",
+      "id": "opp_0006",
+      "created": "2026-09-10T22:24:58+00:00",
       "session": "example-build"
     }
   ]

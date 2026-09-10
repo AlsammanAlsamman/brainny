@@ -126,8 +126,8 @@ can drive brainny the same way.
 
 <p align="center"><sub>Opportunities tab — AI-proposed combinations, sorted by confidence weight, linked back to the ideas each one draws from.</sub></p>
 
-All three screenshots are from the same fabricated example dataset (16
-ideas across 7 domains, every kind/origin, attachments, snippets, and 3
+All three screenshots are from the same fabricated example dataset (50
+ideas across 14 domains, every kind/origin, attachments, snippets, and 6
 proposed Opportunities) — built to show the full dashboard, not the
 maintainer's real ideas. **Want to click around it yourself, not just
 look at screenshots?**

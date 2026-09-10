@@ -903,5 +903,26 @@ permission-gated local check — see above.
       separately verified the merged central view (3 projects, opportunity
       correctly hidden/shown as the project filter changes).
 
+24. README screenshots -- refreshed twice: once for staleness, once for scale. ✅
+    - First pass: `assets/screenshot-dashboard.png`/`screenshot-stats.png`
+      hadn't been touched since the origin-filter commit, well before
+      Opportunities, badges, or anything else built since -- they no
+      longer matched the real dashboard. Replaced both from step 23's
+      example dataset (force-network view for the hero shot, more
+      visually compelling than the radial tree) and added a third,
+      `screenshot-opportunities.png`, which never existed before.
+    - Second pass, same day: a real user asked for the hero shot to show
+      "a complicated network with lots of ideas" -- 16 ideas across 7
+      domains looked too sparse for that. Expanded `examples/demo/` to 50
+      ideas across 14 domains and 6 opportunities (still entirely
+      fabricated, still built through the real CLI against a scratch
+      directory then copied in, same discipline as the original), and
+      re-shot all three screenshots against the denser dataset. The force-
+      network view in particular reads as a dense, colorful "flower" of
+      14 cluster halos now, instead of the original's sparser 7. Same
+      near-miss caught and cleaned up again: the larger demo capture also
+      auto-mirrored into the maintainer's real central folder before
+      being deleted.
+
 Each step should land, get tested, and get dogfooded (per SEED.md §6
 Layer 7) before the next starts — same discipline as the v0 build.

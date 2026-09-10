@@ -3,12 +3,11 @@
     {
       "kind": "technique",
       "title": "Debounce search-as-you-type inputs at ~300ms",
-      "summary": "Wait for a short pause in keystrokes before firing the search request, instead of one request per keystroke.",
+      "summary": "Wait for a short pause in keystrokes before firing the search request.",
       "detail": null,
       "domain": "web-app",
       "tags": [
-        "ux",
-        "performance"
+        "ux"
       ],
       "trigger": null,
       "origin": "human",
@@ -20,13 +19,13 @@
         {
           "project": "brainny-demo",
           "session": "example-build",
-          "ts": "2026-09-10T22:09:42+00:00"
+          "ts": "2026-09-10T22:24:23+00:00"
         }
       ],
       "growth_log": [
         {
           "session": "example-build",
-          "ts": "2026-09-10T22:09:42+00:00",
+          "ts": "2026-09-10T22:24:23+00:00",
           "event": "seeded",
           "note": "first captured"
         }
@@ -35,18 +34,18 @@
       "embedding": [],
       "novelty": null,
       "recurrence": 1,
-      "last_touched": "2026-09-10T22:09:42+00:00"
+      "last_touched": "2026-09-10T22:24:23+00:00"
     },
     {
       "kind": "precaution",
       "title": "Never trust client-side validation alone",
-      "summary": "Client-side checks are a UX convenience, not a security boundary -- always re-validate on the server.",
+      "summary": "Client-side checks are a UX convenience, not a security boundary.",
       "detail": null,
       "domain": "web-app",
       "tags": [
         "security"
       ],
-      "trigger": "before shipping a form that touches money, auth, or user-submitted content",
+      "trigger": "before shipping a form that touches money or auth",
       "origin": "ai",
       "attachments": [],
       "snippet": null,
@@ -56,13 +55,13 @@
         {
           "project": "brainny-demo",
           "session": "example-build",
-          "ts": "2026-09-10T22:09:42+00:00"
+          "ts": "2026-09-10T22:24:23+00:00"
         }
       ],
       "growth_log": [
         {
           "session": "example-build",
-          "ts": "2026-09-10T22:09:42+00:00",
+          "ts": "2026-09-10T22:24:23+00:00",
           "event": "seeded",
           "note": "first captured"
         }
@@ -71,17 +70,16 @@
       "embedding": [],
       "novelty": null,
       "recurrence": 1,
-      "last_touched": "2026-09-10T22:09:42+00:00"
+      "last_touched": "2026-09-10T22:24:23+00:00"
     },
     {
       "kind": "solution",
-      "title": "Fixed a CORS preflight failure by adding an explicit OPTIONS handler",
-      "summary": "The browser's preflight OPTIONS request was hitting a 404 because the route only handled GET/POST -- adding an explicit OPTIONS handler that returns the right CORS headers fixed it.",
+      "title": "Fixed a CORS preflight failure with an explicit OPTIONS handler",
+      "summary": "The route only handled GET/POST; preflight needs its own handler.",
       "detail": null,
       "domain": "web-app",
       "tags": [
-        "cors",
-        "api"
+        "cors"
       ],
       "trigger": null,
       "origin": "collaborative",
@@ -93,13 +91,13 @@
         {
           "project": "brainny-demo",
           "session": "example-build",
-          "ts": "2026-09-10T22:09:42+00:00"
+          "ts": "2026-09-10T22:24:23+00:00"
         }
       ],
       "growth_log": [
         {
           "session": "example-build",
-          "ts": "2026-09-10T22:09:42+00:00",
+          "ts": "2026-09-10T22:24:23+00:00",
           "event": "seeded",
           "note": "first captured"
         }
@@ -108,17 +106,52 @@
       "embedding": [],
       "novelty": null,
       "recurrence": 1,
-      "last_touched": "2026-09-10T22:09:42+00:00"
+      "last_touched": "2026-09-10T22:24:23+00:00"
+    },
+    {
+      "kind": "insight",
+      "title": "Optimistic UI updates need a rollback path",
+      "summary": "Showing success before the server confirms is fine, until the request fails and nothing reverts it.",
+      "detail": null,
+      "domain": "web-app",
+      "tags": [
+        "ux"
+      ],
+      "trigger": null,
+      "origin": "ai",
+      "attachments": [],
+      "snippet": null,
+      "id": "idea_0004",
+      "state": "seed",
+      "provenance": [
+        {
+          "project": "brainny-demo",
+          "session": "example-build",
+          "ts": "2026-09-10T22:24:23+00:00"
+        }
+      ],
+      "growth_log": [
+        {
+          "session": "example-build",
+          "ts": "2026-09-10T22:24:23+00:00",
+          "event": "seeded",
+          "note": "first captured"
+        }
+      ],
+      "edges": [],
+      "embedding": [],
+      "novelty": null,
+      "recurrence": 1,
+      "last_touched": "2026-09-10T22:24:23+00:00"
     },
     {
       "kind": "skill",
       "title": "ETL retry-with-backoff pattern",
-      "summary": "Wrap each pipeline stage in exponential backoff with jitter so a transient failure doesn't cascade into a full pipeline restart.",
+      "summary": "Wrap each pipeline stage in exponential backoff with jitter.",
       "detail": null,
       "domain": "data-pipeline",
       "tags": [
-        "etl",
-        "reliability"
+        "etl"
       ],
       "trigger": null,
       "origin": "human",
@@ -130,25 +163,25 @@
         }
       ],
       "snippet": "def with_backoff(fn, max_tries=5, base=0.5):\n    for attempt in range(max_tries):\n        try:\n            return fn()\n        except TransientError:\n            time.sleep(base * (2 ** attempt) + random.uniform(0, 0.3))\n    raise",
-      "id": "idea_0004",
+      "id": "idea_0005",
       "state": "seed",
       "provenance": [
         {
           "project": "brainny-demo",
           "session": "example-build",
-          "ts": "2026-09-10T22:09:42+00:00"
+          "ts": "2026-09-10T22:24:23+00:00"
         }
       ],
       "growth_log": [
         {
           "session": "example-build",
-          "ts": "2026-09-10T22:09:42+00:00",
+          "ts": "2026-09-10T22:24:23+00:00",
           "event": "seeded",
           "note": "first captured"
         },
         {
           "session": "example-build",
-          "ts": "2026-09-10T22:09:54+00:00",
+          "ts": "2026-09-10T22:24:36+00:00",
           "event": "attached",
           "note": "code: backoff.py"
         }
@@ -157,12 +190,12 @@
       "embedding": [],
       "novelty": null,
       "recurrence": 1,
-      "last_touched": "2026-09-10T22:09:54+00:00"
+      "last_touched": "2026-09-10T22:24:36+00:00"
     },
     {
       "kind": "precaution",
       "title": "Idempotency keys prevent duplicate processing on retry",
-      "summary": "A retried request without an idempotency key can double-charge, double-send, or double-write -- generate one per logical operation, not per HTTP call.",
+      "summary": "Generate one key per logical operation, not per HTTP call.",
       "detail": null,
       "domain": "data-pipeline",
       "tags": [
@@ -172,19 +205,19 @@
       "origin": "ai",
       "attachments": [],
       "snippet": null,
-      "id": "idea_0005",
+      "id": "idea_0006",
       "state": "seed",
       "provenance": [
         {
           "project": "brainny-demo",
           "session": "example-build",
-          "ts": "2026-09-10T22:09:42+00:00"
+          "ts": "2026-09-10T22:24:23+00:00"
         }
       ],
       "growth_log": [
         {
           "session": "example-build",
-          "ts": "2026-09-10T22:09:42+00:00",
+          "ts": "2026-09-10T22:24:23+00:00",
           "event": "seeded",
           "note": "first captured"
         }
@@ -193,12 +226,12 @@
       "embedding": [],
       "novelty": null,
       "recurrence": 1,
-      "last_touched": "2026-09-10T22:09:42+00:00"
+      "last_touched": "2026-09-10T22:24:23+00:00"
     },
     {
       "kind": "insight",
       "title": "Batch size trades latency for throughput, not for free",
-      "summary": "Bigger batches improve throughput but increase the latency of the first result in the batch -- the right size depends on which one the user actually feels.",
+      "summary": "Bigger batches improve throughput but delay the first result.",
       "detail": null,
       "domain": "data-pipeline",
       "tags": [
@@ -208,19 +241,19 @@
       "origin": "collaborative",
       "attachments": [],
       "snippet": null,
-      "id": "idea_0006",
+      "id": "idea_0007",
       "state": "seed",
       "provenance": [
         {
           "project": "brainny-demo",
           "session": "example-build",
-          "ts": "2026-09-10T22:09:42+00:00"
+          "ts": "2026-09-10T22:24:23+00:00"
         }
       ],
       "growth_log": [
         {
           "session": "example-build",
-          "ts": "2026-09-10T22:09:42+00:00",
+          "ts": "2026-09-10T22:24:23+00:00",
           "event": "seeded",
           "note": "first captured"
         }
@@ -229,17 +262,88 @@
       "embedding": [],
       "novelty": null,
       "recurrence": 1,
-      "last_touched": "2026-09-10T22:09:42+00:00"
+      "last_touched": "2026-09-10T22:24:23+00:00"
+    },
+    {
+      "kind": "seed",
+      "title": "Could retry-with-backoff apply to LLM API calls?",
+      "summary": "Rate limits and transient 5xxs look like the ETL retry problem.",
+      "detail": null,
+      "domain": "data-pipeline",
+      "tags": [
+        "llm"
+      ],
+      "trigger": null,
+      "origin": "ai",
+      "attachments": [],
+      "snippet": null,
+      "id": "idea_0008",
+      "state": "seed",
+      "provenance": [
+        {
+          "project": "brainny-demo",
+          "session": "example-build",
+          "ts": "2026-09-10T22:24:23+00:00"
+        }
+      ],
+      "growth_log": [
+        {
+          "session": "example-build",
+          "ts": "2026-09-10T22:24:23+00:00",
+          "event": "seeded",
+          "note": "first captured"
+        }
+      ],
+      "edges": [],
+      "embedding": [],
+      "novelty": null,
+      "recurrence": 1,
+      "last_touched": "2026-09-10T22:24:23+00:00"
+    },
+    {
+      "kind": "precaution",
+      "title": "Schema drift breaks silently without a contract check",
+      "summary": "A producer changing a field type doesn't fail loudly downstream -- it just corrupts quietly.",
+      "detail": null,
+      "domain": "data-pipeline",
+      "tags": [
+        "schema"
+      ],
+      "trigger": null,
+      "origin": "human",
+      "attachments": [],
+      "snippet": null,
+      "id": "idea_0009",
+      "state": "seed",
+      "provenance": [
+        {
+          "project": "brainny-demo",
+          "session": "example-build",
+          "ts": "2026-09-10T22:24:23+00:00"
+        }
+      ],
+      "growth_log": [
+        {
+          "session": "example-build",
+          "ts": "2026-09-10T22:24:23+00:00",
+          "event": "seeded",
+          "note": "first captured"
+        }
+      ],
+      "edges": [],
+      "embedding": [],
+      "novelty": null,
+      "recurrence": 1,
+      "last_touched": "2026-09-10T22:24:23+00:00"
     },
     {
       "kind": "skill",
       "title": "Manhattan-plot-style genome browser plot",
-      "summary": "How to lay out a genome-wide scatter plot: chromosomes on the x-axis by cumulative position, -log10(p) on the y-axis, alternating colors per chromosome, significance line at the genome-wide threshold.",
+      "summary": "Chromosomes on x by cumulative position, -log10(p) on y, alternating colors, significance line.",
       "detail": null,
       "domain": "data-viz",
       "tags": [
-        "plotting",
-        "genomics"
+        "plotting"
       ],
       "trigger": null,
       "origin": "human",
@@ -256,31 +360,31 @@
         }
       ],
       "snippet": "ax.scatter(df.pos_cum, -np.log10(df.p), c=df.chrom % 2, s=4)\nax.axhline(-np.log10(5e-8), color=\"red\", ls=\"--\")",
-      "id": "idea_0007",
+      "id": "idea_0010",
       "state": "seed",
       "provenance": [
         {
           "project": "brainny-demo",
           "session": "example-build",
-          "ts": "2026-09-10T22:09:42+00:00"
+          "ts": "2026-09-10T22:24:23+00:00"
         }
       ],
       "growth_log": [
         {
           "session": "example-build",
-          "ts": "2026-09-10T22:09:42+00:00",
+          "ts": "2026-09-10T22:24:23+00:00",
           "event": "seeded",
           "note": "first captured"
         },
         {
           "session": "example-build",
-          "ts": "2026-09-10T22:09:54+00:00",
+          "ts": "2026-09-10T22:24:37+00:00",
           "event": "attached",
           "note": "table: manhattan_columns.csv"
         },
         {
           "session": "example-build",
-          "ts": "2026-09-10T22:09:54+00:00",
+          "ts": "2026-09-10T22:24:37+00:00",
           "event": "attached",
           "note": "plot: manhattan_example.png"
         }
@@ -289,126 +393,16 @@
       "embedding": [],
       "novelty": null,
       "recurrence": 1,
-      "last_touched": "2026-09-10T22:09:54+00:00"
+      "last_touched": "2026-09-10T22:24:37+00:00"
     },
     {
       "kind": "technique",
       "title": "Pick a color-blind-safe palette by default",
-      "summary": "Use a palette validated for deuteranopia/protanopia (e.g. Okabe-Ito) as the default, not an afterthought toggle.",
+      "summary": "Use a palette validated for deuteranopia/protanopia as the default.",
       "detail": null,
       "domain": "data-viz",
       "tags": [
-        "accessibility",
-        "color"
-      ],
-      "trigger": null,
-      "origin": "ai",
-      "attachments": [],
-      "snippet": null,
-      "id": "idea_0008",
-      "state": "seed",
-      "provenance": [
-        {
-          "project": "brainny-demo",
-          "session": "example-build",
-          "ts": "2026-09-10T22:09:42+00:00"
-        }
-      ],
-      "growth_log": [
-        {
-          "session": "example-build",
-          "ts": "2026-09-10T22:09:42+00:00",
-          "event": "seeded",
-          "note": "first captured"
-        }
-      ],
-      "edges": [],
-      "embedding": [],
-      "novelty": null,
-      "recurrence": 1,
-      "last_touched": "2026-09-10T22:09:42+00:00"
-    },
-    {
-      "kind": "insight",
-      "title": "Time-based train/test splits leak information that random splits hide",
-      "summary": "A random split can let future information leak backward into training in ways a chronological split exposes immediately -- always check both.",
-      "detail": null,
-      "domain": "ml",
-      "tags": [
-        "leakage",
-        "evaluation"
-      ],
-      "trigger": null,
-      "origin": "collaborative",
-      "attachments": [],
-      "snippet": null,
-      "id": "idea_0009",
-      "state": "seed",
-      "provenance": [
-        {
-          "project": "brainny-demo",
-          "session": "example-build",
-          "ts": "2026-09-10T22:09:42+00:00"
-        }
-      ],
-      "growth_log": [
-        {
-          "session": "example-build",
-          "ts": "2026-09-10T22:09:42+00:00",
-          "event": "seeded",
-          "note": "first captured"
-        }
-      ],
-      "edges": [],
-      "embedding": [],
-      "novelty": null,
-      "recurrence": 1,
-      "last_touched": "2026-09-10T22:09:42+00:00"
-    },
-    {
-      "kind": "precaution",
-      "title": "Never tune hyperparameters against the test set",
-      "summary": "Repeatedly checking test performance while tuning turns the test set into a second validation set -- keep a true holdout untouched until the very end.",
-      "detail": null,
-      "domain": "ml",
-      "tags": [
-        "overfitting"
-      ],
-      "trigger": "before finalizing any model for a report or deployment",
-      "origin": "human",
-      "attachments": [],
-      "snippet": null,
-      "id": "idea_0010",
-      "state": "seed",
-      "provenance": [
-        {
-          "project": "brainny-demo",
-          "session": "example-build",
-          "ts": "2026-09-10T22:09:42+00:00"
-        }
-      ],
-      "growth_log": [
-        {
-          "session": "example-build",
-          "ts": "2026-09-10T22:09:42+00:00",
-          "event": "seeded",
-          "note": "first captured"
-        }
-      ],
-      "edges": [],
-      "embedding": [],
-      "novelty": null,
-      "recurrence": 1,
-      "last_touched": "2026-09-10T22:09:42+00:00"
-    },
-    {
-      "kind": "seed",
-      "title": "Could the same retry-with-backoff pattern apply to LLM API calls?",
-      "summary": "Rate limits and transient 5xxs from LLM providers look a lot like the ETL retry problem -- worth exploring whether the same pattern transfers directly.",
-      "detail": null,
-      "domain": "data-pipeline",
-      "tags": [
-        "llm"
+        "accessibility"
       ],
       "trigger": null,
       "origin": "ai",
@@ -420,13 +414,13 @@
         {
           "project": "brainny-demo",
           "session": "example-build",
-          "ts": "2026-09-10T22:09:42+00:00"
+          "ts": "2026-09-10T22:24:23+00:00"
         }
       ],
       "growth_log": [
         {
           "session": "example-build",
-          "ts": "2026-09-10T22:09:42+00:00",
+          "ts": "2026-09-10T22:24:23+00:00",
           "event": "seeded",
           "note": "first captured"
         }
@@ -435,19 +429,19 @@
       "embedding": [],
       "novelty": null,
       "recurrence": 1,
-      "last_touched": "2026-09-10T22:09:42+00:00"
+      "last_touched": "2026-09-10T22:24:23+00:00"
     },
     {
       "kind": "insight",
-      "title": "Users pay more for saved time than for saved money",
-      "summary": "Pricing research kept showing the same pattern: a feature that saves an hour a week converts better than one that saves a comparable amount of money.",
+      "title": "Log scales hide small but real differences near zero",
+      "summary": "A log-scale axis compresses exactly the range where small absolute changes matter most.",
       "detail": null,
-      "domain": "business",
+      "domain": "data-viz",
       "tags": [
-        "pricing"
+        "charts"
       ],
       "trigger": null,
-      "origin": "human",
+      "origin": "collaborative",
       "attachments": [],
       "snippet": null,
       "id": "idea_0012",
@@ -456,13 +450,13 @@
         {
           "project": "brainny-demo",
           "session": "example-build",
-          "ts": "2026-09-10T22:09:42+00:00"
+          "ts": "2026-09-10T22:24:23+00:00"
         }
       ],
       "growth_log": [
         {
           "session": "example-build",
-          "ts": "2026-09-10T22:09:42+00:00",
+          "ts": "2026-09-10T22:24:23+00:00",
           "event": "seeded",
           "note": "first captured"
         }
@@ -471,16 +465,16 @@
       "embedding": [],
       "novelty": null,
       "recurrence": 1,
-      "last_touched": "2026-09-10T22:09:42+00:00"
+      "last_touched": "2026-09-10T22:24:23+00:00"
     },
     {
-      "kind": "precaution",
-      "title": "Rotate API keys before revoking the old one, not after",
-      "summary": "Revoke-then-rotate creates a window where nothing works; issue the new key, deploy it everywhere, confirm it's in use, then revoke the old one.",
+      "kind": "insight",
+      "title": "Time-based splits leak information random splits hide",
+      "summary": "A random split can let future information leak backward into training.",
       "detail": null,
-      "domain": "devops",
+      "domain": "ml",
       "tags": [
-        "secrets"
+        "leakage"
       ],
       "trigger": null,
       "origin": "collaborative",
@@ -492,13 +486,13 @@
         {
           "project": "brainny-demo",
           "session": "example-build",
-          "ts": "2026-09-10T22:09:42+00:00"
+          "ts": "2026-09-10T22:24:23+00:00"
         }
       ],
       "growth_log": [
         {
           "session": "example-build",
-          "ts": "2026-09-10T22:09:42+00:00",
+          "ts": "2026-09-10T22:24:23+00:00",
           "event": "seeded",
           "note": "first captured"
         }
@@ -507,20 +501,19 @@
       "embedding": [],
       "novelty": null,
       "recurrence": 1,
-      "last_touched": "2026-09-10T22:09:42+00:00"
+      "last_touched": "2026-09-10T22:24:23+00:00"
     },
     {
-      "kind": "technique",
-      "title": "Blue-green deploys avoid downtime on schema migrations",
-      "summary": "Run the new schema alongside the old one behind a flag, cut traffic over once both are verified, then retire the old schema.",
+      "kind": "precaution",
+      "title": "Never tune hyperparameters against the test set",
+      "summary": "Repeatedly checking test performance turns it into a second validation set.",
       "detail": null,
-      "domain": "devops",
+      "domain": "ml",
       "tags": [
-        "deploys",
-        "migrations"
+        "overfitting"
       ],
-      "trigger": null,
-      "origin": "ai",
+      "trigger": "before finalizing any model for a report or deployment",
+      "origin": "human",
       "attachments": [],
       "snippet": null,
       "id": "idea_0014",
@@ -529,13 +522,13 @@
         {
           "project": "brainny-demo",
           "session": "example-build",
-          "ts": "2026-09-10T22:09:42+00:00"
+          "ts": "2026-09-10T22:24:23+00:00"
         }
       ],
       "growth_log": [
         {
           "session": "example-build",
-          "ts": "2026-09-10T22:09:42+00:00",
+          "ts": "2026-09-10T22:24:23+00:00",
           "event": "seeded",
           "note": "first captured"
         }
@@ -544,12 +537,300 @@
       "embedding": [],
       "novelty": null,
       "recurrence": 1,
-      "last_touched": "2026-09-10T22:09:42+00:00"
+      "last_touched": "2026-09-10T22:24:23+00:00"
+    },
+    {
+      "kind": "solution",
+      "title": "Class imbalance fixed with focal loss, not just resampling",
+      "summary": "Resampling alone kept overfitting the minority class; focal loss down-weighted easy majority examples instead.",
+      "detail": null,
+      "domain": "ml",
+      "tags": [
+        "imbalance"
+      ],
+      "trigger": null,
+      "origin": "ai",
+      "attachments": [],
+      "snippet": null,
+      "id": "idea_0015",
+      "state": "seed",
+      "provenance": [
+        {
+          "project": "brainny-demo",
+          "session": "example-build",
+          "ts": "2026-09-10T22:24:23+00:00"
+        }
+      ],
+      "growth_log": [
+        {
+          "session": "example-build",
+          "ts": "2026-09-10T22:24:23+00:00",
+          "event": "seeded",
+          "note": "first captured"
+        }
+      ],
+      "edges": [],
+      "embedding": [],
+      "novelty": null,
+      "recurrence": 1,
+      "last_touched": "2026-09-10T22:24:23+00:00"
+    },
+    {
+      "kind": "seed",
+      "title": "Could a small model pre-filter before the expensive model runs?",
+      "summary": "A cheap classifier could triage obvious cases before the heavy model even runs.",
+      "detail": null,
+      "domain": "ml",
+      "tags": [
+        "cost"
+      ],
+      "trigger": null,
+      "origin": "human",
+      "attachments": [],
+      "snippet": null,
+      "id": "idea_0016",
+      "state": "seed",
+      "provenance": [
+        {
+          "project": "brainny-demo",
+          "session": "example-build",
+          "ts": "2026-09-10T22:24:23+00:00"
+        }
+      ],
+      "growth_log": [
+        {
+          "session": "example-build",
+          "ts": "2026-09-10T22:24:23+00:00",
+          "event": "seeded",
+          "note": "first captured"
+        }
+      ],
+      "edges": [],
+      "embedding": [],
+      "novelty": null,
+      "recurrence": 1,
+      "last_touched": "2026-09-10T22:24:23+00:00"
+    },
+    {
+      "kind": "insight",
+      "title": "Users pay more for saved time than for saved money",
+      "summary": "A feature that saves an hour a week converts better than one saving comparable money.",
+      "detail": null,
+      "domain": "business",
+      "tags": [
+        "pricing"
+      ],
+      "trigger": null,
+      "origin": "human",
+      "attachments": [],
+      "snippet": null,
+      "id": "idea_0017",
+      "state": "seed",
+      "provenance": [
+        {
+          "project": "brainny-demo",
+          "session": "example-build",
+          "ts": "2026-09-10T22:24:23+00:00"
+        }
+      ],
+      "growth_log": [
+        {
+          "session": "example-build",
+          "ts": "2026-09-10T22:24:23+00:00",
+          "event": "seeded",
+          "note": "first captured"
+        }
+      ],
+      "edges": [],
+      "embedding": [],
+      "novelty": null,
+      "recurrence": 1,
+      "last_touched": "2026-09-10T22:24:23+00:00"
+    },
+    {
+      "kind": "insight",
+      "title": "Churn spikes right after the free-trial reminder email",
+      "summary": "The reminder meant to reduce churn was itself prompting people to reconsider and leave.",
+      "detail": null,
+      "domain": "business",
+      "tags": [
+        "retention"
+      ],
+      "trigger": null,
+      "origin": "collaborative",
+      "attachments": [],
+      "snippet": null,
+      "id": "idea_0018",
+      "state": "seed",
+      "provenance": [
+        {
+          "project": "brainny-demo",
+          "session": "example-build",
+          "ts": "2026-09-10T22:24:23+00:00"
+        }
+      ],
+      "growth_log": [
+        {
+          "session": "example-build",
+          "ts": "2026-09-10T22:24:23+00:00",
+          "event": "seeded",
+          "note": "first captured"
+        }
+      ],
+      "edges": [],
+      "embedding": [],
+      "novelty": null,
+      "recurrence": 1,
+      "last_touched": "2026-09-10T22:24:23+00:00"
+    },
+    {
+      "kind": "precaution",
+      "title": "Rotate API keys before revoking the old one, not after",
+      "summary": "Revoke-then-rotate creates a window where nothing works.",
+      "detail": null,
+      "domain": "devops",
+      "tags": [
+        "secrets"
+      ],
+      "trigger": null,
+      "origin": "collaborative",
+      "attachments": [],
+      "snippet": null,
+      "id": "idea_0019",
+      "state": "seed",
+      "provenance": [
+        {
+          "project": "brainny-demo",
+          "session": "example-build",
+          "ts": "2026-09-10T22:24:23+00:00"
+        }
+      ],
+      "growth_log": [
+        {
+          "session": "example-build",
+          "ts": "2026-09-10T22:24:23+00:00",
+          "event": "seeded",
+          "note": "first captured"
+        }
+      ],
+      "edges": [],
+      "embedding": [],
+      "novelty": null,
+      "recurrence": 1,
+      "last_touched": "2026-09-10T22:24:23+00:00"
+    },
+    {
+      "kind": "technique",
+      "title": "Blue-green deploys avoid downtime on schema migrations",
+      "summary": "Run the new schema alongside the old one behind a flag.",
+      "detail": null,
+      "domain": "devops",
+      "tags": [
+        "deploys"
+      ],
+      "trigger": null,
+      "origin": "ai",
+      "attachments": [],
+      "snippet": null,
+      "id": "idea_0020",
+      "state": "seed",
+      "provenance": [
+        {
+          "project": "brainny-demo",
+          "session": "example-build",
+          "ts": "2026-09-10T22:24:23+00:00"
+        }
+      ],
+      "growth_log": [
+        {
+          "session": "example-build",
+          "ts": "2026-09-10T22:24:23+00:00",
+          "event": "seeded",
+          "note": "first captured"
+        }
+      ],
+      "edges": [],
+      "embedding": [],
+      "novelty": null,
+      "recurrence": 1,
+      "last_touched": "2026-09-10T22:24:23+00:00"
+    },
+    {
+      "kind": "solution",
+      "title": "Memory leak traced to an unbounded in-process cache",
+      "summary": "A cache with no eviction policy grew until the process OOM'd under sustained load.",
+      "detail": null,
+      "domain": "devops",
+      "tags": [
+        "memory"
+      ],
+      "trigger": null,
+      "origin": "human",
+      "attachments": [],
+      "snippet": null,
+      "id": "idea_0021",
+      "state": "seed",
+      "provenance": [
+        {
+          "project": "brainny-demo",
+          "session": "example-build",
+          "ts": "2026-09-10T22:24:23+00:00"
+        }
+      ],
+      "growth_log": [
+        {
+          "session": "example-build",
+          "ts": "2026-09-10T22:24:23+00:00",
+          "event": "seeded",
+          "note": "first captured"
+        }
+      ],
+      "edges": [],
+      "embedding": [],
+      "novelty": null,
+      "recurrence": 1,
+      "last_touched": "2026-09-10T22:24:23+00:00"
+    },
+    {
+      "kind": "precaution",
+      "title": "Health checks must not depend on the thing they're checking",
+      "summary": "A health check that queries the same DB connection pool it's meant to protect can report healthy while the pool is exhausted.",
+      "detail": null,
+      "domain": "devops",
+      "tags": [
+        "monitoring"
+      ],
+      "trigger": null,
+      "origin": "ai",
+      "attachments": [],
+      "snippet": null,
+      "id": "idea_0022",
+      "state": "seed",
+      "provenance": [
+        {
+          "project": "brainny-demo",
+          "session": "example-build",
+          "ts": "2026-09-10T22:24:23+00:00"
+        }
+      ],
+      "growth_log": [
+        {
+          "session": "example-build",
+          "ts": "2026-09-10T22:24:23+00:00",
+          "event": "seeded",
+          "note": "first captured"
+        }
+      ],
+      "edges": [],
+      "embedding": [],
+      "novelty": null,
+      "recurrence": 1,
+      "last_touched": "2026-09-10T22:24:23+00:00"
     },
     {
       "kind": "solution",
       "title": "A flaky test traced to unseeded random test data",
-      "summary": "The test failed about 1 in 20 runs -- traced to a fixture generating random data without a fixed seed, so edge-case values occasionally slipped through.",
+      "summary": "A fixture generating random data without a fixed seed let edge-case values occasionally slip through.",
       "detail": null,
       "domain": "testing",
       "tags": [
@@ -559,19 +840,19 @@
       "origin": "human",
       "attachments": [],
       "snippet": null,
-      "id": "idea_0015",
+      "id": "idea_0023",
       "state": "seed",
       "provenance": [
         {
           "project": "brainny-demo",
           "session": "example-build",
-          "ts": "2026-09-10T22:09:42+00:00"
+          "ts": "2026-09-10T22:24:23+00:00"
         }
       ],
       "growth_log": [
         {
           "session": "example-build",
-          "ts": "2026-09-10T22:09:42+00:00",
+          "ts": "2026-09-10T22:24:23+00:00",
           "event": "seeded",
           "note": "first captured"
         }
@@ -580,35 +861,34 @@
       "embedding": [],
       "novelty": null,
       "recurrence": 1,
-      "last_touched": "2026-09-10T22:09:42+00:00"
+      "last_touched": "2026-09-10T22:24:23+00:00"
     },
     {
       "kind": "skill",
       "title": "Headless-browser screenshot verification for UI changes",
-      "summary": "Render the page, screenshot it with a headless browser, and actually look at the image instead of trusting that the code change looks right -- catches real visual regressions unit tests miss.",
+      "summary": "Render, screenshot with a headless browser, and actually look at the image instead of trusting the diff.",
       "detail": null,
       "domain": "testing",
       "tags": [
-        "verification",
-        "ui"
+        "verification"
       ],
       "trigger": null,
       "origin": "collaborative",
       "attachments": [],
       "snippet": "chrome --headless=new --window-size=1200,800 --screenshot=out.png file:///path/to/page.html",
-      "id": "idea_0016",
+      "id": "idea_0024",
       "state": "seed",
       "provenance": [
         {
           "project": "brainny-demo",
           "session": "example-build",
-          "ts": "2026-09-10T22:09:42+00:00"
+          "ts": "2026-09-10T22:24:23+00:00"
         }
       ],
       "growth_log": [
         {
           "session": "example-build",
-          "ts": "2026-09-10T22:09:42+00:00",
+          "ts": "2026-09-10T22:24:23+00:00",
           "event": "seeded",
           "note": "first captured"
         }
@@ -617,7 +897,943 @@
       "embedding": [],
       "novelty": null,
       "recurrence": 1,
-      "last_touched": "2026-09-10T22:09:42+00:00"
+      "last_touched": "2026-09-10T22:24:23+00:00"
+    },
+    {
+      "kind": "precaution",
+      "title": "Mocking the database can hide a broken real migration",
+      "summary": "Mocked tests passed while the actual migration silently failed against a real database.",
+      "detail": null,
+      "domain": "testing",
+      "tags": [
+        "mocks"
+      ],
+      "trigger": null,
+      "origin": "human",
+      "attachments": [],
+      "snippet": null,
+      "id": "idea_0025",
+      "state": "seed",
+      "provenance": [
+        {
+          "project": "brainny-demo",
+          "session": "example-build",
+          "ts": "2026-09-10T22:24:23+00:00"
+        }
+      ],
+      "growth_log": [
+        {
+          "session": "example-build",
+          "ts": "2026-09-10T22:24:23+00:00",
+          "event": "seeded",
+          "note": "first captured"
+        }
+      ],
+      "edges": [],
+      "embedding": [],
+      "novelty": null,
+      "recurrence": 1,
+      "last_touched": "2026-09-10T22:24:23+00:00"
+    },
+    {
+      "kind": "precaution",
+      "title": "SQL injection risk from string-built queries in admin tools",
+      "summary": "Internal tools get the same injection risk as public ones -- trusted user is not a sanitizer.",
+      "detail": null,
+      "domain": "security",
+      "tags": [
+        "injection"
+      ],
+      "trigger": "before writing any raw SQL string concatenation, even in internal tooling",
+      "origin": "ai",
+      "attachments": [],
+      "snippet": null,
+      "id": "idea_0026",
+      "state": "seed",
+      "provenance": [
+        {
+          "project": "brainny-demo",
+          "session": "example-build",
+          "ts": "2026-09-10T22:24:23+00:00"
+        }
+      ],
+      "growth_log": [
+        {
+          "session": "example-build",
+          "ts": "2026-09-10T22:24:23+00:00",
+          "event": "seeded",
+          "note": "first captured"
+        }
+      ],
+      "edges": [],
+      "embedding": [],
+      "novelty": null,
+      "recurrence": 1,
+      "last_touched": "2026-09-10T22:24:23+00:00"
+    },
+    {
+      "kind": "solution",
+      "title": "Fixed a session-fixation bug by rotating the session id on login",
+      "summary": "The session id stayed the same across the login boundary, letting a pre-login id become valid post-login.",
+      "detail": null,
+      "domain": "security",
+      "tags": [
+        "sessions"
+      ],
+      "trigger": null,
+      "origin": "collaborative",
+      "attachments": [],
+      "snippet": null,
+      "id": "idea_0027",
+      "state": "seed",
+      "provenance": [
+        {
+          "project": "brainny-demo",
+          "session": "example-build",
+          "ts": "2026-09-10T22:24:23+00:00"
+        }
+      ],
+      "growth_log": [
+        {
+          "session": "example-build",
+          "ts": "2026-09-10T22:24:23+00:00",
+          "event": "seeded",
+          "note": "first captured"
+        }
+      ],
+      "edges": [],
+      "embedding": [],
+      "novelty": null,
+      "recurrence": 1,
+      "last_touched": "2026-09-10T22:24:23+00:00"
+    },
+    {
+      "kind": "insight",
+      "title": "Most security incidents start with a valid credential, not an exploit",
+      "summary": "Phished or reused credentials beat zero-days as the actual common entry point.",
+      "detail": null,
+      "domain": "security",
+      "tags": [
+        "credentials"
+      ],
+      "trigger": null,
+      "origin": "human",
+      "attachments": [],
+      "snippet": null,
+      "id": "idea_0028",
+      "state": "seed",
+      "provenance": [
+        {
+          "project": "brainny-demo",
+          "session": "example-build",
+          "ts": "2026-09-10T22:24:23+00:00"
+        }
+      ],
+      "growth_log": [
+        {
+          "session": "example-build",
+          "ts": "2026-09-10T22:24:23+00:00",
+          "event": "seeded",
+          "note": "first captured"
+        }
+      ],
+      "edges": [],
+      "embedding": [],
+      "novelty": null,
+      "recurrence": 1,
+      "last_touched": "2026-09-10T22:24:23+00:00"
+    },
+    {
+      "kind": "technique",
+      "title": "Rate-limit by account, not just by IP",
+      "summary": "IP-only limits miss distributed credential-stuffing attempts across many IPs against one account.",
+      "detail": null,
+      "domain": "security",
+      "tags": [
+        "rate-limiting"
+      ],
+      "trigger": null,
+      "origin": "ai",
+      "attachments": [],
+      "snippet": null,
+      "id": "idea_0029",
+      "state": "seed",
+      "provenance": [
+        {
+          "project": "brainny-demo",
+          "session": "example-build",
+          "ts": "2026-09-10T22:24:23+00:00"
+        }
+      ],
+      "growth_log": [
+        {
+          "session": "example-build",
+          "ts": "2026-09-10T22:24:23+00:00",
+          "event": "seeded",
+          "note": "first captured"
+        }
+      ],
+      "edges": [],
+      "embedding": [],
+      "novelty": null,
+      "recurrence": 1,
+      "last_touched": "2026-09-10T22:24:23+00:00"
+    },
+    {
+      "kind": "technique",
+      "title": "Virtualize long lists instead of rendering every row",
+      "summary": "Only render the rows currently in the viewport, recycling DOM nodes as the user scrolls.",
+      "detail": null,
+      "domain": "frontend",
+      "tags": [
+        "performance"
+      ],
+      "trigger": null,
+      "origin": "human",
+      "attachments": [],
+      "snippet": null,
+      "id": "idea_0030",
+      "state": "seed",
+      "provenance": [
+        {
+          "project": "brainny-demo",
+          "session": "example-build",
+          "ts": "2026-09-10T22:24:23+00:00"
+        }
+      ],
+      "growth_log": [
+        {
+          "session": "example-build",
+          "ts": "2026-09-10T22:24:23+00:00",
+          "event": "seeded",
+          "note": "first captured"
+        }
+      ],
+      "edges": [],
+      "embedding": [],
+      "novelty": null,
+      "recurrence": 1,
+      "last_touched": "2026-09-10T22:24:23+00:00"
+    },
+    {
+      "kind": "precaution",
+      "title": "A key prop tied to array index breaks reordering",
+      "summary": "Reordered items keep stale local state when the key is the index instead of a stable id.",
+      "detail": null,
+      "domain": "frontend",
+      "tags": [
+        "react"
+      ],
+      "trigger": null,
+      "origin": "ai",
+      "attachments": [],
+      "snippet": null,
+      "id": "idea_0031",
+      "state": "seed",
+      "provenance": [
+        {
+          "project": "brainny-demo",
+          "session": "example-build",
+          "ts": "2026-09-10T22:24:23+00:00"
+        }
+      ],
+      "growth_log": [
+        {
+          "session": "example-build",
+          "ts": "2026-09-10T22:24:23+00:00",
+          "event": "seeded",
+          "note": "first captured"
+        }
+      ],
+      "edges": [],
+      "embedding": [],
+      "novelty": null,
+      "recurrence": 1,
+      "last_touched": "2026-09-10T22:24:23+00:00"
+    },
+    {
+      "kind": "solution",
+      "title": "Fixed layout shift by reserving image dimensions upfront",
+      "summary": "Images without explicit width/height caused the page to jump as they loaded.",
+      "detail": null,
+      "domain": "frontend",
+      "tags": [
+        "cls"
+      ],
+      "trigger": null,
+      "origin": "collaborative",
+      "attachments": [],
+      "snippet": null,
+      "id": "idea_0032",
+      "state": "seed",
+      "provenance": [
+        {
+          "project": "brainny-demo",
+          "session": "example-build",
+          "ts": "2026-09-10T22:24:23+00:00"
+        }
+      ],
+      "growth_log": [
+        {
+          "session": "example-build",
+          "ts": "2026-09-10T22:24:23+00:00",
+          "event": "seeded",
+          "note": "first captured"
+        }
+      ],
+      "edges": [],
+      "embedding": [],
+      "novelty": null,
+      "recurrence": 1,
+      "last_touched": "2026-09-10T22:24:23+00:00"
+    },
+    {
+      "kind": "insight",
+      "title": "Perceived performance matters more than raw load time",
+      "summary": "A skeleton screen shown immediately beat a faster but blank-then-pop-in load in user testing.",
+      "detail": null,
+      "domain": "frontend",
+      "tags": [
+        "perception"
+      ],
+      "trigger": null,
+      "origin": "human",
+      "attachments": [],
+      "snippet": null,
+      "id": "idea_0033",
+      "state": "seed",
+      "provenance": [
+        {
+          "project": "brainny-demo",
+          "session": "example-build",
+          "ts": "2026-09-10T22:24:23+00:00"
+        }
+      ],
+      "growth_log": [
+        {
+          "session": "example-build",
+          "ts": "2026-09-10T22:24:23+00:00",
+          "event": "seeded",
+          "note": "first captured"
+        }
+      ],
+      "edges": [],
+      "embedding": [],
+      "novelty": null,
+      "recurrence": 1,
+      "last_touched": "2026-09-10T22:24:23+00:00"
+    },
+    {
+      "kind": "technique",
+      "title": "Use connection pooling with a sane max, not unlimited",
+      "summary": "An unbounded pool just moves the bottleneck to the database instead of removing it.",
+      "detail": null,
+      "domain": "backend",
+      "tags": [
+        "db"
+      ],
+      "trigger": null,
+      "origin": "ai",
+      "attachments": [],
+      "snippet": null,
+      "id": "idea_0034",
+      "state": "seed",
+      "provenance": [
+        {
+          "project": "brainny-demo",
+          "session": "example-build",
+          "ts": "2026-09-10T22:24:23+00:00"
+        }
+      ],
+      "growth_log": [
+        {
+          "session": "example-build",
+          "ts": "2026-09-10T22:24:23+00:00",
+          "event": "seeded",
+          "note": "first captured"
+        }
+      ],
+      "edges": [],
+      "embedding": [],
+      "novelty": null,
+      "recurrence": 1,
+      "last_touched": "2026-09-10T22:24:23+00:00"
+    },
+    {
+      "kind": "precaution",
+      "title": "N+1 queries hide behind an innocent-looking loop",
+      "summary": "A loop calling one ORM method per item silently issues one query per iteration.",
+      "detail": null,
+      "domain": "backend",
+      "tags": [
+        "orm"
+      ],
+      "trigger": "before shipping any loop that touches the ORM per-item",
+      "origin": "human",
+      "attachments": [],
+      "snippet": null,
+      "id": "idea_0035",
+      "state": "seed",
+      "provenance": [
+        {
+          "project": "brainny-demo",
+          "session": "example-build",
+          "ts": "2026-09-10T22:24:23+00:00"
+        }
+      ],
+      "growth_log": [
+        {
+          "session": "example-build",
+          "ts": "2026-09-10T22:24:23+00:00",
+          "event": "seeded",
+          "note": "first captured"
+        }
+      ],
+      "edges": [],
+      "embedding": [],
+      "novelty": null,
+      "recurrence": 1,
+      "last_touched": "2026-09-10T22:24:23+00:00"
+    },
+    {
+      "kind": "solution",
+      "title": "Fixed a race condition with a database-level unique constraint",
+      "summary": "Application-level check-then-insert wasn't atomic; the DB constraint made the race impossible instead of just unlikely.",
+      "detail": null,
+      "domain": "backend",
+      "tags": [
+        "concurrency"
+      ],
+      "trigger": null,
+      "origin": "collaborative",
+      "attachments": [],
+      "snippet": null,
+      "id": "idea_0036",
+      "state": "seed",
+      "provenance": [
+        {
+          "project": "brainny-demo",
+          "session": "example-build",
+          "ts": "2026-09-10T22:24:23+00:00"
+        }
+      ],
+      "growth_log": [
+        {
+          "session": "example-build",
+          "ts": "2026-09-10T22:24:23+00:00",
+          "event": "seeded",
+          "note": "first captured"
+        }
+      ],
+      "edges": [],
+      "embedding": [],
+      "novelty": null,
+      "recurrence": 1,
+      "last_touched": "2026-09-10T22:24:23+00:00"
+    },
+    {
+      "kind": "seed",
+      "title": "Could read replicas serve the N+1 pattern cheaply enough to ignore?",
+      "summary": "Not a fix, but might make the problem cheap enough not to matter for read-heavy paths.",
+      "detail": null,
+      "domain": "backend",
+      "tags": [
+        "orm"
+      ],
+      "trigger": null,
+      "origin": "ai",
+      "attachments": [],
+      "snippet": null,
+      "id": "idea_0037",
+      "state": "seed",
+      "provenance": [
+        {
+          "project": "brainny-demo",
+          "session": "example-build",
+          "ts": "2026-09-10T22:24:23+00:00"
+        }
+      ],
+      "growth_log": [
+        {
+          "session": "example-build",
+          "ts": "2026-09-10T22:24:23+00:00",
+          "event": "seeded",
+          "note": "first captured"
+        }
+      ],
+      "edges": [],
+      "embedding": [],
+      "novelty": null,
+      "recurrence": 1,
+      "last_touched": "2026-09-10T22:24:23+00:00"
+    },
+    {
+      "kind": "precaution",
+      "title": "Background app refresh drains battery if polling too aggressively",
+      "summary": "A 30-second poll interval felt responsive in testing and drained batteries in the field.",
+      "detail": null,
+      "domain": "mobile",
+      "tags": [
+        "battery"
+      ],
+      "trigger": null,
+      "origin": "human",
+      "attachments": [],
+      "snippet": null,
+      "id": "idea_0038",
+      "state": "seed",
+      "provenance": [
+        {
+          "project": "brainny-demo",
+          "session": "example-build",
+          "ts": "2026-09-10T22:24:23+00:00"
+        }
+      ],
+      "growth_log": [
+        {
+          "session": "example-build",
+          "ts": "2026-09-10T22:24:23+00:00",
+          "event": "seeded",
+          "note": "first captured"
+        }
+      ],
+      "edges": [],
+      "embedding": [],
+      "novelty": null,
+      "recurrence": 1,
+      "last_touched": "2026-09-10T22:24:23+00:00"
+    },
+    {
+      "kind": "technique",
+      "title": "Cache API responses on-device with a short TTL",
+      "summary": "Most screens re-fetch data the user just saw seconds ago -- a short TTL cache avoids the redundant round trip.",
+      "detail": null,
+      "domain": "mobile",
+      "tags": [
+        "caching"
+      ],
+      "trigger": null,
+      "origin": "collaborative",
+      "attachments": [],
+      "snippet": null,
+      "id": "idea_0039",
+      "state": "seed",
+      "provenance": [
+        {
+          "project": "brainny-demo",
+          "session": "example-build",
+          "ts": "2026-09-10T22:24:23+00:00"
+        }
+      ],
+      "growth_log": [
+        {
+          "session": "example-build",
+          "ts": "2026-09-10T22:24:23+00:00",
+          "event": "seeded",
+          "note": "first captured"
+        }
+      ],
+      "edges": [],
+      "embedding": [],
+      "novelty": null,
+      "recurrence": 1,
+      "last_touched": "2026-09-10T22:24:23+00:00"
+    },
+    {
+      "kind": "insight",
+      "title": "Offline-first isn't optional once users are on mobile networks",
+      "summary": "Even brief connectivity gaps produced visible errors until the app treated offline as a normal state, not an edge case.",
+      "detail": null,
+      "domain": "mobile",
+      "tags": [
+        "offline"
+      ],
+      "trigger": null,
+      "origin": "ai",
+      "attachments": [],
+      "snippet": null,
+      "id": "idea_0040",
+      "state": "seed",
+      "provenance": [
+        {
+          "project": "brainny-demo",
+          "session": "example-build",
+          "ts": "2026-09-10T22:24:23+00:00"
+        }
+      ],
+      "growth_log": [
+        {
+          "session": "example-build",
+          "ts": "2026-09-10T22:24:23+00:00",
+          "event": "seeded",
+          "note": "first captured"
+        }
+      ],
+      "edges": [],
+      "embedding": [],
+      "novelty": null,
+      "recurrence": 1,
+      "last_touched": "2026-09-10T22:24:23+00:00"
+    },
+    {
+      "kind": "solution",
+      "title": "Terraform state drift traced to a manual console change",
+      "summary": "Someone edited a resource directly in the cloud console, and the next apply tried to revert it.",
+      "detail": null,
+      "domain": "infra",
+      "tags": [
+        "terraform"
+      ],
+      "trigger": null,
+      "origin": "human",
+      "attachments": [],
+      "snippet": null,
+      "id": "idea_0041",
+      "state": "seed",
+      "provenance": [
+        {
+          "project": "brainny-demo",
+          "session": "example-build",
+          "ts": "2026-09-10T22:24:23+00:00"
+        }
+      ],
+      "growth_log": [
+        {
+          "session": "example-build",
+          "ts": "2026-09-10T22:24:23+00:00",
+          "event": "seeded",
+          "note": "first captured"
+        }
+      ],
+      "edges": [],
+      "embedding": [],
+      "novelty": null,
+      "recurrence": 1,
+      "last_touched": "2026-09-10T22:24:23+00:00"
+    },
+    {
+      "kind": "precaution",
+      "title": "Autoscaling on CPU alone misses memory-bound workloads",
+      "summary": "A memory-bound service stayed under the CPU threshold while getting OOM-killed under load.",
+      "detail": null,
+      "domain": "infra",
+      "tags": [
+        "autoscaling"
+      ],
+      "trigger": null,
+      "origin": "ai",
+      "attachments": [],
+      "snippet": null,
+      "id": "idea_0042",
+      "state": "seed",
+      "provenance": [
+        {
+          "project": "brainny-demo",
+          "session": "example-build",
+          "ts": "2026-09-10T22:24:23+00:00"
+        }
+      ],
+      "growth_log": [
+        {
+          "session": "example-build",
+          "ts": "2026-09-10T22:24:23+00:00",
+          "event": "seeded",
+          "note": "first captured"
+        }
+      ],
+      "edges": [],
+      "embedding": [],
+      "novelty": null,
+      "recurrence": 1,
+      "last_touched": "2026-09-10T22:24:23+00:00"
+    },
+    {
+      "kind": "technique",
+      "title": "Tag every cloud resource with an owner and a purpose",
+      "summary": "Untagged resources are the ones nobody can safely delete six months later.",
+      "detail": null,
+      "domain": "infra",
+      "tags": [
+        "hygiene"
+      ],
+      "trigger": null,
+      "origin": "collaborative",
+      "attachments": [],
+      "snippet": null,
+      "id": "idea_0043",
+      "state": "seed",
+      "provenance": [
+        {
+          "project": "brainny-demo",
+          "session": "example-build",
+          "ts": "2026-09-10T22:24:23+00:00"
+        }
+      ],
+      "growth_log": [
+        {
+          "session": "example-build",
+          "ts": "2026-09-10T22:24:23+00:00",
+          "event": "seeded",
+          "note": "first captured"
+        }
+      ],
+      "edges": [],
+      "embedding": [],
+      "novelty": null,
+      "recurrence": 1,
+      "last_touched": "2026-09-10T22:24:23+00:00"
+    },
+    {
+      "kind": "insight",
+      "title": "Good docs answer why, code already answers what",
+      "summary": "Comments restating what the code does go stale; the reasoning behind a non-obvious choice doesn't.",
+      "detail": null,
+      "domain": "docs",
+      "tags": [
+        "writing"
+      ],
+      "trigger": null,
+      "origin": "human",
+      "attachments": [],
+      "snippet": null,
+      "id": "idea_0044",
+      "state": "seed",
+      "provenance": [
+        {
+          "project": "brainny-demo",
+          "session": "example-build",
+          "ts": "2026-09-10T22:24:23+00:00"
+        }
+      ],
+      "growth_log": [
+        {
+          "session": "example-build",
+          "ts": "2026-09-10T22:24:23+00:00",
+          "event": "seeded",
+          "note": "first captured"
+        }
+      ],
+      "edges": [],
+      "embedding": [],
+      "novelty": null,
+      "recurrence": 1,
+      "last_touched": "2026-09-10T22:24:23+00:00"
+    },
+    {
+      "kind": "technique",
+      "title": "Put a runnable example at the top of every README",
+      "summary": "Readers try the example before reading the explanation -- put it first, not buried after the theory.",
+      "detail": null,
+      "domain": "docs",
+      "tags": [
+        "readme"
+      ],
+      "trigger": null,
+      "origin": "ai",
+      "attachments": [],
+      "snippet": null,
+      "id": "idea_0045",
+      "state": "seed",
+      "provenance": [
+        {
+          "project": "brainny-demo",
+          "session": "example-build",
+          "ts": "2026-09-10T22:24:23+00:00"
+        }
+      ],
+      "growth_log": [
+        {
+          "session": "example-build",
+          "ts": "2026-09-10T22:24:23+00:00",
+          "event": "seeded",
+          "note": "first captured"
+        }
+      ],
+      "edges": [],
+      "embedding": [],
+      "novelty": null,
+      "recurrence": 1,
+      "last_touched": "2026-09-10T22:24:23+00:00"
+    },
+    {
+      "kind": "insight",
+      "title": "Most drop-off happens before the first real value moment",
+      "summary": "Onboarding funnels lost more people before the first meaningful action than after it.",
+      "detail": null,
+      "domain": "onboarding",
+      "tags": [
+        "activation"
+      ],
+      "trigger": null,
+      "origin": "collaborative",
+      "attachments": [],
+      "snippet": null,
+      "id": "idea_0046",
+      "state": "seed",
+      "provenance": [
+        {
+          "project": "brainny-demo",
+          "session": "example-build",
+          "ts": "2026-09-10T22:24:23+00:00"
+        }
+      ],
+      "growth_log": [
+        {
+          "session": "example-build",
+          "ts": "2026-09-10T22:24:23+00:00",
+          "event": "seeded",
+          "note": "first captured"
+        }
+      ],
+      "edges": [],
+      "embedding": [],
+      "novelty": null,
+      "recurrence": 1,
+      "last_touched": "2026-09-10T22:24:23+00:00"
+    },
+    {
+      "kind": "technique",
+      "title": "Show progress, not just a spinner, for anything over 2 seconds",
+      "summary": "A determinate progress indicator reduced abandonment even when the total time was unchanged.",
+      "detail": null,
+      "domain": "onboarding",
+      "tags": [
+        "ux"
+      ],
+      "trigger": null,
+      "origin": "human",
+      "attachments": [],
+      "snippet": null,
+      "id": "idea_0047",
+      "state": "seed",
+      "provenance": [
+        {
+          "project": "brainny-demo",
+          "session": "example-build",
+          "ts": "2026-09-10T22:24:23+00:00"
+        }
+      ],
+      "growth_log": [
+        {
+          "session": "example-build",
+          "ts": "2026-09-10T22:24:23+00:00",
+          "event": "seeded",
+          "note": "first captured"
+        }
+      ],
+      "edges": [],
+      "embedding": [],
+      "novelty": null,
+      "recurrence": 1,
+      "last_touched": "2026-09-10T22:24:23+00:00"
+    },
+    {
+      "kind": "solution",
+      "title": "P99 latency spike traced to GC pauses under load",
+      "summary": "Average latency looked fine; the tail was dominated by stop-the-world garbage collection pauses.",
+      "detail": null,
+      "domain": "perf",
+      "tags": [
+        "gc"
+      ],
+      "trigger": null,
+      "origin": "ai",
+      "attachments": [],
+      "snippet": null,
+      "id": "idea_0048",
+      "state": "seed",
+      "provenance": [
+        {
+          "project": "brainny-demo",
+          "session": "example-build",
+          "ts": "2026-09-10T22:24:23+00:00"
+        }
+      ],
+      "growth_log": [
+        {
+          "session": "example-build",
+          "ts": "2026-09-10T22:24:23+00:00",
+          "event": "seeded",
+          "note": "first captured"
+        }
+      ],
+      "edges": [],
+      "embedding": [],
+      "novelty": null,
+      "recurrence": 1,
+      "last_touched": "2026-09-10T22:24:23+00:00"
+    },
+    {
+      "kind": "technique",
+      "title": "Profile before optimizing -- intuition about hot paths is often wrong",
+      "summary": "The assumed bottleneck wasn't; a five-minute profile pointed at a completely different function.",
+      "detail": null,
+      "domain": "perf",
+      "tags": [
+        "profiling"
+      ],
+      "trigger": null,
+      "origin": "human",
+      "attachments": [],
+      "snippet": null,
+      "id": "idea_0049",
+      "state": "seed",
+      "provenance": [
+        {
+          "project": "brainny-demo",
+          "session": "example-build",
+          "ts": "2026-09-10T22:24:23+00:00"
+        }
+      ],
+      "growth_log": [
+        {
+          "session": "example-build",
+          "ts": "2026-09-10T22:24:23+00:00",
+          "event": "seeded",
+          "note": "first captured"
+        }
+      ],
+      "edges": [],
+      "embedding": [],
+      "novelty": null,
+      "recurrence": 1,
+      "last_touched": "2026-09-10T22:24:23+00:00"
+    },
+    {
+      "kind": "seed",
+      "title": "Would a bloom filter cut the redundant lookups here?",
+      "summary": "Most lookups check for existence and miss -- a bloom filter could short-circuit the common case cheaply.",
+      "detail": null,
+      "domain": "perf",
+      "tags": [
+        "data-structures"
+      ],
+      "trigger": null,
+      "origin": "ai",
+      "attachments": [],
+      "snippet": null,
+      "id": "idea_0050",
+      "state": "seed",
+      "provenance": [
+        {
+          "project": "brainny-demo",
+          "session": "example-build",
+          "ts": "2026-09-10T22:24:23+00:00"
+        }
+      ],
+      "growth_log": [
+        {
+          "session": "example-build",
+          "ts": "2026-09-10T22:24:23+00:00",
+          "event": "seeded",
+          "note": "first captured"
+        }
+      ],
+      "edges": [],
+      "embedding": [],
+      "novelty": null,
+      "recurrence": 1,
+      "last_touched": "2026-09-10T22:24:23+00:00"
     }
   ]
 }
