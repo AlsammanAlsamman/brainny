@@ -228,4 +228,4 @@ central/GitHub sync model in full.
 | Name | Contact |
 |---|---|
 | Alsamman M. Alsamman | [aalsamman100@gmail.com](mailto:aalsamman100@gmail.com) |
-| M. M. Adeel | [m.muzammal.adeel@outlook.com](mailto:m.muzammal.adeel@outlook.com) |
+| Muhammad M. Adeel | [m.muzammal.adeel@outlook.com](mailto:m.muzammal.adeel@outlook.com) |
