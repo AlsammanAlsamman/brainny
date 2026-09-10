@@ -545,5 +545,37 @@ permission-gated local check — see above.
       rejected, attach copies file + updates graph, `--rename` honored,
       sync copies attachments to central) — 83 tests total.
 
+16. Inline `snippet` field — evidence without a file. ✅
+    - `brainny attach` (step 15) covers evidence that's genuinely a file,
+      but a lot of what's worth keeping verbatim during a session is
+      already just text: a short code excerpt, an equation, a config
+      block, a table's column-by-column structure described in words. The
+      user's ask: give brainny the freedom to keep that directly on the
+      idea/skill itself, not force everything through a file + `attach`.
+    - New `snippet: Optional[str]` on `EntryInput`/`Node`
+      (`brainny/schema.py`), capped at `MAX_SNIPPET_CHARS` (4000) — small
+      enough to guide, same discipline as attachments; if it doesn't fit,
+      it belongs in a real attached file instead of being truncated down.
+      Deliberately free-form (no language/type field) — it's meant for
+      code, equations, or structure notes alike, whatever fits the idea.
+    - Rendered in the dashboard's itemized list as a monospace `<pre>`
+      block in the expanded body (preserves whitespace/newlines, unlike
+      `detail`'s plain paragraph), plus a small pencil "sign" badge next to
+      the title alongside the code/plot/table attachment badges — visible
+      at a glance that an idea has something to literally read, without
+      opening it.
+    - `brainny search`/`brainny recall` now search `snippet` text too
+      (`cli.py`'s haystacks), so a precaution or skill carrying, say, an
+      equation is findable by matching content inside it, not just its
+      title/summary.
+    - All four capture skills (`SKILL.md`, `catch.md`, `catch-this.md`,
+      `catch-skill.md`) updated to know about `snippet` and when to reach
+      for it vs. a real `brainny attach`ed file — the dividing line is
+      simply size/nature: pasteable text goes in `snippet`, an actual file
+      (a whole script, a real image, a real table file) goes through
+      `attach`.
+    - 3 new schema tests (snippet accepted, defaults to `None`, oversized
+      snippet rejected) — 86 tests total.
+
 Each step should land, get tested, and get dogfooded (per SEED.md §6
 Layer 7) before the next starts — same discipline as the v0 build.

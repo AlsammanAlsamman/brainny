@@ -44,6 +44,17 @@ EdgeSource = Literal["extracted", "inferred"]
 # cli.py's cmd_attach), referenced here by filename only.
 AttachmentType = Literal["code", "plot", "table"]
 
+# The cap on Attachment is a file-size cap (cli.py's MAX_ATTACHMENT_BYTES,
+# for real files copied to disk). `snippet` is the inline sibling: no file,
+# no `brainny attach` call needed — just a piece of text carried straight
+# in the entry/node itself for whenever the useful part of an idea already
+# *is* text: a code excerpt, a column-by-column table description, an
+# equation, a config block, a short schema. Still bounded, same "small
+# enough to guide" discipline as attachments -- if it's long enough to need
+# trimming down to fit, it probably belongs in a real `code`/`table` file
+# via `brainny attach` instead, not squeezed in here.
+MAX_SNIPPET_CHARS = 4000
+
 
 class Attachment(BaseModel):
     type: AttachmentType
@@ -91,6 +102,7 @@ class EntryInput(BaseModel):
     trigger: Optional[str] = None
     origin: Optional[Origin] = None
     attachments: list[Attachment] = Field(default_factory=list)
+    snippet: Optional[str] = Field(default=None, max_length=MAX_SNIPPET_CHARS)
 
     @field_validator("trigger")
     @classmethod

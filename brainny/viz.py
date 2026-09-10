@@ -133,6 +133,7 @@ def _build_payload(graph: Graph, title: str) -> dict:
                 "title": n.title,
                 "summary": n.summary,
                 "detail": n.detail,
+                "snippet": n.snippet,
                 "domain": n.domain,
                 "tags": n.tags,
                 "trigger": n.trigger,
@@ -326,6 +327,16 @@ _CSS = """
   .item-sign-code { background: rgba(59,111,214,0.18); color: #9db8ef; }
   .item-sign-plot { background: rgba(139,92,214,0.18); color: #c4aef0; }
   .item-sign-table { background: rgba(47,158,94,0.18); color: #8fd6a8; }
+  .item-sign-snippet { background: rgba(232,178,61,0.18); color: #e8c877; }
+  /* inline snippet -- a code excerpt/equation/table-structure note kept
+     directly on the entry, no separate file needed (see schema.py's
+     `snippet` field) */
+  .item-snippet {
+    margin: 0 0 0.5rem; padding: 0.55rem 0.7rem; border-radius: 6px;
+    background: rgba(0,0,0,0.28); border: 1px solid rgba(255,255,255,0.08);
+    font: 0.76rem/1.45 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    color: #d7ddd4; white-space: pre-wrap; word-break: break-word; overflow-x: auto;
+  }
   .item-evidence { display: flex; flex-direction: column; gap: 0.4rem; margin-top: 0.5rem; }
   .item-evidence-row { display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap; }
   .item-evidence-row a { color: #9db8ef; font-size: 0.78rem; text-decoration: none; }
@@ -482,7 +493,9 @@ _JS = """
           return '<span class="item-sign item-sign-' + escapeHtml(a.type) + '" title="' +
             escapeHtml((data.attachmentLabel[a.type] || a.type) + ': ' + a.filename) + '">' +
             escapeHtml(data.attachmentIcon[a.type] || '?') + '</span>';
-        }).join('');
+        }).join('') + (idea.snippet
+          ? '<span class="item-sign item-sign-snippet" title="inline snippet">\\u270e</span>'
+          : '');
 
         var titleRow = document.createElement('button');
         titleRow.type = 'button';
@@ -513,6 +526,7 @@ _JS = """
         body.innerHTML =
           '<p class="item-summary">' + escapeHtml(idea.summary) + '</p>' +
           (idea.detail ? '<p class="item-detail">' + escapeHtml(idea.detail) + '</p>' : '') +
+          (idea.snippet ? '<pre class="item-snippet"><code>' + escapeHtml(idea.snippet) + '</code></pre>' : '') +
           (idea.trigger ? '<p class="item-trigger"><strong>trigger:</strong> ' + escapeHtml(idea.trigger) + '</p>' : '') +
           '<p class="item-meta">' + escapeHtml(idea.kind) + ' \\u00b7 ' + escapeHtml(idea.state) +
           ' \\u00b7 ' + escapeHtml(originLabel(idea)) + ' \\u00b7 ' + escapeHtml(idea.id) + '</p>' +

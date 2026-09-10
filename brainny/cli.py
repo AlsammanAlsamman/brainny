@@ -255,7 +255,7 @@ def cmd_search(args: argparse.Namespace) -> int:
     term = args.term.lower()
 
     def matches(n) -> bool:
-        haystacks = [n.title, n.summary, n.detail or "", n.domain, n.kind, n.state, *n.tags]
+        haystacks = [n.title, n.summary, n.detail or "", n.snippet or "", n.domain, n.kind, n.state, *n.tags]
         return any(term in h.lower() for h in haystacks)
 
     hits = [n for n in graph.nodes if matches(n)]
@@ -280,7 +280,7 @@ def cmd_recall(args: argparse.Namespace) -> int:
     terms = [t.lower() for t in args.terms]
 
     def matches(n) -> bool:
-        haystacks = [n.title, n.summary, n.detail or "", n.domain, n.kind, n.state, *n.tags]
+        haystacks = [n.title, n.summary, n.detail or "", n.snippet or "", n.domain, n.kind, n.state, *n.tags]
         return any(term in h.lower() for term in terms for h in haystacks)
 
     results: list[tuple[str, object]] = []

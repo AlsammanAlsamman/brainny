@@ -69,3 +69,11 @@ and — for precautions — a `trigger` describing WHEN brainny should
 proactively surface it ("starting a METAL/GWAS run"). Leave id, embedding,
 edges, novelty, recurrence, state, and provenance timestamps EMPTY — the
 body fills those.
+
+If the session actually produced a small piece of text worth keeping
+verbatim — a code excerpt, an equation, a config block, a table's column
+structure — put it in `snippet` (free text, capped at 4000 chars). This is
+separate from `brainny attach`: `snippet` lives inline on the entry itself,
+no file needed; use `brainny attach` instead when the evidence is a real
+file (a whole script, an actual small plot image, a real table excerpt as
+its own file) rather than something short enough to paste directly.

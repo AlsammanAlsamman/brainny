@@ -126,3 +126,26 @@ def test_attachment_requires_filename():
 
     with pytest.raises(ValidationError):
         Attachment(type="code", filename="")
+
+
+def test_entry_accepts_inline_snippet():
+    entry = EntryInput(
+        kind="skill",
+        title="GWAS manhattan plot",
+        summary="How the manhattan plot is made for this project.",
+        domain="GWAS",
+        snippet="def plot_manhattan(df):\n    ax.scatter(df.pos_cum, -np.log10(df.p))",
+    )
+    assert entry.snippet.startswith("def plot_manhattan")
+
+
+def test_entry_snippet_defaults_none():
+    entry = EntryInput(kind="insight", title="t", summary="s", domain="d")
+    assert entry.snippet is None
+
+
+def test_entry_rejects_oversized_snippet():
+    from brainny.schema import MAX_SNIPPET_CHARS
+
+    with pytest.raises(ValidationError):
+        EntryInput(kind="skill", title="t", summary="s", domain="d", snippet="x" * (MAX_SNIPPET_CHARS + 1))

@@ -84,7 +84,10 @@ If it yields one or more entries:
 1. Emit a JSON array matching the schema in brainny's `brainny/schema.py`
    (`EntryInput`) — same shape as full capture: kind, title, summary,
    detail (optional), domain, tags, trigger (precautions only), origin
-   (human/ai/collaborative — see above). Leave id/embedding/edges/
+   (human/ai/collaborative — see above), snippet (optional — a short code
+   excerpt/equation/table-structure note carried inline on the entry, capped
+   at 4000 chars; use this when the useful part of the idea already is a
+   small piece of text, no separate file needed). Leave id/embedding/edges/
    novelty/recurrence/state/provenance timestamps empty — the body fills
    those.
 2. Write it to a file, then shell out (from the current project's

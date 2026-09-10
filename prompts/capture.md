@@ -17,8 +17,15 @@ template; the full instructions live in `skills/brainny/SKILL.md`.
    without classifying or placing it.
 3. For each kept item, fill only the prompt-side fields: `kind`, `title`,
    `summary`, `detail` (optional), `domain`, `tags`, `trigger` (precautions
-   only). Do not fill `id`, `embedding`, `edges`, `novelty`, `recurrence`,
-   `state`, or `provenance` — the body fills those.
+   only), `snippet` (optional). Do not fill `id`, `embedding`, `edges`,
+   `novelty`, `recurrence`, `state`, or `provenance` — the body fills those.
+   `snippet` is free text carried straight on the entry — a code excerpt, a
+   table's column structure, an equation, a config block — whenever the
+   useful part of the idea already *is* a small piece of text and doesn't
+   need a real file (`brainny attach` is for that: a whole script, a small
+   plot image, a real table excerpt as its own file). Capped at 4000 chars
+   (`schema.py`'s `MAX_SNIPPET_CHARS`) — if it doesn't fit, it belongs in an
+   attached file instead, not truncated to fit here.
 4. Write the JSON array (possibly empty) to a file.
 5. Run: `brainny capture <path> --project <project-name> --session <session-id>`
 
@@ -31,6 +38,7 @@ template; the full instructions live in `skills/brainny/SKILL.md`.
   "detail": null,
   "domain": "...",
   "tags": ["..."],
-  "trigger": "..."
+  "trigger": "...",
+  "snippet": null
 }
 ```

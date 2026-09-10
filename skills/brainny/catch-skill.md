@@ -25,12 +25,13 @@ it points at, not just a recent window.
 ## What makes a "skill" different from a `technique`
 
 A `technique` is a description in prose. A `skill` is that description PLUS
-real evidence attached — a script, a small illustrative table, a small plot
-— substantial enough that a future session (human or AI) can literally
-follow it, not just read about it. If the conversation produced no evidence
-worth attaching (no code, no table shape, no plot), this probably isn't a
-`skill` — capture it as a `technique` via `/brainny-catch-this` instead. Ask
-the user if it's unclear which one fits.
+real evidence — an inline `snippet` (a code excerpt, equation, or table
+structure kept as text directly on the entry) and/or a `brainny attach`ed
+file (a script, a small illustrative table, a small plot) — substantial
+enough that a future session (human or AI) can literally follow it, not
+just read about it. If the conversation produced no evidence worth keeping
+either way, this probably isn't a `skill` — capture it as a `technique` via
+`/brainny-catch-this` instead. Ask the user if it's unclear which one fits.
 
 ## What to do
 
@@ -43,22 +44,33 @@ the user if it's unclear which one fits.
 4. Draft ONE entry (rarely more — a skill is usually one coherent procedure)
    with `kind: "skill"`, per the schema in `brainny/schema.py`
    (`EntryInput`): `title`, `summary`, `detail` (the actual steps/structure,
-   written so someone could follow them cold), `domain`, `tags`. Set
+   written so someone could follow them cold), `domain`, `tags`, and
+   `snippet` if step 5 below finds inline evidence worth including. Set
    `origin: "human"` — same reasoning as `/brainny-catch-this`: the user
    pointed at this and said "keep it," which is what "human" means here
    regardless of who wrote any underlying code.
 5. Look at what the conversation actually produced for this procedure and
-   decide what's worth attaching as evidence — small, illustrative, NOT a
-   full dataset or a large file:
-   - `code` — the actual script/function that does it (e.g. the manhattan
-     plot function, the Snakemake `rule` block)
-   - `table` — a tiny excerpt showing the expected shape: column names,
-     one or two example rows, format notes — never the real dataset
-   - `plot` — a small example image of the output (a thumbnail-sized PNG,
-     not a publication-res figure)
-   If nothing suitable exists in the conversation as an actual file, don't
-   fabricate one — a skill entry with zero attachments is still valid, just
-   weaker; say so to the user rather than inventing a placeholder.
+   decide what's worth keeping as evidence. Two ways to carry it, pick
+   whichever fits the size:
+   - **`snippet`** (inline, on the entry itself, no file) — a short code
+     excerpt, an equation, a config block, a table's column-by-column
+     structure described as text — anything small enough to paste directly.
+     Capped at 4000 chars; if it doesn't fit, it belongs in an attached file
+     instead, not truncated down to squeeze in.
+   - **`brainny attach`** (a real file, copied to disk, 2 MB cap) — when the
+     evidence is genuinely a file: the actual script (not just an excerpt),
+     a small example plot image, or a real table excerpt saved as its own
+     `.csv`:
+     - `code` — the actual script/function that does it (e.g. the manhattan
+       plot function, the Snakemake `rule` block)
+     - `table` — a tiny excerpt showing the expected shape: column names,
+       one or two example rows, format notes — never the real dataset
+     - `plot` — a small example image of the output (a thumbnail-sized PNG,
+       not a publication-res figure)
+   A skill entry can carry both, or either alone. If nothing suitable
+   exists in the conversation, don't fabricate one — a skill entry with no
+   snippet and no attachments is still valid, just weaker; say so to the
+   user rather than inventing a placeholder.
 6. Write the entry to a file, then capture it:
    ```
    brainny capture <path-to-entry.json> --project <current-project-name> --session <session-id>

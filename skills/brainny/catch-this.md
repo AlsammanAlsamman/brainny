@@ -43,7 +43,11 @@ you is what you match against the conversation.
 4. If you find it, draft one entry (or a small handful, only if the
    description genuinely spans multiple distinct ideas) per the schema in
    `brainny/schema.py` (`EntryInput`): `kind`, `title`, `summary`, `detail`
-   (optional), `domain`, `tags`, `trigger` (precautions only), `origin`.
+   (optional), `domain`, `tags`, `trigger` (precautions only), `origin`,
+   `snippet` (optional — a code excerpt, equation, table-structure note, or
+   any other small piece of text worth keeping verbatim, carried inline on
+   the entry itself, capped at 4000 chars; no separate file needed for this
+   — that's what `brainny attach` is for instead, for real files).
    Use the project's `PROJECT_NATURE` descriptor the same way `/brainny`/
    `/brainny-catch` do (infer one silently if none exists yet).
    **`origin` is always `"human"` for this skill** — by construction, the

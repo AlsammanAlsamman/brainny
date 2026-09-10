@@ -54,10 +54,10 @@ purpose — and turn it into something durable:
   keeps coming back across sessions, brAInny notices and lets it grow.
 - A reusable **skill** — how a project should be structured, how a
   specific analysis or plot should be built — gets kept as a described
-  procedure *plus* real evidence: a small script, a tiny illustrative
-  table, a small plot, each shown as a badge on the idea so it's visible
-  at a glance which ones have something to literally follow, not just
-  read about.
+  procedure *plus* real evidence: a code excerpt, an equation, or a
+  table structure kept inline, and/or a small attached script, table, or
+  plot — each shown as a badge on the idea so it's visible at a glance
+  which ones have something to literally follow, not just read about.
 
 It works for anyone who works with AI, not just developers — a
 precaution, a structure, a working approach is the same shape of thing
@@ -172,6 +172,13 @@ as small badges (code / plot / table) on the idea in the dashboard, and
 capped at 2&nbsp;MB each — small enough to guide future use, not a copy
 of the full dataset or output.
 
+Not everything worth keeping needs a whole file, though — a code excerpt,
+an equation, a config block, a table's column structure can just live
+directly on the idea via the `snippet` field (capped at 4000 characters),
+no `brainny attach` call needed. Any capture skill can fill it in; the
+dashboard renders it as monospace text in the idea's expanded view, with
+its own small pencil badge next to the title.
+
 **2. See what you've kept:**
 
 ```bash
@@ -244,7 +251,7 @@ same as it asks before a local sync.
 
 ## Status
 
-**v0 · seed** — the core loop above is real and tested (83 tests).
+**v0 · seed** — the core loop above is real and tested (86 tests).
 Capture *and* proactive recall (`brainny recall` + the `brainny-recall`
 skill) both work today. Not yet built: automatic dedup/novelty scoring so
 `recurrence`/`state` truly evolve over time, decay for neglected ideas,
@@ -261,7 +268,7 @@ for the full build order and `SEED.md` for the complete design rationale
 brainny/                 the CLI + engine (Python, assistant-agnostic)
 skills/brainny/          the capture skills (assistant-facing prompts)
 prompts/                 entry + project-nature templates
-tests/                   83 tests, see SEED.md §6 for the testing philosophy
+tests/                   86 tests, see SEED.md §6 for the testing philosophy
 brainny-out/             where captures land when you use brainny *on*
                          this repo (gitignored — same as in any project;
                          not shipped, this is per-user local data)
