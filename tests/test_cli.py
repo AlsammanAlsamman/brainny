@@ -307,6 +307,39 @@ def test_set_central_rejects_a_file_path(tmp_path, capsys, isolated_config):
     assert "not a directory" in capsys.readouterr().err
 
 
+def test_set_central_clone_downloads_an_existing_one(tmp_path, capsys, isolated_config):
+    import subprocess
+
+    # a real git repo standing in for "an existing central brain on GitHub",
+    # already containing a synced project -- matching what set-central --clone
+    # is actually for: a second machine picking up knowledge from a first one.
+    source = tmp_path / "source-central"
+    subprocess.run(["git", "init", str(source)], check=True, capture_output=True)
+    subprocess.run(["git", "-C", str(source), "config", "user.email", "t@example.com"], check=True, capture_output=True)
+    subprocess.run(["git", "-C", str(source), "config", "user.name", "Test"], check=True, capture_output=True)
+    capture(FIXTURES / "sample_entries.json", project="otherproj", session="s1", out_dir=source / "otherproj")
+    subprocess.run(["git", "-C", str(source), "add", "."], check=True, capture_output=True)
+    subprocess.run(["git", "-C", str(source), "commit", "-m", "init"], check=True, capture_output=True)
+
+    target = tmp_path / "cloned-central"
+    code = main(["config", "set-central", str(target), "--clone", str(source)])
+    assert code == 0
+    out = capsys.readouterr().out
+    assert "cloned" in out
+    assert (target / "otherproj" / "graph.json").exists()
+    assert config_module.get_value("central-folder") == str(target)
+
+
+def test_set_central_clone_refuses_nonempty_target(tmp_path, capsys, isolated_config):
+    target = tmp_path / "already-has-stuff"
+    target.mkdir()
+    (target / "something.txt").write_text("x")
+
+    code = main(["config", "set-central", str(target), "--clone", "https://example.com/whatever.git"])
+    assert code == 1
+    assert "isn't empty" in capsys.readouterr().err
+
+
 def test_sync_without_central_configured_fails(tmp_path, capsys, isolated_config):
     out_dir = tmp_path / "out"
     capture(FIXTURES / "sample_entries.json", project="p", session="s1", out_dir=out_dir)
@@ -516,6 +549,69 @@ def test_sync_no_remote_no_push_is_informational_only(tmp_path, capsys, isolated
     code = main(["--out-dir", str(out_dir), "sync"])
     assert code == 0
     assert "local sync only" in capsys.readouterr().out
+
+
+# ---- step 11: `brainny status` reports central push staleness ----
+
+
+def test_status_no_push_line_when_central_is_not_a_git_repo(tmp_path, capsys, isolated_config):
+    out_dir = tmp_path / "out"
+    capture(FIXTURES / "sample_entries.json", project="myproj", session="s1", out_dir=out_dir)
+    main(["config", "set-central", str(tmp_path / "central")])
+    capsys.readouterr()
+    main(["--out-dir", str(out_dir), "sync"])
+    capsys.readouterr()
+
+    code = main(["--out-dir", str(out_dir), "status"])
+    assert code == 0
+    assert "central github:" not in capsys.readouterr().out
+
+
+def test_status_shows_recent_push_as_not_due(tmp_path, capsys, isolated_config, git_central):
+    central, bare = git_central
+    out_dir = tmp_path / "out"
+    capture(FIXTURES / "sample_entries.json", project="myproj", session="s1", out_dir=out_dir)
+    main(["config", "set-central", str(central)])
+    capsys.readouterr()
+    main(["--out-dir", str(out_dir), "sync", "--push"])
+    capsys.readouterr()
+
+    code = main(["--out-dir", str(out_dir), "status"])
+    assert code == 0
+    out = capsys.readouterr().out
+    assert "central github: last pushed" in out
+    assert "due for a GitHub push" not in out
+
+
+def test_status_flags_a_stale_central_as_due_for_push(tmp_path, capsys, isolated_config):
+    import os
+    import subprocess
+
+    central = tmp_path / "central"
+    _run(["git", "init", str(central)], tmp_path)
+    _run(["git", "-C", str(central), "config", "user.email", "t@example.com"], tmp_path)
+    _run(["git", "-C", str(central), "config", "user.name", "Test"], tmp_path)
+    (central / ".gitkeep").write_text("", encoding="utf-8")
+    _run(["git", "-C", str(central), "add", "."], tmp_path)
+    old_date = "2020-01-01T00:00:00+00:00"
+    env = {**os.environ, "GIT_AUTHOR_DATE": old_date, "GIT_COMMITTER_DATE": old_date}
+    subprocess.run(
+        ["git", "-C", str(central), "commit", "-m", "init"],
+        cwd=tmp_path, env=env, check=True, capture_output=True,
+    )
+
+    out_dir = tmp_path / "out"
+    capture(FIXTURES / "sample_entries.json", project="myproj", session="s1", out_dir=out_dir)
+    main(["config", "set-central", str(central)])
+    capsys.readouterr()
+    main(["--out-dir", str(out_dir), "sync"])
+    capsys.readouterr()
+
+    code = main(["--out-dir", str(out_dir), "status"])
+    assert code == 0
+    out = capsys.readouterr().out
+    assert "central github: last pushed" in out
+    assert "due for a GitHub push" in out
 
 
 # --- regression: version resolution must survive namespace-package shadowing ---

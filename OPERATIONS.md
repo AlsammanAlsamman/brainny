@@ -416,5 +416,41 @@ permission-gated local check — see above.
       (`C:\Users\...>` with no local graph at all), matching exactly the
       scenario that surfaced the gap.
 
+13. Cloning an existing central brain + real daily push cadence. ✅
+    - Two gaps in the same conversation: onboarding could only ever
+      *create* a new central folder — a second machine, or a fresh
+      install meant to pick up an *existing* central brain from GitHub,
+      had no path in. And `sync-interval-days` (step 2's config key) was
+      pure documentation — nothing in the code ever read it; there was
+      no real "every N days, push to GitHub" mechanism at all, despite
+      the original step-7 intent.
+    - `brainny config set-central <path> --clone <url>` (new `cli.py`
+      flag): clones an existing central repo instead of creating an
+      empty folder — refuses to clone into a path that already exists
+      and isn't empty, so it can't silently clobber something. Every
+      project previously synced there from any machine becomes
+      immediately visible via `brainny recall`/`search`/`open --central`.
+    - `brainny status` now reports real push staleness when the central
+      folder is a git repo: `central github: last pushed X day(s) ago
+      (push every Y day(s))`, flagged `- due for a GitHub push` once
+      `sync-interval-days` (now genuinely read from config, defaulting
+      to **1 day**, down from the old documented-only "3") has elapsed
+      since the central folder's last commit.
+    - `brainny-onboarding` gained a fork: brand-new central brain (as
+      before) vs. "I already have one" (asks for the URL + where to
+      clone it to, same concrete-location-choices discipline as before).
+      `brainny-sync-check` now checks *two* independent things each
+      session start — local drift (as before) and GitHub push
+      staleness — and can ask about either or both, but a yes to one
+      is never treated as consent for the other (still asymmetric-push
+      safe, `SEED.md` §1.7).
+    - 5 new tests (clone downloads and is usable, clone refuses a
+      non-empty target, status shows no push line when central isn't
+      git, status shows "not due" right after a push, status flags a
+      backdated commit as "due") — 69 tests total. Verified for real:
+      `brainny status` against the maintainer's actual (non-git, local-
+      only) central folder correctly shows no push-staleness line at
+      all, matching the local-only choice made during onboarding.
+
 Each step should land, get tested, and get dogfooded (per SEED.md §6
 Layer 7) before the next starts — same discipline as the v0 build.

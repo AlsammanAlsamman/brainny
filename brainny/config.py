@@ -26,7 +26,8 @@ KNOWN_KEYS = {
     "github-remote": "git remote URL for the central folder, if any (informational; "
     "the actual push target always comes from `git remote` in the central folder itself)",
     "git-auto-push": "'true' to let `brainny sync` push without needing --push each time",
-    "sync-interval-days": "how often the ambient reconciliation runs (default 3)",
+    "sync-interval-days": "how often `brainny status` flags the central folder as "
+    "due for a GitHub push, in days (default 1); read by cli.py's `_sync_interval_days()`",
     "project-nature": "one-line descriptor for this project's capture prompt",
     "onboarding-done": "'true' once the one-time central-folder setup offer "
     "(brainny-onboarding skill) has been asked, so it never asks again "

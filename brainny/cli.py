@@ -111,12 +111,59 @@ def cmd_status(args: argparse.Namespace) -> int:
     in_sync = len(central_graph.nodes) == len(graph.nodes)
     state = "in sync" if in_sync else f"{len(graph.nodes) - len(central_graph.nodes):+d} idea(s) since last sync"
     print(f"  central copy: {len(central_graph.nodes)} idea(s) at {graph_path(central_out)} ({state})")
+
+    days_since = _days_since_last_central_commit(Path(central))
+    if days_since is not None:
+        interval = _sync_interval_days()
+        due = " - due for a GitHub push (`brainny sync --push`)" if days_since >= interval else ""
+        print(f"  central github: last pushed {days_since:.1f} day(s) ago (push every {interval:g} day(s)){due}")
     return 0
+
+
+def _sync_interval_days() -> float:
+    raw = config.get_value("sync-interval-days")
+    if not raw:
+        return 1.0
+    try:
+        return float(raw)
+    except ValueError:
+        return 1.0
+
+
+def _days_since_last_central_commit(central_root: Path) -> float | None:
+    if not (central_root / ".git").is_dir():
+        return None
+    result = _run_git(["log", "-1", "--format=%cI"], central_root)
+    if result.returncode != 0 or not result.stdout.strip():
+        return None
+    try:
+        last = datetime.fromisoformat(result.stdout.strip())
+    except ValueError:
+        return None
+    if last.tzinfo is None:
+        last = last.replace(tzinfo=timezone.utc)
+    return (datetime.now(timezone.utc) - last).total_seconds() / 86400
 
 
 def cmd_config(args: argparse.Namespace) -> int:
     if args.action == "set-central":
         path = Path(args.path).expanduser().resolve()
+        clone_url = getattr(args, "clone", None)
+        if clone_url:
+            if path.exists() and any(path.iterdir()):
+                print(f"brainny: {path} already exists and isn't empty - won't clone into it.", file=sys.stderr)
+                return 1
+            path.parent.mkdir(parents=True, exist_ok=True)
+            result = subprocess.run(
+                ["git", "clone", clone_url, str(path)], capture_output=True, text=True
+            )
+            if result.returncode != 0:
+                print(f"brainny: git clone failed:\n{result.stderr}", file=sys.stderr)
+                return 1
+            config.set_value("central-folder", str(path))
+            print(f"brainny: cloned {clone_url} -> {path}")
+            print(f"brainny: central folder set to {path}")
+            return 0
         if path.exists() and not path.is_dir():
             print(f"brainny: {path} exists and is not a directory", file=sys.stderr)
             return 1
@@ -405,6 +452,10 @@ def build_parser() -> argparse.ArgumentParser:
         "set-central", help="set + validate the central folder path (creates it if missing)"
     )
     p_config_set_central.add_argument("path")
+    p_config_set_central.add_argument(
+        "--clone", metavar="URL",
+        help="clone an existing central folder from this git URL instead of creating an empty one (path must not already exist / must be empty)",
+    )
     p_config_set_central.set_defaults(func=cmd_config)
 
     p_sync = sub.add_parser("sync", help="push this project's ideas to the configured central folder")

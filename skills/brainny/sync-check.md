@@ -19,30 +19,45 @@ timer that can't exist for this architecture.
 
 1. If the `brainny` CLI isn't installed/on PATH: do nothing, silently.
 2. Run `brainny status` from the current project's directory.
-3. Read the output:
-   - `central folder: not configured` → nothing to do, stop silently.
-     Don't suggest setting one up — that's the user's call, unprompted.
-   - `central copy: not synced yet` → drift (never synced).
-   - `central copy: N idea(s) at ... (in sync)` → no drift, stop silently.
-   - `central copy: N idea(s) at ... (+K idea(s) since last sync)` → drift.
-4. If there's no drift, or no central folder configured: say nothing, do
-   nothing further this session.
-5. If there **is** drift, ask the user once, in plain chat (not a tool
-   popup) — something like:
+3. Read the output for **two independent things** — either, both, or
+   neither can apply:
+   - **Local drift** (this project → central folder):
+     - `central folder: not configured` → nothing to check here.
+     - `central copy: not synced yet` → drift (never synced).
+     - `central copy: N idea(s) at ... (in sync)` → no drift.
+     - `central copy: N idea(s) at ... (+K idea(s) since last sync)` → drift.
+   - **GitHub push staleness** (central folder → its git remote), only
+     printed at all when the central folder is a git repo:
+     - `central github: last pushed X day(s) ago (push every Y day(s))`
+       → up to date, nothing to do.
+     - `... - due for a GitHub push` → the central folder has gone
+       longer than `sync-interval-days` (default 1) since its last
+       commit — it may have unpushed local commits, or just nothing new
+       from anyone in a while; either way it's due for a check.
+4. If neither applies: say nothing, do nothing further this session —
+   the common, correct outcome.
+5. If **local drift** exists, ask once, in plain chat (not a tool
+   popup):
    `brainny: N idea(s) here haven't synced to central yet — run` `` `brainny sync` `` `now?`
-   Then wait for their reply like any normal question.
-6. Only on a clear yes, run `brainny sync` from the project directory.
-   Never add `--push` yourself — if they also want the GitHub push, that's
-   still a separate, explicit ask (`brainny sync --push`), per the
-   asymmetric/never-silent-push rule in `SEED.md` §1.7. Report the command's
-   own output back to them.
-7. On no / no reply / any other answer: drop it. Do not ask again later in
-   this same session. It's fine to ask again next session if drift still
-   exists then.
+6. If the central folder is **due for a GitHub push** (regardless of
+   whether step 5 also fired — combine into one message if both apply),
+   ask:
+   `brainny: the central folder hasn't been pushed to GitHub in over a day — run` `` `brainny sync --push` `` `now?`
+   This is still just an ask — never run `--push` without a clear yes,
+   per the asymmetric/never-silent-push rule in `SEED.md` §1.7. If the
+   user already said yes to a plain `brainny sync` in step 5 *and* a
+   GitHub push is also due, you can fold it into one command
+   (`brainny sync --push`) instead of running sync twice — use judgment,
+   don't make them answer the same question twice for one outcome.
+7. On no / no reply / any other answer to either question: drop it. Do
+   not ask again later in this same session. It's fine to ask again next
+   session if either condition still holds then.
 
 ## What this must never do
 
 - Never run more than once per session.
-- Never push to GitHub on its own initiative.
+- Never push to GitHub without an explicit yes to that specific
+  question — a yes to the local-sync question alone does not imply
+  consent to push.
 - Never touch any project other than the one the current session is in.
 - Never treat silence or an ambiguous answer as consent.

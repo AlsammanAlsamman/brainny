@@ -36,8 +36,16 @@ this session or any future one. They can always run
 `brainny config set-central <path>` by hand later — mention that once,
 briefly, then drop it.
 
-If they say yes, ask two things (one message, or `AskUserQuestion` with
-two questions is fine):
+If they say yes, ask **whether this is a new central brain or one they
+already have** — this is a real fork, not a detail:
+
+> Is this a brand-new central brain, or do you already have one — say,
+> from another machine, pushed to GitHub — that this one should pick up?
+
+### Path A — brand new
+
+Ask two more things (one message, or `AskUserQuestion` with two
+questions is fine):
 
 1. **Where.** Offer concrete default options rather than an open-ended
    "type a path": something like `~/brainny-central` (home directory) or
@@ -47,7 +55,31 @@ two questions is fine):
    a GitHub repo (so it syncs across machines / is durably backed up),
    or kept purely local for now. Local-only is a completely fine answer.
 
-## Executing the choice
+Then follow "Executing a new brain" below.
+
+### Path B — already have one
+
+Ask for the git URL of their existing central repo, then ask **where to
+clone it to** locally — same concrete-options approach as path A
+(`~/brainny-central`, `~/Documents/brainny-central`, or custom; don't
+guess).
+
+Then run:
+```
+brainny config set-central <chosen-path> --clone <their-url>
+```
+This downloads their existing central brain — every project they'd
+already synced from any other machine becomes immediately readable here
+via `brainny recall`/`brainny search`/`brainny open --central`, without
+waiting for anything to happen in *this* project first. If the clone
+fails (bad URL, no access, `git` not installed), say so plainly and offer
+path A instead rather than leaving them stuck.
+
+Run `brainny config set onboarding-done true` after a successful clone
+and report back the path and how many projects came with it (`ls` the
+cloned folder, or just glance at it).
+
+## Executing a new brain
 
 1. Run `brainny config set-central <chosen-path>`. This creates the
    folder and points every future `brainny sync` at it (see
@@ -79,6 +111,11 @@ two questions is fine):
      URL — either is fine.
    - `git init` the central folder if `gh repo create --source` didn't
      already, commit whatever's there, and do the initial push.
+   - Mention the daily push check (see `brainny-sync-check`'s skill
+     doc): once this is GitHub-backed, `brainny status` will start
+     flagging it as "due for a GitHub push" once a day by default
+     (`sync-interval-days`), and `brainny-sync-check` will offer to push
+     when that happens — they don't need to remember to do it by hand.
    - Run `brainny config set onboarding-done true`.
 4. Report back in a few short lines what got set up (path, and whether
    it's GitHub-backed) — this is a one-time, visible setup event, not an
@@ -87,10 +124,13 @@ two questions is fine):
 ## What this must never do
 
 - Never ask more than once, regardless of the answer.
-- Never invent a path or create a GitHub repo without the user choosing
-  that path/that GitHub option first — always ask, per the user's
-  explicit requirement that this "should ask the user."
-- Never make the repo public without being told to.
+- Never invent a path, clone a URL, or create a GitHub repo without the
+  user choosing that specific path/URL/option first — always ask, per
+  the user's explicit requirement that this "should ask the user."
+- Never make a new repo public without being told to.
+- Never clone into a non-empty directory — `set-central --clone` already
+  refuses this itself, but don't route around it by clearing a directory
+  first either.
 - Never block other work in the session on this — if the user seems
   busy or mid-task when this would fire, it's fine to ask briefly and
   move on to whatever they actually came to do; this isn't urgent.

@@ -185,8 +185,8 @@ moment, every time.
 | `/brainny` | manually, end of a session | full two-pass review of the whole session (project-aware + project-blind); project-local only — copy `skills/brainny/SKILL.md` into a project to use it there |
 | `/brainny-catch` | manually, or every ~25 min in the background | lightweight scan of the last ~25 min for anything worth keeping; silent when it finds nothing |
 | `/brainny-catch-this <description>` | manually, whenever you point at something | searches the *whole* session for what you describe and captures it; always tells you what it did |
-| `/brainny-sync-check` | automatically, once per session | checks for drift against your central folder and asks before syncing |
-| `/brainny-onboarding` | automatically, once ever per machine | offers to set up a central folder (and optionally GitHub) on first use |
+| `/brainny-sync-check` | automatically, once per session | checks for local drift and for an overdue GitHub push, asking before either |
+| `/brainny-onboarding` | automatically, once ever per machine | offers to set up a new central folder, or download an existing one, plus optional GitHub, on first use |
 | `/brainny-recall` | automatically, once per session, after your first message | surfaces anything relevant you've captured before — in this project or any other one — before the task starts |
 
 All but `/brainny` are installed globally, once, and then work in any project.
@@ -195,19 +195,24 @@ All but `/brainny` are installed globally, once, and then work in any project.
 skill above offers to do this for you on first run — or by hand):
 
 ```bash
-brainny config set-central ~/brainy-central   # point at a shared folder
-brainny sync                                    # push this project's ideas there
-brainny sync --push                              # + commit & push, if that folder has a git remote
+brainny config set-central ~/brainny-central          # point at a new shared folder
+brainny config set-central ~/brainny-central --clone <git-url>  # ...or download an existing one (another machine, GitHub)
+brainny sync                                            # push this project's ideas there
+brainny sync --push                                      # + commit & push, if that folder has a git remote
 ```
 
 Sync only ever flows project → central. Central never overwrites a
-project's own copy unless you explicitly ask for that.
+project's own copy unless you explicitly ask for that. If the central
+folder is GitHub-backed, `brainny status` tracks how long it's been
+since the last push and flags it as due once `sync-interval-days` has
+passed (default **1 day**) — `brainny-sync-check` asks before pushing,
+same as it asks before a local sync.
 
 ---
 
 ## Status
 
-**v0 · seed** — the core loop above is real and tested (64 tests).
+**v0 · seed** — the core loop above is real and tested (69 tests).
 Capture *and* proactive recall (`brainny recall` + the `brainny-recall`
 skill) both work today. Not yet built: automatic dedup/novelty scoring so
 `recurrence`/`state` truly evolve over time, decay for neglected ideas,
@@ -224,7 +229,7 @@ for the full build order and `SEED.md` for the complete design rationale
 brainny/                 the CLI + engine (Python, assistant-agnostic)
 skills/brainny/          the capture skills (assistant-facing prompts)
 prompts/                 entry + project-nature templates
-tests/                   64 tests, see SEED.md §6 for the testing philosophy
+tests/                   69 tests, see SEED.md §6 for the testing philosophy
 brainny-out/             where captures land when you use brainny *on*
                          this repo (gitignored — same as in any project;
                          not shipped, this is per-user local data)
