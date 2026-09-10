@@ -78,6 +78,13 @@ Nothing runs on a server, nothing leaves your machine unless you
 explicitly point it at a central folder — and even then, syncing to
 GitHub is a separate, explicit command, never silent.
 
+**Not locked to one AI.** The brain (the `brainny` CLI + `graph.json`) is
+plain, assistant-agnostic Python — the skills in `skills/brainny/` are
+just markdown instructions plus shell commands. The ones built and tested
+so far target Claude Code, but nothing about the design is Claude-only:
+any assistant that can read an instruction file and run a shell command
+can drive brainny the same way.
+
 ---
 
 ## Install
@@ -220,5 +227,5 @@ central/GitHub sync model in full.
 
 | Name | Contact |
 |---|---|
-| Samman Mahmoud | [aalsamman100@gmail.com](mailto:aalsamman100@gmail.com) |
+| Alsamman M. Alsamman | [aalsamman100@gmail.com](mailto:aalsamman100@gmail.com) |
 | M. M. Adeel | [m.muzammal.adeel@outlook.com](mailto:m.muzammal.adeel@outlook.com) |

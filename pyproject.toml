@@ -6,7 +6,7 @@ readme = "README.md"
 requires-python = ">=3.10"
 license = { file = "LICENSE" }
 authors = [
-    { name = "Samman Mahmoud", email = "sammanmahmoud@gmail.com" },
+    { name = "Alsamman M. Alsamman", email = "aalsamman100@gmail.com" },
 ]
 keywords = ["ai", "claude", "knowledge-management", "notes", "productivity", "cli"]
 classifiers = [
