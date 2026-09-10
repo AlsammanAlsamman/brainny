@@ -825,6 +825,14 @@ permission-gated local check — see above.
       matching the total isn't a bug, just an honest reflection of the
       tool being two days old (every real idea's `last_touched` is
       genuinely within the last 3 days right now).
+    - Fully dogfooded end to end, not just generated and screenshotted:
+      pushed `assets/badge-example.svg` to this repo, then actually
+      cloned the maintainer's own GitHub profile repo
+      (`<username>/<username>`), added the image to its `README.md`
+      (shown as a diff before pushing, since it edits a public page), and
+      pushed — confirmed live via the raw URL afterward. README's badge
+      section rewritten from a one-line pointer into the real, exact
+      step-by-step this dogfood run followed.
 
 Each step should land, get tested, and get dogfooded (per SEED.md §6
 Layer 7) before the next starts — same discipline as the v0 build.

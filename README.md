@@ -302,15 +302,45 @@ brainny badge --out assets/badge.svg # write it somewhere specific
 </p>
 
 Nothing gets uploaded anywhere — `brainny badge` only ever writes a local
-`.svg` file, same "no silent push" rule as everything else here. To
-actually show it on a GitHub profile: commit the file somewhere public
-(this repo, or your profile's own special `<username>/<username>` repo)
-and embed it with `![brainny activity](https://raw.githubusercontent.com/<user>/<repo>/<branch>/badge.svg)`.
-Shows: idea count, kind breakdown (skills/techniques/precautions),
-domains, project count, and how many ideas were touched in the last 3
-days — not "novelty," since that scoring model isn't built yet (see
-Status below); this recency count uses the same honest proxy the
-dashboard's own Stats tab already does.
+`.svg` file, same "no silent push" rule as everything else here. Shows:
+idea count, kind breakdown (skills/techniques/precautions), domains,
+project count, and how many ideas were touched in the last 3 days — not
+"novelty," since that scoring model isn't built yet (see Status below);
+this recency count uses the same honest proxy the dashboard's own Stats
+tab already does.
+
+**Putting it on a GitHub profile, step by step:**
+
+1. Generate it, pointed at a file inside a **public** repo you can push
+   to (this `brainny` repo works fine — that's what `assets/badge-example.svg`
+   above actually is):
+   ```bash
+   brainny badge --out assets/badge.svg
+   ```
+2. Commit and push that file, same as any other change:
+   ```bash
+   git add assets/badge.svg && git commit -m "Update brainny badge" && git push
+   ```
+3. Grab its raw URL: `https://raw.githubusercontent.com/<user>/<repo>/<branch>/assets/badge.svg`.
+4. If you want it on your **profile page** specifically (not just this
+   repo), that lives in a separate, special repo named exactly after your
+   username — `github.com/<username>/<username>`. Clone it, add the image
+   to its `README.md`:
+   ```bash
+   git clone https://github.com/<username>/<username>.git
+   cd <username>
+   ```
+   ```markdown
+   ![brainny activity](https://raw.githubusercontent.com/<user>/<repo>/<branch>/assets/badge.svg)
+   ```
+   then `git add README.md && git commit -m "Add brainny activity badge" && git push`.
+5. Re-run step 1–2 any time you want the badge to reflect newer activity
+   — your profile page re-fetches the raw URL on every view, so nothing
+   on the profile-repo side needs to change again.
+
+No step here runs on its own — capturing, syncing, and badge generation
+never push to GitHub by themselves, so this is always something you (or
+an assistant you've explicitly asked) does deliberately.
 
 ---
 
