@@ -27,10 +27,24 @@ work*. For each, decide its `kind`:
 - `solution` — a concrete working answer to a specific problem, worth reusing
 - `insight` — a conceptual realization
 
+Also decide its `origin` — who actually originated this, independent of kind:
+- `"human"` — the user did/said/decided it; you're just the one capturing it.
+- `"ai"` — you (the assistant) figured it out yourself — a mistake you caught,
+  a technique you landed on — without the user directing it.
+- `"collaborative"` — genuinely built together, back and forth.
+This matters: the human supplies direction and innovation, the AI supplies
+collective/pattern knowledge, and telling them apart is what makes the
+distinction between "what I decided" and "what the model already knew"
+visible later. Make the call per entry; don't default to one side out of
+convenience, and prefer `"collaborative"` over a guess if it's genuinely
+mixed.
+
 ### Pass 2 — project-blind seed catcher (recall)
 Ignore the project's nature entirely. Look for the tangent — the "huh, that's
 interesting and unrelated" moment, the off-topic spark. Do NOT classify or place
-it. Emit it as `kind: seed`. Bias toward flagging; time will sort it out.
+it. Emit it as `kind: seed`. Bias toward flagging; time will sort it out. Still
+set `origin` the same way as pass 1 if it's reasonably clear whose tangent it
+was; leave it unset only if you genuinely can't tell.
 
 ## The GATE (apply hard)
 For Pass 1, the default answer is usually NO. Emit an entry ONLY if it is:
@@ -50,7 +64,8 @@ Emit a JSON array of entries matching the schema in `brainny/schema.py`
 brainny capture <path-to-entries.json> --project <project-name> --session <session-id>
 ```
 For each entry fill: kind, title, summary (in the user's own reusable terms),
-detail (optional), domain/tags, and — for precautions — a `trigger` describing
-WHEN brainny should proactively surface it ("starting a METAL/GWAS run").
-Leave id, embedding, edges, novelty, recurrence, state, and provenance
-timestamps EMPTY — the body fills those.
+detail (optional), domain/tags, origin (human/ai/collaborative — see above),
+and — for precautions — a `trigger` describing WHEN brainny should
+proactively surface it ("starting a METAL/GWAS run"). Leave id, embedding,
+edges, novelty, recurrence, state, and provenance timestamps EMPTY — the
+body fills those.

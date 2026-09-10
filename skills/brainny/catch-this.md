@@ -43,9 +43,14 @@ you is what you match against the conversation.
 4. If you find it, draft one entry (or a small handful, only if the
    description genuinely spans multiple distinct ideas) per the schema in
    `brainny/schema.py` (`EntryInput`): `kind`, `title`, `summary`, `detail`
-   (optional), `domain`, `tags`, `trigger` (precautions only). Use the
-   project's `PROJECT_NATURE` descriptor the same way `/brainny`/
+   (optional), `domain`, `tags`, `trigger` (precautions only), `origin`.
+   Use the project's `PROJECT_NATURE` descriptor the same way `/brainny`/
    `/brainny-catch` do (infer one silently if none exists yet).
+   **`origin` is always `"human"` for this skill** — by construction, the
+   user is the one who just told you what to capture. That's what "human"
+   means here: not who typed the code, but who pointed at the idea and
+   said "keep this." Don't re-judge it per entry the way `/brainny-catch`
+   has to.
 5. Still use real judgment on `kind` and phrasing — the user telling you
    *what* to capture doesn't mean you skip making it well-formed and
    actually reusable-reading, same quality bar as the other two skills'

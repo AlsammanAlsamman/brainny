@@ -452,5 +452,46 @@ permission-gated local check — see above.
       only) central folder correctly shows no push-staleness line at
       all, matching the local-only choice made during onboarding.
 
+14. The `origin` field: human / AI / collaborative, filterable. ✅
+    - Everything up to this point captured *what* was learned but not
+      *who* originated it. The user's framing: humans supply direction
+      and innovation, the AI supplies collective/pattern knowledge, and
+      a lot of real work is genuinely both — collapsing that distinction
+      loses something real about how brainny's knowledge actually forms.
+    - New `Origin = Literal["human", "ai", "collaborative"]` on
+      `EntryInput`/`Node` (`brainny/schema.py`), `Optional[...] = None` —
+      missing/old entries read as "unclassified" (an honest fourth
+      state), never defaulted to a guessed value.
+    - Capture-skill rules, not a coin flip: `/brainny-catch-this` is
+      always `"human"` by construction (the user just told you what to
+      capture — that *is* the human-origin signal, regardless of who
+      wrote the underlying code). `/brainny-catch` and the full
+      `/brainny` review make a real per-entry judgment call, preferring
+      `"collaborative"` over guessing a side when genuinely mixed.
+    - The dashboard: a pill-button filter (All / Human / AI /
+      Collaborative / Unclassified) in the header, driving a single
+      `filteredData()` applied consistently to the itemized list, both
+      graph views, and every Stats tab number/chart — not a separate
+      filter per view. Idea nodes now carry an origin-colored ring
+      (kind fill stays the same); the "promising" highlight moved from
+      stroke color to stroke width so the two signals don't collide.
+      Added a "by origin" bar chart in Stats next to "by kind".
+    - Reconciled a real drift found along the way: the project-local
+      `skills/brainny/catch.md` (nominally the "source of truth" per its
+      own global mirror's header note) had fallen behind the actually-
+      running global copy — missing the "which project this captures
+      into" section entirely. Brought local back in sync with what was
+      really running before adding the origin-judgment instructions on
+      top, rather than building on the stale version.
+    - 4 new schema tests (each origin value accepted, invalid value
+      rejected, default is `None` not a guess) — 73 tests total.
+      Verified visually with headless Chrome: tagged the real local
+      graph with varied origins, screenshotted every view (list, both
+      graph views, Stats) to confirm the filter actually narrows every
+      one of them consistently, then restored the real data to its
+      honest `null`/unclassified state (these 24 ideas predate the
+      field — they were never actually re-judged, so leaving them
+      unclassified is the truthful choice, not a cosmetic default).
+
 Each step should land, get tested, and get dogfooded (per SEED.md §6
 Layer 7) before the next starts — same discipline as the v0 build.

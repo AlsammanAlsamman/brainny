@@ -57,6 +57,14 @@ It works for anyone who works with AI, not just developers — a
 precaution, a structure, a working approach is the same shape of thing
 whether you write code, contracts, prose, or research.
 
+**Every idea also remembers who came up with it** — `human`, `ai`, or
+`collaborative`. Not who typed it: who actually originated it. The human
+supplies direction and innovation; the AI supplies collective, pattern-level
+knowledge; a lot of real work is genuinely both. `/brainny-catch-this` is
+always `human` (you're the one pointing at it); the ambient skills judge it
+per idea. The dashboard's Graph, Stats, and idea list all filter by this —
+see it below.
+
 ---
 
 ## How it works, in one picture
@@ -87,16 +95,16 @@ any assistant that can read an instruction file and run a shell command
 can drive brainny the same way.
 
 <p align="center">
-  <img src="assets/screenshot-dashboard.png" alt="brAInny dashboard: force-directed network of captured ideas with a colored halo per domain cluster, plus an itemized list alongside" width="100%">
+  <img src="assets/screenshot-dashboard.png" alt="brAInny dashboard: force-directed network of captured ideas with a colored halo per domain cluster, a human/AI/collaborative origin filter, and an itemized list alongside" width="100%">
 </p>
 
-<p align="center"><sub>Graph tab — force network with cluster halos.</sub></p>
+<p align="center"><sub>Graph tab — force network with cluster halos. The row of pills under the tabs filters by who originated each idea.</sub></p>
 
 <p align="center">
-  <img src="assets/screenshot-stats.png" alt="brAInny dashboard Stats tab: domain treemap, per-cluster activity table, kind breakdown, and newest ideas" width="100%">
+  <img src="assets/screenshot-stats.png" alt="brAInny dashboard Stats tab: domain treemap, per-cluster activity table, kind breakdown, origin breakdown, and newest ideas" width="100%">
 </p>
 
-<p align="center"><sub>Stats tab — domain treemap, growth trends, kind breakdown. Both from <code>brainny query --html</code>, on this project's own real, dogfooded ideas.</sub></p>
+<p align="center"><sub>Stats tab — domain treemap, growth trends, kind + origin breakdown. Both from <code>brainny query --html</code>, on this project's own real, dogfooded ideas — all still "unclassified" here since they predate the origin field.</sub></p>
 
 ---
 
@@ -148,7 +156,7 @@ brainny status              # counts, domains, last capture, sync state
 brainny query                # your ideas as a terminal tree
 brainny query --html          # a browsable dashboard: brainny-out/graph.html
                                 #   Graph tab: radial tree / force network, click-to-inspect
-                                #   Stats tab: domain treemap, growth trends, kind breakdown
+                                #   Stats tab: domain treemap, growth trends, kind + origin breakdown
 brainny open                  # open that dashboard in your browser
 brainny open --central          # ...or the central folder's copy of this project instead
 brainny open --central --project X  # ...or an explicit project's central copy, from anywhere
@@ -212,7 +220,7 @@ same as it asks before a local sync.
 
 ## Status
 
-**v0 · seed** — the core loop above is real and tested (69 tests).
+**v0 · seed** — the core loop above is real and tested (73 tests).
 Capture *and* proactive recall (`brainny recall` + the `brainny-recall`
 skill) both work today. Not yet built: automatic dedup/novelty scoring so
 `recurrence`/`state` truly evolve over time, decay for neglected ideas,
@@ -229,7 +237,7 @@ for the full build order and `SEED.md` for the complete design rationale
 brainny/                 the CLI + engine (Python, assistant-agnostic)
 skills/brainny/          the capture skills (assistant-facing prompts)
 prompts/                 entry + project-nature templates
-tests/                   69 tests, see SEED.md §6 for the testing philosophy
+tests/                   73 tests, see SEED.md §6 for the testing philosophy
 brainny-out/             where captures land when you use brainny *on*
                          this repo (gitignored — same as in any project;
                          not shipped, this is per-user local data)

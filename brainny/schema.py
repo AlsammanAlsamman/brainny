@@ -15,6 +15,15 @@ from pydantic import BaseModel, Field, field_validator
 
 Kind = Literal["technique", "precaution", "solution", "insight", "seed"]
 State = Literal["seed", "sprouting", "mature", "harvested"]
+# Who actually originated the idea's content — not who ran the capture
+# command. "human": the person explicitly pointed at it (e.g.
+# /brainny-catch-this is always this, by construction — the user just
+# described it). "ai": the assistant noticed/figured it out itself
+# (a mistake it caught, a technique it landed on) without the human
+# calling it out. "collaborative": genuinely built together, back and
+# forth. Optional/None on older entries captured before this field
+# existed — "unclassified", not a fourth category.
+Origin = Literal["human", "ai", "collaborative"]
 EdgeType = Literal[
     "derived-from", "refines", "contradicts", "combines-with", "same-technique"
 ]
@@ -59,6 +68,7 @@ class EntryInput(BaseModel):
     domain: str = Field(min_length=1)
     tags: list[str] = Field(default_factory=list)
     trigger: Optional[str] = None
+    origin: Optional[Origin] = None
 
     @field_validator("trigger")
     @classmethod

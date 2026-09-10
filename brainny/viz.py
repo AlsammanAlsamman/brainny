@@ -49,12 +49,31 @@ STATE_META = {
     "harvested": {"label": "harvested fruit", "size": 0.34, "emissive": 0.65, "gold": True},
 }
 
+# who originated the idea's content (schema.py's Origin) -- an axis
+# independent of kind/state: humans supply the innovation and direction,
+# the AI supplies collective/pattern knowledge, and a lot of real work is
+# neither alone. None (pre-this-field entries) reads as "unclassified",
+# a real fourth bucket, not a guessed default.
+ORIGIN_COLOR = {
+    "human": "#e05a9a",
+    "ai": "#e8b23d",
+    "collaborative": "#3bb0a8",
+}
+ORIGIN_LABEL = {
+    "human": "human",
+    "ai": "AI",
+    "collaborative": "collaborative",
+    None: "unclassified",
+}
+UNCLASSIFIED_COLOR = "#5c6b63"
+
 
 def _node_line(node: Node) -> str:
     icon = KIND_ICON.get(node.kind, "?")
     tags = f" [{', '.join(node.tags)}]" if node.tags else ""
     recur = f" x{node.recurrence}" if node.recurrence > 1 else ""
-    return f"  [{icon}] ({node.state}{recur}) {node.title} - {node.id}{tags}"
+    origin = f" <{node.origin}>" if node.origin else ""
+    return f"  [{icon}] ({node.state}{recur}) {node.title} - {node.id}{tags}{origin}"
 
 
 def render_tree(graph: Graph) -> str:
@@ -109,6 +128,7 @@ def _build_payload(graph: Graph, title: str) -> dict:
                 "tags": n.tags,
                 "trigger": n.trigger,
                 "state": n.state,
+                "origin": n.origin,
                 "recurrence": n.recurrence,
                 "lastTouched": n.last_touched,
                 "session": prov.session if prov else None,
@@ -136,6 +156,9 @@ def _build_payload(graph: Graph, title: str) -> dict:
         "domainCount": len({n.domain for n in graph.nodes}),
         "kindColor": KIND_COLOR,
         "stateMeta": STATE_META,
+        "originColor": ORIGIN_COLOR,
+        "originLabel": {k: v for k, v in ORIGIN_LABEL.items() if k is not None},
+        "unclassifiedColor": UNCLASSIFIED_COLOR,
     }
 
 
@@ -175,6 +198,18 @@ _CSS = """
   .tab-btn:hover { background: rgba(255,255,255,0.06); color: #eef3ea; }
   .tab-btn.active { background: rgba(232,178,61,0.14); border-color: rgba(232,178,61,0.4); color: #f0e2bb; }
 
+  /* who originated an idea: human / AI / collaborative / all -- an axis
+     independent of kind/state, filterable across every view */
+  #origin-filter { display: flex; gap: 0.3rem; align-items: center; flex-wrap: wrap; }
+  .origin-btn {
+    background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.14); color: #c9d3c6;
+    font: inherit; font-size: 0.78rem; padding: 0.25rem 0.65rem; border-radius: 999px; cursor: pointer;
+    display: inline-flex; align-items: center; gap: 0.35rem;
+  }
+  .origin-btn:hover { background: rgba(255,255,255,0.09); }
+  .origin-btn .dot { width: 8px; height: 8px; border-radius: 50%; flex: none; }
+  .origin-btn.active { font-weight: 600; }
+
   main { flex: 1; display: grid; grid-template-columns: 300px 1fr; min-height: 0; }
   main#stats-main { display: block; overflow-y: auto; padding: 1.1rem 1.4rem 2rem; }
   #graph-main[hidden], #stats-main[hidden] { display: none !important; }
@@ -211,7 +246,7 @@ _CSS = """
 
   .kind-bars { display: flex; flex-direction: column; gap: 0.4rem; margin-top: 0.4rem; }
   .kind-bar-row { display: flex; align-items: center; gap: 0.6rem; font-size: 0.78rem; }
-  .kind-bar-label { width: 90px; flex: none; color: #c9d3c6; }
+  .kind-bar-label { width: 110px; flex: none; color: #c9d3c6; }
   .kind-bar-track { flex: 1; height: 10px; border-radius: 999px; background: rgba(255,255,255,0.06); overflow: hidden; }
   .kind-bar-fill { height: 100%; border-radius: 999px; }
   .kind-bar-count { width: 24px; flex: none; text-align: right; color: #8fa08c; }
@@ -307,6 +342,35 @@ _JS = """
     return idea.recurrence > 1 || idea.state !== 'seed';
   }
 
+  // ---- origin filter: who actually originated each idea (human / AI /
+  // collaborative / unclassified) -- independent of kind/state, and
+  // applied consistently across every view (list, both graphs, stats) ----
+  var activeOrigin = 'all';
+
+  function originColor(idea) {
+    if (!idea.origin) return DATA.unclassifiedColor || '#5c6b63';
+    return (DATA.originColor && DATA.originColor[idea.origin]) || DATA.unclassifiedColor || '#5c6b63';
+  }
+
+  function originLabel(idea) {
+    if (!idea.origin) return 'unclassified';
+    return (DATA.originLabel && DATA.originLabel[idea.origin]) || idea.origin;
+  }
+
+  function matchesOriginFilter(idea) {
+    if (activeOrigin === 'all') return true;
+    if (activeOrigin === 'unclassified') return !idea.origin;
+    return idea.origin === activeOrigin;
+  }
+
+  function filteredData() {
+    if (activeOrigin === 'all') return DATA;
+    var filtered = {};
+    for (var k in DATA) { if (Object.prototype.hasOwnProperty.call(DATA, k)) filtered[k] = DATA[k]; }
+    filtered.nodes = DATA.nodes.filter(matchesOriginFilter);
+    return filtered;
+  }
+
   function escapeHtml(s) {
     var div = document.createElement('div');
     div.textContent = s == null ? '' : String(s);
@@ -354,7 +418,9 @@ _JS = """
     if (!data.nodes.length) {
       var empty = document.createElement('p');
       empty.className = 'empty-note';
-      empty.textContent = 'No ideas captured yet. Run `brainny capture <entries.json>`.';
+      empty.textContent = (DATA.nodes.length && activeOrigin !== 'all')
+        ? 'No ' + activeOrigin + ' ideas yet \\u2014 try a different filter, or "All".'
+        : 'No ideas captured yet. Run `brainny capture <entries.json>`.';
       container.appendChild(empty);
       return;
     }
@@ -383,6 +449,7 @@ _JS = """
         titleRow.className = 'item-title-row';
         titleRow.innerHTML =
           '<span class="item-dot" style="background:' + (data.kindColor[idea.kind] || '#8a8f98') + '"></span>' +
+          '<span class="item-dot" style="background:' + originColor(idea) + '" title="' + escapeHtml(originLabel(idea)) + '"></span>' +
           '<span class="item-title">' + escapeHtml(idea.title) + '</span>' +
           '<span class="item-caret">\\u25b8</span>';
 
@@ -395,7 +462,7 @@ _JS = """
           (idea.detail ? '<p class="item-detail">' + escapeHtml(idea.detail) + '</p>' : '') +
           (idea.trigger ? '<p class="item-trigger"><strong>trigger:</strong> ' + escapeHtml(idea.trigger) + '</p>' : '') +
           '<p class="item-meta">' + escapeHtml(idea.kind) + ' \\u00b7 ' + escapeHtml(idea.state) +
-          ' \\u00b7 ' + escapeHtml(idea.id) + '</p>' +
+          ' \\u00b7 ' + escapeHtml(originLabel(idea)) + ' \\u00b7 ' + escapeHtml(idea.id) + '</p>' +
           '<div class="item-tags">' + tags + '</div>';
 
         titleRow.addEventListener('click', function () {
@@ -432,7 +499,12 @@ _JS = """
     focusFlashTimer = setTimeout(function () { el.classList.remove('item-flash'); }, 1400);
   }
 
-  renderItemList(document.getElementById('item-list-mount'), DATA);
+  function refreshItemList() {
+    var mount = document.getElementById('item-list-mount');
+    mount.innerHTML = '';
+    renderItemList(mount, filteredData());
+  }
+  refreshItemList();
 
   var vizEl = document.getElementById('viz');
   var tooltip = document.getElementById('tooltip');
@@ -465,7 +537,7 @@ _JS = """
 
   // ---- view 1: radial tree ----
   function renderRadialTree() {
-    var hierarchyData = buildHierarchy(DATA);
+    var hierarchyData = buildHierarchy(filteredData());
     var root = d3.hierarchy(hierarchyData);
 
     var width = vizEl.clientWidth;
@@ -508,8 +580,8 @@ _JS = """
         if (d.data.kind === 'branch') return '#7c8c6e';
         return DATA.kindColor[d.data.idea.kind] || '#8a8f98';
       })
-      .attr('stroke', function (d) { return d.data.kind === 'idea' && isPromising(d.data.idea) ? '#e8b23d' : 'none'; })
-      .attr('stroke-width', 2)
+      .attr('stroke', function (d) { return d.data.kind === 'idea' ? originColor(d.data.idea) : 'none'; })
+      .attr('stroke-width', function (d) { return d.data.kind === 'idea' && isPromising(d.data.idea) ? 3 : 1.5; })
       .style('cursor', 'pointer')
       .on('mouseenter', function (event, d) { showTooltip(event, tooltipHtml(d.data)); })
       .on('mousemove', function (event, d) { showTooltip(event, tooltipHtml(d.data)); })
@@ -530,7 +602,7 @@ _JS = """
 
   // ---- view 2: force network with cluster halos ----
   function renderForceClusters() {
-    var hierarchyData = buildHierarchy(DATA);
+    var hierarchyData = buildHierarchy(filteredData());
     var nodes = [];
     var links = [];
     var groupPalette = ['#3b6fd6', '#c9432c', '#2f9e5e', '#8b5cd6', '#d68a3b', '#3bb0d6', '#d63b8a'];
@@ -606,8 +678,8 @@ _JS = """
         if (d.kind === 'branch') return '#7c8c6e';
         return DATA.kindColor[d.idea.kind] || '#8a8f98';
       })
-      .attr('stroke', function (d) { return d.kind === 'idea' && isPromising(d.idea) ? '#e8b23d' : 'rgba(255,255,255,0.15)'; })
-      .attr('stroke-width', function (d) { return d.kind === 'idea' && isPromising(d.idea) ? 2.5 : 1; })
+      .attr('stroke', function (d) { return d.kind === 'idea' ? originColor(d.idea) : 'rgba(255,255,255,0.15)'; })
+      .attr('stroke-width', function (d) { return d.kind === 'idea' && isPromising(d.idea) ? 3 : 1.5; })
       .style('cursor', 'pointer')
       .on('mouseenter', function (event, d) { showTooltip(event, tooltipHtml(d)); })
       .on('mousemove', function (event, d) { showTooltip(event, tooltipHtml(d)); })
@@ -840,6 +912,28 @@ _JS = """
     mount.appendChild(wrap);
   }
 
+  function renderOriginBars(mount, data) {
+    var counts = { human: 0, ai: 0, collaborative: 0, unclassified: 0 };
+    data.nodes.forEach(function (n) { counts[n.origin || 'unclassified'] += 1; });
+    var max = Math.max.apply(null, Object.keys(counts).map(function (k) { return counts[k]; }).concat([1]));
+    var wrap = document.createElement('div');
+    wrap.className = 'kind-bars';
+    ['human', 'ai', 'collaborative', 'unclassified'].forEach(function (key) {
+      var n = counts[key];
+      var color = key === 'unclassified' ? (data.unclassifiedColor || '#5c6b63') : (data.originColor[key] || '#5c6b63');
+      var label = key === 'unclassified' ? 'unclassified' : (data.originLabel[key] || key);
+      var row = document.createElement('div');
+      row.className = 'kind-bar-row';
+      row.innerHTML =
+        '<span class="kind-bar-label">' + escapeHtml(label) + '</span>' +
+        '<span class="kind-bar-track"><span class="kind-bar-fill" style="width:' + (n / max * 100) +
+        '%;background:' + color + '"></span></span>' +
+        '<span class="kind-bar-count">' + n + '</span>';
+      wrap.appendChild(row);
+    });
+    mount.appendChild(wrap);
+  }
+
   function renderRecentList(mount, data) {
     var withTs = data.nodes.filter(function (n) { return n.lastTouched; })
       .slice().sort(function (a, b) { return new Date(b.lastTouched) - new Date(a.lastTouched); })
@@ -866,22 +960,27 @@ _JS = """
   function renderStatsView() {
     var mount = document.getElementById('stats-main');
     mount.innerHTML = '';
-    if (!DATA.nodes.length) {
-      mount.innerHTML = '<p class="empty-note" style="padding:2rem">No ideas captured yet \\u2014 nothing to show stats on.</p>';
+    var data = filteredData();
+    if (!data.nodes.length) {
+      mount.innerHTML = '<p class="empty-note" style="padding:2rem">' +
+        ((DATA.nodes.length && activeOrigin !== 'all')
+          ? 'No ' + escapeHtml(activeOrigin) + ' ideas yet \\u2014 try a different filter, or "All".'
+          : 'No ideas captured yet \\u2014 nothing to show stats on.') +
+        '</p>';
       return;
     }
 
-    var domains = buildDomainStats(DATA);
-    var recentTotal = DATA.nodes.filter(function (n) {
+    var domains = buildDomainStats(data);
+    var recentTotal = data.nodes.filter(function (n) {
       return n.lastTouched && Date.now() - new Date(n.lastTouched).getTime() <= RECENT_MS;
     }).length;
 
     var cards = document.createElement('div');
     cards.className = 'stat-cards';
     [
-      [DATA.nodes.length, 'ideas'],
+      [data.nodes.length, 'ideas'],
       [domains.length, 'domains'],
-      [DATA.sessions.length, 'sessions'],
+      [data.sessions.length, 'sessions'],
       [recentTotal, 'new (3d)'],
       [domains.filter(function (d) { return d.trend === 'growing'; }).length, 'growing clusters'],
       [domains.filter(function (d) { return d.trend === 'quiet'; }).length, 'quiet clusters'],
@@ -926,15 +1025,25 @@ _JS = """
     var kindBlock = document.createElement('div');
     kindBlock.className = 'stats-block';
     kindBlock.innerHTML = '<h2>by kind</h2>';
-    renderKindBars(kindBlock, DATA);
+    renderKindBars(kindBlock, data);
     bottom.appendChild(kindBlock);
 
+    var originBlock = document.createElement('div');
+    originBlock.className = 'stats-block';
+    originBlock.innerHTML = '<h2>by origin \\u2014 who came up with it</h2>';
+    renderOriginBars(originBlock, data);
+    bottom.appendChild(originBlock);
+    mount.appendChild(bottom);
+
+    var bottom2 = document.createElement('div');
+    bottom2.className = 'stats-grid';
+    bottom2.style.marginTop = '1.4rem';
     var recentBlock = document.createElement('div');
     recentBlock.className = 'stats-block';
     recentBlock.innerHTML = '<h2>newest ideas</h2>';
-    renderRecentList(recentBlock, DATA);
-    bottom.appendChild(recentBlock);
-    mount.appendChild(bottom);
+    renderRecentList(recentBlock, data);
+    bottom2.appendChild(recentBlock);
+    mount.appendChild(bottom2);
 
     renderTreemap(document.getElementById('treemap-mount'), domains);
     domains.forEach(function (d) {
@@ -965,14 +1074,16 @@ _JS = """
     vizEl.innerHTML = '';
     hideTooltip();
     descEl.textContent = DESCRIPTIONS[name];
-    if (DATA.nodes.length) {
+    if (filteredData().nodes.length) {
       currentCleanup = VIEWS[name]();
     } else {
       currentCleanup = null;
       var empty = document.createElement('p');
       empty.className = 'empty-note';
       empty.style.padding = '2rem';
-      empty.textContent = 'No ideas captured yet \\u2014 just the mother tree. Run `brainny capture <entries.json>`.';
+      empty.textContent = (DATA.nodes.length && activeOrigin !== 'all')
+        ? 'No ' + activeOrigin + ' ideas yet \\u2014 try a different filter, or "All".'
+        : 'No ideas captured yet \\u2014 just the mother tree. Run `brainny capture <entries.json>`.';
       vizEl.appendChild(empty);
     }
   }
@@ -991,13 +1102,45 @@ _JS = """
     descEl.hidden = name !== 'graph';
     if (name === 'stats') {
       renderStatsView();
-    } else if (!currentCleanup && DATA.nodes.length) {
+    } else if (!currentCleanup && filteredData().nodes.length) {
       switchView(select.value);
     }
   }
   document.querySelectorAll('.tab-btn').forEach(function (b) {
     b.addEventListener('click', function () { switchTab(b.dataset.tab); });
   });
+
+  function applyOriginFilterUI() {
+    document.querySelectorAll('.origin-btn').forEach(function (b) {
+      var on = b.dataset.origin === activeOrigin;
+      b.classList.toggle('active', on);
+      var color = b.dataset.color;
+      if (on && color) {
+        b.style.background = color + '29'; // ~16% alpha, hex shorthand
+        b.style.borderColor = color;
+        b.style.color = '#eef3ea';
+      } else if (on) {
+        b.style.background = 'rgba(255,255,255,0.14)';
+        b.style.borderColor = 'rgba(255,255,255,0.3)';
+        b.style.color = '#eef3ea';
+      } else {
+        b.style.background = '';
+        b.style.borderColor = '';
+        b.style.color = '';
+      }
+    });
+  }
+
+  document.querySelectorAll('.origin-btn').forEach(function (b) {
+    b.addEventListener('click', function () {
+      activeOrigin = b.dataset.origin;
+      applyOriginFilterUI();
+      refreshItemList();
+      if (activeTab === 'stats') renderStatsView();
+      else switchView(select.value);
+    });
+  });
+  applyOriginFilterUI();
 
   switchView(select.value);
 
@@ -1039,6 +1182,19 @@ def render_html(graph: Graph, title: str = "brainny") -> str:
         for state, meta in STATE_META.items()
     )
 
+    origin_buttons = ['<button type="button" class="origin-btn active" data-origin="all">All</button>']
+    for origin, color in ORIGIN_COLOR.items():
+        label = _esc(ORIGIN_LABEL[origin])
+        origin_buttons.append(
+            f'<button type="button" class="origin-btn" data-origin="{origin}" data-color="{color}">'
+            f'<span class="dot" style="background:{color}"></span>{label}</button>'
+        )
+    origin_buttons.append(
+        f'<button type="button" class="origin-btn" data-origin="unclassified" data-color="{UNCLASSIFIED_COLOR}">'
+        f'<span class="dot" style="background:{UNCLASSIFIED_COLOR}"></span>unclassified</button>'
+    )
+    origin_filter_html = "".join(origin_buttons)
+
     subtitle = (
         f"{len(graph.nodes)} idea(s) · {payload['domainCount']} branch(es), "
         f"grown over {len(payload['sessions'])} session(s)"
@@ -1071,8 +1227,11 @@ def render_html(graph: Graph, title: str = "brainny") -> str:
       <option value="force">Force network with cluster halos</option>
     </select>
   </div>
+  <div class="row" style="margin-top:0.5rem">
+    <nav id="origin-filter">{origin_filter_html}</nav>
+  </div>
   <p id="view-desc"></p>
-  <p class="note">{_esc(subtitle)} · sizing/highlighting uses the real <code>recurrence</code>/<code>state</code> fields, but v0.1 (dedup/stats) doesn't exist yet — every idea is currently <code>recurrence: 1</code>, <code>state: "seed"</code>, so nothing visibly stands out yet. Click any idea to jump to it in the list.</p>
+  <p class="note">{_esc(subtitle)} · sizing/highlighting uses the real <code>recurrence</code>/<code>state</code> fields, but v0.1 (dedup/stats) doesn't exist yet — every idea is currently <code>recurrence: 1</code>, <code>state: "seed"</code>, so nothing visibly stands out yet. Click any idea to jump to it in the list. The <strong>human / AI / collaborative</strong> filter above shows who actually originated each idea — the human supplies direction and innovation, the AI supplies collective/pattern knowledge, and a lot of real work is both.</p>
 </header>
 <main id="graph-main">
   <div id="panel">

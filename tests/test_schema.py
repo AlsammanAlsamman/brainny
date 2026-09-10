@@ -28,6 +28,18 @@ def test_entry_minimal_fields():
     assert entry.detail is None
     assert entry.tags == []
     assert entry.trigger is None
+    assert entry.origin is None  # unclassified, not a guessed default
+
+
+@pytest.mark.parametrize("origin", ["human", "ai", "collaborative"])
+def test_entry_accepts_each_origin(origin):
+    entry = EntryInput(kind="insight", title="t", summary="s", domain="d", origin=origin)
+    assert entry.origin == origin
+
+
+def test_entry_rejects_invalid_origin():
+    with pytest.raises(ValidationError):
+        EntryInput(kind="insight", title="t", summary="s", domain="d", origin="robot")
 
 
 @pytest.mark.parametrize(

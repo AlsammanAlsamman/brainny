@@ -139,6 +139,8 @@ This one shape is **both** the JSON entry (Part 1 → Body) **and** the node for
   "domain": "<whatever the project is>",
   "tags": ["data-quality", "merge", "validation"],
   "trigger": "before merging or combining multiple data sources",  // precautions only: when to surface
+  "origin": "human",             // human | ai | collaborative | null (unclassified) — who actually
+                                  // originated the idea's content, not who ran the capture command
 
   // ---- filled by the BODY (Part 2) ----
   "id": "idea_0007",
@@ -162,7 +164,7 @@ This one shape is **both** the JSON entry (Part 1 → Body) **and** the node for
 }
 ```
 
-Why each field earns its place: `embedding`+`novelty` → candidate neighbors & the novelty band; `provenance`+`recurrence` → recurrence signal & seed promotion; `growth_log`+`state` → the temporal tree; `edges` → the typed graph; `last_touched` → decay math; `trigger` → proactive surfacing.
+Why each field earns its place: `embedding`+`novelty` → candidate neighbors & the novelty band; `provenance`+`recurrence` → recurrence signal & seed promotion; `growth_log`+`state` → the temporal tree; `edges` → the typed graph; `last_touched` → decay math; `trigger` → proactive surfacing; `origin` → who to credit — the human supplies direction and innovation, the AI supplies collective/pattern knowledge, and a lot of real work is genuinely both; keeping that distinction visible (and filterable — see the dashboard's origin filter) is what keeps brainny from flattening into an undifferentiated pile of "stuff that happened."
 
 ---
 
