@@ -91,7 +91,10 @@ The diagram above is the pitch; this is the literal mechanics:
 
 Nothing runs on a server, nothing leaves your machine unless you
 explicitly point it at a central folder — and even then, syncing to
-GitHub is a separate, explicit command, never silent.
+GitHub is a separate, explicit command, never silent. `graph.html` itself
+has zero network dependency, too — D3 is vendored and baked directly
+into the file, not pulled from a CDN, so it renders identically offline,
+behind a firewall, or years from now regardless of what's still online.
 
 **Not locked to one AI.** The brain (the `brainny` CLI + `graph.json`) is
 plain, assistant-agnostic Python — the skills in `skills/brainny/` are

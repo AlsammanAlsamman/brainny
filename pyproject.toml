@@ -39,3 +39,10 @@ build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]
 include = ["brainny*"]
+
+[tool.setuptools.package-data]
+# The vendored D3 copy graph.html embeds inline (brainny/viz.py's
+# _D3_JS) -- must ship in the built package, not just the editable
+# dev-install source tree, or a real `pip install brainny` gets a
+# FileNotFoundError importing brainny.viz.
+brainny = ["vendor/*.js", "vendor/*.txt"]

@@ -13,6 +13,18 @@ from pathlib import Path
 from brainny.graph import DEFAULT_OUT_DIR, html_path
 from brainny.schema import Graph, Node
 
+# Vendored, not CDN-loaded: graph.html used to pull D3 from
+# cdn.jsdelivr.net at view time, which silently produced a blank graph
+# (data present, nothing drawn) for anyone opening it offline or behind a
+# firewall that blocks that CDN -- a real user hit exactly this. Baking
+# the library's own source into the generated HTML instead makes the
+# "static, self-contained, git-shareable file" claim above literally true
+# -- no network needed to view it, ever. Pinned at v7.9.0 to match the
+# `<option>`s/behavior this file's JS was written against; bump
+# brainny/vendor/d3.v7.9.0.min.js (and this filename/path) together if
+# that version ever changes. License: brainny/vendor/D3_LICENSE.txt.
+_D3_JS = (Path(__file__).parent / "vendor" / "d3.v7.9.0.min.js").read_text(encoding="utf-8")
+
 KIND_ICON = {
     "technique": "T",
     "precaution": "!",
@@ -1221,22 +1233,24 @@ _JS = """
 
 
 def render_html(graph: Graph, title: str = "brainny") -> str:
-    """Render graph.json as a navigable dashboard (D3, CDN-loaded) with two
-    tabs. Graph tab: a dropdown switches between a radial tree (domains
-    branching from a center, ideas as rim leaves) and a force-directed
-    network with a colored halo per domain group, alongside an itemized
-    accordion list (click a title to unfold summary/detail/trigger/tags).
-    Clicking an idea in either graph opens + scrolls to its entry in the
-    list. Ideas are sized/highlighted by growth state and kind — real
-    fields, but inert until v0.1 (dedup.py/stats.py) makes recurrence/
-    state actually vary. Stats tab: a domain treemap (size = idea count,
-    color = activity) plus a per-cluster table, kind breakdown, and a
-    newest-ideas feed — all derived from real timestamps/domains/kinds
-    (no fabricated data), with "growing"/"quiet" as an honest recency
-    proxy rather than the real decay/novelty model v0.1 will bring.
-    Clicking a cluster jumps to it in the Graph tab's idea list. Falls
-    back to the plain terminal tree if D3 can't load. No server involved
-    — a static, self-contained, git-shareable file."""
+    """Render graph.json as a navigable dashboard (D3, vendored inline —
+    see `_D3_JS` above, no CDN/network dependency) with two tabs. Graph
+    tab: a dropdown switches between a radial tree (domains branching from
+    a center, ideas as rim leaves) and a force-directed network with a
+    colored halo per domain group, alongside an itemized accordion list
+    (click a title to unfold summary/detail/trigger/tags). Clicking an
+    idea in either graph opens + scrolls to its entry in the list. Ideas
+    are sized/highlighted by growth state and kind — real fields, but
+    inert until v0.1 (dedup.py/stats.py) makes recurrence/state actually
+    vary. Stats tab: a domain treemap (size = idea count, color =
+    activity) plus a per-cluster table, kind breakdown, and a newest-ideas
+    feed — all derived from real timestamps/domains/kinds (no fabricated
+    data), with "growing"/"quiet" as an honest recency proxy rather than
+    the real decay/novelty model v0.1 will bring. Clicking a cluster jumps
+    to it in the Graph tab's idea list. Falls back to the plain terminal
+    tree in the (now near-impossible) case the embedded D3 fails to
+    execute. No server involved — a static, self-contained, git-shareable
+    file that renders identically with zero network access."""
 
     payload = _build_payload(graph, title)
     data_json = json.dumps(payload, ensure_ascii=False).replace("</", "<\\/")
@@ -1316,8 +1330,9 @@ def render_html(graph: Graph, title: str = "brainny") -> str:
 <pre id="fallback" hidden>{_esc(render_tree(graph))}</pre>
 <script id="brainny-data" type="application/json">"""
 
+    d3_js = _D3_JS.replace("</", "<\\/")
     scripts = f"""</script>
-<script src="https://cdn.jsdelivr.net/npm/d3@7.9.0/dist/d3.min.js" crossorigin="anonymous"></script>
+<script>{d3_js}</script>
 <script>{_JS}</script>
 </body>
 </html>

@@ -83,9 +83,16 @@ def test_render_html_escapes_script_breakout():
     assert "<\\/script>" in out
 
 
-def test_render_html_cdn_references():
+def test_render_html_embeds_d3_with_no_cdn_dependency():
+    # D3 is vendored and baked directly into the HTML (brainny/viz.py's
+    # _D3_JS) so the dashboard renders with zero network access -- a real
+    # user's central-folder graph.html rendered blank because the old CDN
+    # <script src> silently failed to load offline. No cdn.jsdelivr.net
+    # reference should remain, and the actual library source must be here.
     out = render_html(Graph())
-    assert "d3@7.9.0/dist/d3.min.js" in out
+    assert "cdn.jsdelivr.net" not in out
+    assert "<script src=" not in out
+    assert "d3js.org v7.9.0" in out  # D3's own version banner comment
     # no leftover references to the retired 3D-tree-browser implementation
     assert "three@" not in out
     assert "3d-force-graph" not in out

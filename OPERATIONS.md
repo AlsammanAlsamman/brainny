@@ -625,5 +625,44 @@ permission-gated local check — see above.
       separate `brainny sync` call, then confirmed the real folder was
       clean of test pollution afterward.
 
+18. Vendor D3 inline — graph.html no longer depends on a CDN. ✅
+    - Real gap, found by a real user hitting it: they synced 4 ideas to
+      central successfully, confirmed the data was genuinely in
+      graph.json, but `graph.html` still rendered blank when opened.
+      Traced it to `<script src="https://cdn.jsdelivr.net/npm/d3@7.9.0/
+      dist/d3.min.js">` — the page depended on fetching D3 from a CDN at
+      *view* time, and if that fails (offline, a firewall/proxy blocking
+      that host, or just a flaky network at the moment the file happens
+      to be opened) the page loads with the data sitting right there in
+      it but nothing ever gets drawn, no visible error either. This
+      directly contradicted this file's own docstring/README claim of
+      being a "static, self-contained, git-shareable file."
+    - Fixed by vendoring D3 v7.9.0 (same version that was pinned via CDN)
+      into `brainny/vendor/d3.v7.9.0.min.js` (+ `D3_LICENSE.txt`,
+      ISC-style, ~280&nbsp;KB) and baking its source directly into the
+      generated HTML (`viz.py`'s `_D3_JS`, loaded once at import time,
+      same `</` escaping already used for the embedded data block) in
+      place of the CDN `<script src>` tag. `graph.html` genuinely has
+      zero network dependency now — it renders identically offline,
+      behind a firewall, or years from now regardless of what's still
+      reachable online. `pyproject.toml` gained
+      `[tool.setuptools.package-data]` so the vendored file actually
+      ships in a real (non-editable) `pip install`, not just this dev
+      checkout.
+    - Updated the one existing test that had been asserting the CDN URL
+      was present (`test_render_html_cdn_references` →
+      `test_render_html_embeds_d3_with_no_cdn_dependency`) to instead
+      assert no `cdn.jsdelivr.net`/`<script src=` remains and D3's own
+      version-banner comment is actually embedded — 90 tests total
+      (unchanged count; this replaced a test rather than adding one).
+      Verified for real, reproducing the exact failure: rendered a fresh
+      dashboard and screenshotted it with headless Chrome launched with
+      `--host-resolver-rules="MAP * 0.0.0.0"` (every external host
+      unreachable, matching the user's blank-page scenario) — the graph
+      drew correctly with real data, confirming the fix under the actual
+      failure condition, not just "the tests still pass." Regenerated and
+      re-synced this repo's own dogfooded `graph.html` (local + central)
+      with the fix afterward.
+
 Each step should land, get tested, and get dogfooded (per SEED.md §6
 Layer 7) before the next starts — same discipline as the v0 build.
