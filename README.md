@@ -194,7 +194,7 @@ project's own copy unless you explicitly ask for that.
 
 ## Status
 
-**v0 · seed** — the core loop above is real and tested (60 tests).
+**v0 · seed** — the core loop above is real and tested (64 tests).
 Capture *and* proactive recall (`brainny recall` + the `brainny-recall`
 skill) both work today. Not yet built: automatic dedup/novelty scoring so
 `recurrence`/`state` truly evolve over time, decay for neglected ideas,
@@ -212,7 +212,7 @@ what's *not* built yet as what is.
 brainny/                 the CLI + engine (Python, assistant-agnostic)
 skills/brainny/          the capture skills (assistant-facing prompts)
 prompts/                 entry + project-nature templates
-tests/                   60 tests, see SEED.md §6 for the testing philosophy
+tests/                   64 tests, see SEED.md §6 for the testing philosophy
 brainny-out/             where captures land when you use brainny *on*
                          this repo (gitignored — same as in any project;
                          not shipped, this is per-user local data)
