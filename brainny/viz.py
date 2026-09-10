@@ -11,7 +11,23 @@ from collections import defaultdict
 from pathlib import Path
 
 from brainny.graph import DEFAULT_OUT_DIR, html_path
-from brainny.schema import Graph, Node
+from brainny.opportunities import load_opportunities
+from brainny.schema import Graph, Node, Opportunities
+
+OPPORTUNITY_KIND_COLOR = {
+    "tool": "#3b6fd6",
+    "website": "#2f9e5e",
+    "statistical-module": "#8b5cd6",
+    "business-idea": "#e8b23d",
+    "other": "#8a8f98",
+}
+OPPORTUNITY_KIND_LABEL = {
+    "tool": "tool",
+    "website": "website",
+    "statistical-module": "statistical module",
+    "business-idea": "business idea",
+    "other": "other",
+}
 
 # Vendored, not CDN-loaded: graph.html used to pull D3 from
 # cdn.jsdelivr.net at view time, which silently produced a blank graph
@@ -131,7 +147,7 @@ def _esc(s: str) -> str:
     return htmllib.escape(s, quote=True)
 
 
-def _build_payload(graph: Graph, title: str) -> dict:
+def _build_payload(graph: Graph, opportunities: Opportunities, title: str) -> dict:
     """The data the 3D scene is built from client-side: nodes plus a
     de-duplicated, chronological session list (the trunk's growth rings)."""
 
@@ -190,6 +206,21 @@ def _build_payload(graph: Graph, title: str) -> dict:
         "unclassifiedColor": UNCLASSIFIED_COLOR,
         "attachmentIcon": ATTACHMENT_ICON,
         "attachmentLabel": ATTACHMENT_LABEL,
+        "opportunities": [
+            {
+                "id": o.id,
+                "title": o.title,
+                "kind": o.kind,
+                "weight": o.weight,
+                "summary": o.summary,
+                "rationale": o.rationale,
+                "ideaIds": o.idea_ids,
+                "created": o.created,
+            }
+            for o in opportunities.items
+        ],
+        "opportunityKindColor": OPPORTUNITY_KIND_COLOR,
+        "opportunityKindLabel": OPPORTUNITY_KIND_LABEL,
     }
 
 
@@ -257,8 +288,34 @@ _CSS = """
   }
 
   main { flex: 1; display: grid; grid-template-columns: 300px 1fr; min-height: 0; }
-  main#stats-main { display: block; overflow-y: auto; padding: 1.1rem 1.4rem 2rem; }
-  #graph-main[hidden], #stats-main[hidden] { display: none !important; }
+  main#stats-main, main#opportunities-main { display: block; overflow-y: auto; padding: 1.1rem 1.4rem 2rem; }
+  #graph-main[hidden], #stats-main[hidden], #opportunities-main[hidden] { display: none !important; }
+
+  /* ---- opportunities tab: AI-proposed combinations of ideas ---- */
+  .opp-list { display: flex; flex-direction: column; gap: 0.9rem; max-width: 760px; margin: 0 auto; }
+  .opp-card {
+    background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 10px; padding: 0.9rem 1.1rem;
+  }
+  .opp-header { display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.5rem; flex-wrap: wrap; }
+  .opp-kind-badge {
+    font-size: 0.7rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.03em;
+    padding: 0.15rem 0.55rem; border-radius: 999px; border: 1px solid; flex: none;
+  }
+  .opp-title { font-size: 0.98rem; font-weight: 600; color: #eef3ea; }
+  .opp-weight-row { display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.6rem; }
+  .opp-weight-track { flex: 1; height: 8px; border-radius: 999px; background: rgba(255,255,255,0.07); overflow: hidden; }
+  .opp-weight-fill { height: 100%; border-radius: 999px; }
+  .opp-weight-pct { font-size: 0.76rem; color: #9aab97; width: 2.6rem; text-align: right; flex: none; }
+  .opp-summary { margin: 0 0 0.4rem; color: #d7ddd4; font-size: 0.86rem; }
+  .opp-rationale { margin: 0 0 0.6rem; color: #9aab97; font-size: 0.8rem; font-style: italic; }
+  .opp-ideas-label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.03em; color: #7c8c79; margin-bottom: 0.35rem; }
+  .opp-ideas { display: flex; flex-wrap: wrap; gap: 0.35rem; }
+  .opp-idea-chip {
+    background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.14); color: #c9d3c6;
+    font: inherit; font-size: 0.76rem; padding: 0.2rem 0.6rem; border-radius: 999px; cursor: pointer;
+  }
+  .opp-idea-chip:hover { background: rgba(255,255,255,0.11); color: #eef3ea; }
 
   /* ---- stats tab ---- */
   .stat-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 0.7rem; margin: 0 0 1.4rem; }
@@ -1102,6 +1159,82 @@ _JS = """
   }
 
   var statsRendered = false;
+  // ---- opportunities tab: AI-proposed combinations of ideas that could
+  // support each other toward something bigger (SEED.md principle #1 --
+  // "statistics propose, the AI adjudicates" at its purest: nothing here
+  // is computed, every opportunity was a deliberate semantic judgment
+  // call made by an assistant running the synthesis skill). ----
+  function opportunityMatchesProjectFilter(opp) {
+    if (activeProject === 'all') return true;
+    var first = (opp.ideaIds || [])[0] || '';
+    var project = first.indexOf('::') !== -1 ? first.split('::')[0] : null;
+    return project === activeProject;
+  }
+
+  function renderOpportunitiesView() {
+    var mount = document.getElementById('opportunities-main');
+    mount.innerHTML = '';
+
+    var byKey = {};
+    DATA.nodes.forEach(function (n) { byKey[itemKey(n)] = n; });
+
+    var opps = (DATA.opportunities || []).filter(opportunityMatchesProjectFilter);
+    if (!opps.length) {
+      mount.innerHTML = '<p class="empty-note" style="padding:2rem">' +
+        ((DATA.opportunities || []).length
+          ? 'No opportunities for this project filter \\u2014 try "All".'
+          : 'No opportunities proposed yet. An assistant running the synthesis skill ' +
+            '(<code>brainny propose</code>) looks over captured ideas for ones that genuinely ' +
+            'support each other toward a tool, website, statistical module, or business idea ' +
+            '\\u2014 most passes propose nothing, and that\\u2019s the common, correct outcome.') +
+        '</p>';
+      return;
+    }
+
+    opps = opps.slice().sort(function (a, b) { return b.weight - a.weight; });
+
+    var wrap = document.createElement('div');
+    wrap.className = 'opp-list';
+    opps.forEach(function (opp) {
+      var card = document.createElement('div');
+      card.className = 'opp-card';
+      var color = DATA.opportunityKindColor[opp.kind] || '#8a8f98';
+      var kindLabel = DATA.opportunityKindLabel[opp.kind] || opp.kind;
+      var pct = Math.round(opp.weight * 100);
+
+      var chips = (opp.ideaIds || []).map(function (key) {
+        var idea = byKey[key];
+        var label = idea ? idea.title : key;
+        return '<button type="button" class="opp-idea-chip" data-key="' + escapeHtml(key) + '">' +
+          escapeHtml(label) + '</button>';
+      }).join('');
+
+      card.innerHTML =
+        '<div class="opp-header">' +
+        '<span class="opp-kind-badge" style="background:' + color + '22;color:' + color + ';border-color:' + color + '66">' + escapeHtml(kindLabel) + '</span>' +
+        '<span class="opp-title">' + escapeHtml(opp.title) + '</span>' +
+        '</div>' +
+        '<div class="opp-weight-row">' +
+        '<div class="opp-weight-track"><div class="opp-weight-fill" style="width:' + pct + '%;background:' + color + '"></div></div>' +
+        '<span class="opp-weight-pct">' + pct + '%</span>' +
+        '</div>' +
+        '<p class="opp-summary">' + escapeHtml(opp.summary) + '</p>' +
+        (opp.rationale ? '<p class="opp-rationale">' + escapeHtml(opp.rationale) + '</p>' : '') +
+        '<div class="opp-ideas-label">built from</div>' +
+        '<div class="opp-ideas">' + chips + '</div>';
+
+      card.querySelectorAll('.opp-idea-chip').forEach(function (chip) {
+        chip.addEventListener('click', function () {
+          switchTab('graph');
+          setTimeout(function () { focusItem(chip.dataset.key); }, 0);
+        });
+      });
+
+      wrap.appendChild(card);
+    });
+    mount.appendChild(wrap);
+  }
+
   function renderStatsView() {
     var mount = document.getElementById('stats-main');
     mount.innerHTML = '';
@@ -1243,10 +1376,13 @@ _JS = """
     document.querySelectorAll('.tab-btn').forEach(function (b) { b.classList.toggle('active', b.dataset.tab === name); });
     document.getElementById('graph-main').hidden = name !== 'graph';
     document.getElementById('stats-main').hidden = name !== 'stats';
+    document.getElementById('opportunities-main').hidden = name !== 'opportunities';
     select.style.display = name === 'graph' ? '' : 'none';
     descEl.hidden = name !== 'graph';
     if (name === 'stats') {
       renderStatsView();
+    } else if (name === 'opportunities') {
+      renderOpportunitiesView();
     } else if (!currentCleanup && filteredData().nodes.length) {
       switchView(select.value);
     }
@@ -1276,13 +1412,18 @@ _JS = """
     });
   }
 
+  function refreshActiveTab() {
+    if (activeTab === 'stats') renderStatsView();
+    else if (activeTab === 'opportunities') renderOpportunitiesView();
+    else switchView(select.value);
+  }
+
   document.querySelectorAll('.origin-btn').forEach(function (b) {
     b.addEventListener('click', function () {
       activeOrigin = b.dataset.origin;
       applyOriginFilterUI();
       refreshItemList();
-      if (activeTab === 'stats') renderStatsView();
-      else switchView(select.value);
+      refreshActiveTab();
     });
   });
   applyOriginFilterUI();
@@ -1292,8 +1433,7 @@ _JS = """
     projectSelect.addEventListener('change', function () {
       activeProject = projectSelect.value;
       refreshItemList();
-      if (activeTab === 'stats') renderStatsView();
-      else switchView(select.value);
+      refreshActiveTab();
     });
   }
 
@@ -1307,27 +1447,35 @@ _JS = """
 """
 
 
-def render_html(graph: Graph, title: str = "brainny") -> str:
-    """Render graph.json as a navigable dashboard (D3, vendored inline —
-    see `_D3_JS` above, no CDN/network dependency) with two tabs. Graph
-    tab: a dropdown switches between a radial tree (domains branching from
-    a center, ideas as rim leaves) and a force-directed network with a
-    colored halo per domain group, alongside an itemized accordion list
-    (click a title to unfold summary/detail/trigger/tags). Clicking an
-    idea in either graph opens + scrolls to its entry in the list. Ideas
-    are sized/highlighted by growth state and kind — real fields, but
-    inert until v0.1 (dedup.py/stats.py) makes recurrence/state actually
-    vary. Stats tab: a domain treemap (size = idea count, color =
-    activity) plus a per-cluster table, kind breakdown, and a newest-ideas
-    feed — all derived from real timestamps/domains/kinds (no fabricated
-    data), with "growing"/"quiet" as an honest recency proxy rather than
-    the real decay/novelty model v0.1 will bring. Clicking a cluster jumps
-    to it in the Graph tab's idea list. Falls back to the plain terminal
-    tree in the (now near-impossible) case the embedded D3 fails to
-    execute. No server involved — a static, self-contained, git-shareable
-    file that renders identically with zero network access."""
+def render_html(graph: Graph, opportunities: Opportunities | None = None, title: str = "brainny") -> str:
+    """Render graph.json (+ opportunities.json) as a navigable dashboard
+    (D3, vendored inline — see `_D3_JS` above, no CDN/network dependency)
+    with three tabs. Graph tab: a dropdown switches between a radial tree
+    (domains branching from a center, ideas as rim leaves) and a
+    force-directed network with a colored halo per domain group, alongside
+    an itemized accordion list (click a title to unfold
+    summary/detail/trigger/tags). Clicking an idea in either graph opens +
+    scrolls to its entry in the list. Ideas are sized/highlighted by
+    growth state and kind — real fields, but inert until v0.1
+    (dedup.py/stats.py) makes recurrence/state actually vary. Stats tab: a
+    domain treemap (size = idea count, color = activity) plus a
+    per-cluster table, kind breakdown, and a newest-ideas feed — all
+    derived from real timestamps/domains/kinds (no fabricated data), with
+    "growing"/"quiet" as an honest recency proxy rather than the real
+    decay/novelty model v0.1 will bring. Clicking a cluster jumps to it in
+    the Graph tab's idea list. Opportunities tab: AI-proposed combinations
+    of ideas that could support each other toward something bigger (a
+    tool, website, statistical module, business idea) — see
+    opportunities.py/SEED.md principle #1; empty and hidden when there are
+    none, since most projects won't have any. Falls back to the plain
+    terminal tree in the (now near-impossible) case the embedded D3 fails
+    to execute. No server involved — a static, self-contained,
+    git-shareable file that renders identically with zero network
+    access."""
+    if opportunities is None:
+        opportunities = Opportunities()
 
-    payload = _build_payload(graph, title)
+    payload = _build_payload(graph, opportunities, title)
     data_json = json.dumps(payload, ensure_ascii=False).replace("</", "<\\/")
 
     kind_legend = "".join(
@@ -1396,6 +1544,7 @@ def render_html(graph: Graph, title: str = "brainny") -> str:
     <nav id="tab-bar">
       <button type="button" class="tab-btn active" data-tab="graph">Graph</button>
       <button type="button" class="tab-btn" data-tab="stats">Stats</button>
+      <button type="button" class="tab-btn" data-tab="opportunities">Opportunities{f' ({len(opportunities.items)})' if opportunities.items else ''}</button>
     </nav>
     <select id="view-select">
       <option value="radial">Radial tree</option>
@@ -1420,6 +1569,7 @@ def render_html(graph: Graph, title: str = "brainny") -> str:
   <div id="viz"></div>
 </main>
 <main id="stats-main" hidden></main>
+<main id="opportunities-main" hidden></main>
 <div id="tooltip"></div>
 <pre id="fallback" hidden>{_esc(render_tree(graph))}</pre>
 <script id="brainny-data" type="application/json">"""
@@ -1438,5 +1588,11 @@ def render_html(graph: Graph, title: str = "brainny") -> str:
 def save_html(graph: Graph, out_dir: Path = DEFAULT_OUT_DIR, title: str = "brainny") -> Path:
     out_dir.mkdir(parents=True, exist_ok=True)
     path = html_path(out_dir)
-    path.write_text(render_html(graph, title=title), encoding="utf-8")
+    # opportunities.json lives alongside graph.json in the same out_dir --
+    # loaded transparently here so every existing save_html() call site
+    # (capture/attach/sync/reassign/central/query) picks up the
+    # Opportunities tab automatically, with no changes needed at any of
+    # them.
+    opportunities = load_opportunities(out_dir)
+    path.write_text(render_html(graph, opportunities, title=title), encoding="utf-8")
     return path

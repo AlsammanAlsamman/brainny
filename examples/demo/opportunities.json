@@ -1,0 +1,48 @@
+{
+  "items": [
+    {
+      "title": "Data pipeline reliability toolkit",
+      "kind": "tool",
+      "weight": 0.78,
+      "summary": "Package the retry-with-backoff pattern, idempotency-key discipline, and safe API-key rotation into one reusable reliability layer for data pipelines.",
+      "idea_ids": [
+        "idea_0004",
+        "idea_0005",
+        "idea_0013"
+      ],
+      "rationale": "All three showed up solving the same underlying problem -- failures and retries in long-running pipelines -- from three different angles.",
+      "id": "opp_0001",
+      "created": "2026-09-10T22:10:04+00:00",
+      "session": "example-build"
+    },
+    {
+      "title": "Bioinformatics plotting library with sane defaults",
+      "kind": "tool",
+      "weight": 0.66,
+      "summary": "A small plotting package that bakes in the Manhattan-plot layout and a color-blind-safe palette as defaults, so neither has to be re-derived per project.",
+      "idea_ids": [
+        "idea_0007",
+        "idea_0008"
+      ],
+      "rationale": "Both are visualization decisions that get re-solved from scratch on nearly every project that needs them.",
+      "id": "opp_0002",
+      "created": "2026-09-10T22:10:04+00:00",
+      "session": "example-build"
+    },
+    {
+      "title": "\"Don't ship this mistake\" checklist product",
+      "kind": "business-idea",
+      "weight": 0.42,
+      "summary": "A short, paid pre-launch checklist product (client-side-only validation, test-set leakage, hyperparameter tuning against the test set) aimed at small teams without a dedicated reviewer.",
+      "idea_ids": [
+        "idea_0002",
+        "idea_0009",
+        "idea_0010"
+      ],
+      "rationale": "Speculative -- these precautions are real and recurring, but it's unclear anyone would pay for a checklist rather than just writing one down themselves.",
+      "id": "opp_0003",
+      "created": "2026-09-10T22:10:04+00:00",
+      "session": "example-build"
+    }
+  ]
+}

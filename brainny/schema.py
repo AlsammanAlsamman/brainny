@@ -130,3 +130,41 @@ class Graph(BaseModel):
     """graph.json — the whole per-project brain."""
 
     nodes: list[Node] = Field(default_factory=list)
+
+
+# What combining several captured ideas together could become -- SEED.md
+# principle #1 ("statistics propose; the AI adjudicates") applies here at
+# its purest: this is a pure semantic judgment call (do these ideas
+# actually support each other toward something real?), nothing
+# deterministic proposes it. `weight` is the AI's own honest confidence
+# in the combination, 0.0-1.0 -- same convention as Edge.confidence -- not
+# a popularity/vote count, and never fabricated to make an opportunity
+# look better. Lives in its own opportunities.json (see opportunities.py),
+# sibling to graph.json, same two-contracts discipline (SEED.md §1.6): the
+# prompt/skill emits OpportunityInput, the body fills id/created.
+OpportunityKind = Literal["tool", "website", "statistical-module", "business-idea", "other"]
+
+
+class OpportunityInput(BaseModel):
+    """What the synthesis skill (skills/brainny/synthesize.md) is allowed
+    to fill in. Must NOT set id or created -- the body's job."""
+
+    title: str = Field(min_length=1)
+    kind: OpportunityKind
+    weight: float = Field(ge=0.0, le=1.0)
+    summary: str = Field(min_length=1)
+    idea_ids: list[str] = Field(min_length=2)
+    rationale: Optional[str] = None
+
+
+class Opportunity(OpportunityInput):
+    id: str
+    created: str = Field(default_factory=now_iso)
+    session: Optional[str] = None
+
+
+class Opportunities(BaseModel):
+    """opportunities.json — the whole per-project list of proposed
+    combinations."""
+
+    items: list[Opportunity] = Field(default_factory=list)

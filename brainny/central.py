@@ -18,7 +18,8 @@ from __future__ import annotations
 from pathlib import Path
 
 from brainny.graph import graph_path, load_graph
-from brainny.schema import Graph, Node
+from brainny.opportunities import load_opportunities
+from brainny.schema import Graph, Node, Opportunities
 
 
 def list_central_projects(central_root: Path) -> list[str]:
@@ -48,3 +49,21 @@ def build_merged_graph(central_root: Path) -> Graph:
     for project in list_central_projects(central_root):
         nodes.extend(load_graph(central_root / project).nodes)
     return Graph(nodes=nodes)
+
+
+def build_merged_opportunities(central_root: Path) -> Opportunities:
+    """Concatenate every synced project's proposed opportunities into one
+    Opportunities. Unlike build_merged_graph(), idea_ids here ARE
+    rewritten to "<project>::<id>" -- an opportunity only makes sense
+    alongside the ideas it references, and in the merged dashboard those
+    ideas are addressed by the same project-qualified key viz.py's
+    itemKey() computes (since raw ids collide across projects). This
+    keeps an opportunity's "built from" links resolvable in the merged
+    view without viz.py needing to know anything about central.py."""
+    items = []
+    for project in list_central_projects(central_root):
+        for opp in load_opportunities(central_root / project).items:
+            items.append(
+                opp.model_copy(update={"idea_ids": [f"{project}::{iid}" for iid in opp.idea_ids]})
+            )
+    return Opportunities(items=items)

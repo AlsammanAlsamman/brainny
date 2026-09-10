@@ -1077,3 +1077,107 @@ def test_badge_uses_merged_central_view_by_default(tmp_path, capsys):
     assert code == 0
     svg = out_svg.read_text(encoding="utf-8")
     assert "4 idea(s) captured" in svg  # 2 ideas from each of 2 projects, merged
+
+
+# ---- step 23: `brainny propose` -- AI-proposed combinations of ideas
+# (the "opportunities" tab) ----
+
+
+def _opportunity_entry(idea_ids, title="A combined tool", weight=0.7):
+    return {
+        "title": title,
+        "kind": "tool",
+        "weight": weight,
+        "summary": "Combine these ideas into something bigger.",
+        "idea_ids": idea_ids,
+    }
+
+
+def test_propose_rejects_missing_entries_file(tmp_path, capsys):
+    out_dir = tmp_path / "out"
+    capture(FIXTURES / "sample_entries.json", project="p", session="s1", out_dir=out_dir)
+
+    code = main(["--out-dir", str(out_dir), "propose", str(tmp_path / "nope.json")])
+    assert code == 1
+    assert "no such file" in capsys.readouterr().err
+
+
+def test_propose_skips_opportunity_with_unknown_idea_id(tmp_path, capsys):
+    import json as jsonlib
+
+    out_dir = tmp_path / "out"
+    capture(FIXTURES / "sample_entries.json", project="p", session="s1", out_dir=out_dir)
+    entries = tmp_path / "opps.json"
+    entries.write_text(jsonlib.dumps([_opportunity_entry(["idea_0001", "idea_9999"])]), encoding="utf-8")
+
+    code = main(["--out-dir", str(out_dir), "propose", str(entries)])
+    assert code == 0
+    err = capsys.readouterr().err
+    assert "references unknown idea id(s) idea_9999" in err
+
+    from brainny.opportunities import load_opportunities
+
+    assert load_opportunities(out_dir).items == []
+
+
+def test_propose_adds_valid_opportunity_and_mirrors_to_central(tmp_path, capsys):
+    import json as jsonlib
+
+    out_dir = tmp_path / "out"
+    capture(FIXTURES / "sample_entries.json", project="myproj", session="s1", out_dir=out_dir)
+    central = tmp_path / "central"
+    main(["config", "set-central", str(central)])
+    capsys.readouterr()
+
+    entries = tmp_path / "opps.json"
+    entries.write_text(
+        jsonlib.dumps([_opportunity_entry(["idea_0001", "idea_0002"], title="GWAS toolkit", weight=0.72)]),
+        encoding="utf-8",
+    )
+
+    code = main(["--out-dir", str(out_dir), "propose", str(entries), "--session", "s2"])
+    assert code == 0
+    out = capsys.readouterr().out
+    assert "proposed 1 opportunity(ies)" in out
+    assert "GWAS toolkit" in out
+    assert "mirrored to central" in out
+
+    from brainny.opportunities import load_opportunities
+
+    local = load_opportunities(out_dir)
+    assert len(local.items) == 1
+    assert local.items[0].weight == 0.72
+    assert local.items[0].id == "opp_0001"
+
+    central_opps = load_opportunities(central / "myproj")
+    assert len(central_opps.items) == 1
+
+
+def test_propose_empty_array_is_a_correct_noop(tmp_path, capsys):
+    import json as jsonlib
+
+    out_dir = tmp_path / "out"
+    capture(FIXTURES / "sample_entries.json", project="p", session="s1", out_dir=out_dir)
+    entries = tmp_path / "opps.json"
+    entries.write_text(jsonlib.dumps([]), encoding="utf-8")
+
+    code = main(["--out-dir", str(out_dir), "propose", str(entries)])
+    assert code == 0
+    assert "0 opportunities proposed" in capsys.readouterr().out
+
+
+def test_propose_html_includes_opportunities_tab(tmp_path, capsys):
+    import json as jsonlib
+
+    out_dir = tmp_path / "out"
+    capture(FIXTURES / "sample_entries.json", project="p", session="s1", out_dir=out_dir)
+    entries = tmp_path / "opps.json"
+    entries.write_text(
+        jsonlib.dumps([_opportunity_entry(["idea_0001", "idea_0002"])]), encoding="utf-8"
+    )
+    main(["--out-dir", str(out_dir), "propose", str(entries)])
+    capsys.readouterr()
+
+    html = (out_dir / "graph.html").read_text(encoding="utf-8")
+    assert 'data-tab="opportunities"' in html
+    assert "Opportunities (1)" in html

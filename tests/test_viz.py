@@ -132,3 +132,53 @@ def test_save_html_writes_file(tmp_path):
     assert path.exists()
     payload = _extract_payload(path.read_text(encoding="utf-8"))
     assert len(payload["nodes"]) == 2
+
+
+def test_render_html_with_no_opportunities_shows_untitled_tab():
+    out = render_html(Graph())
+    assert 'data-tab="opportunities">Opportunities<' in out
+    payload = _extract_payload(out)
+    assert payload["opportunities"] == []
+
+
+def test_render_html_includes_opportunities_in_payload():
+    from brainny.schema import Opportunities, Opportunity
+
+    graph = Graph(nodes=[
+        Node(kind="technique", title="t1", summary="s1", domain="d", id="idea_0001"),
+        Node(kind="insight", title="t2", summary="s2", domain="d", id="idea_0002"),
+    ])
+    opportunities = Opportunities(items=[
+        Opportunity(
+            id="opp_0001", title="Combined tool", kind="tool", weight=0.8,
+            summary="s", idea_ids=["idea_0001", "idea_0002"],
+        )
+    ])
+    out = render_html(graph, opportunities)
+    assert "Opportunities (1)" in out
+    payload = _extract_payload(out)
+    assert len(payload["opportunities"]) == 1
+    assert payload["opportunities"][0]["title"] == "Combined tool"
+    assert payload["opportunities"][0]["weight"] == 0.8
+
+
+def test_save_html_loads_opportunities_from_out_dir(tmp_path):
+    from brainny.opportunities import save_opportunities
+    from brainny.schema import Opportunities, Opportunity
+
+    out_dir = tmp_path / "out"
+    capture(FIXTURES / "sample_entries.json", project="p", session="s1", out_dir=out_dir)
+    save_opportunities(
+        Opportunities(items=[
+            Opportunity(
+                id="opp_0001", title="Combined tool", kind="tool", weight=0.5,
+                summary="s", idea_ids=["idea_0001", "idea_0002"],
+            )
+        ]),
+        out_dir,
+    )
+
+    graph = load_graph(out_dir)
+    path = save_html(graph, out_dir)
+    payload = _extract_payload(path.read_text(encoding="utf-8"))
+    assert len(payload["opportunities"]) == 1

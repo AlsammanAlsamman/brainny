@@ -1,0 +1,623 @@
+{
+  "nodes": [
+    {
+      "kind": "technique",
+      "title": "Debounce search-as-you-type inputs at ~300ms",
+      "summary": "Wait for a short pause in keystrokes before firing the search request, instead of one request per keystroke.",
+      "detail": null,
+      "domain": "web-app",
+      "tags": [
+        "ux",
+        "performance"
+      ],
+      "trigger": null,
+      "origin": "human",
+      "attachments": [],
+      "snippet": null,
+      "id": "idea_0001",
+      "state": "seed",
+      "provenance": [
+        {
+          "project": "brainny-demo",
+          "session": "example-build",
+          "ts": "2026-09-10T22:09:42+00:00"
+        }
+      ],
+      "growth_log": [
+        {
+          "session": "example-build",
+          "ts": "2026-09-10T22:09:42+00:00",
+          "event": "seeded",
+          "note": "first captured"
+        }
+      ],
+      "edges": [],
+      "embedding": [],
+      "novelty": null,
+      "recurrence": 1,
+      "last_touched": "2026-09-10T22:09:42+00:00"
+    },
+    {
+      "kind": "precaution",
+      "title": "Never trust client-side validation alone",
+      "summary": "Client-side checks are a UX convenience, not a security boundary -- always re-validate on the server.",
+      "detail": null,
+      "domain": "web-app",
+      "tags": [
+        "security"
+      ],
+      "trigger": "before shipping a form that touches money, auth, or user-submitted content",
+      "origin": "ai",
+      "attachments": [],
+      "snippet": null,
+      "id": "idea_0002",
+      "state": "seed",
+      "provenance": [
+        {
+          "project": "brainny-demo",
+          "session": "example-build",
+          "ts": "2026-09-10T22:09:42+00:00"
+        }
+      ],
+      "growth_log": [
+        {
+          "session": "example-build",
+          "ts": "2026-09-10T22:09:42+00:00",
+          "event": "seeded",
+          "note": "first captured"
+        }
+      ],
+      "edges": [],
+      "embedding": [],
+      "novelty": null,
+      "recurrence": 1,
+      "last_touched": "2026-09-10T22:09:42+00:00"
+    },
+    {
+      "kind": "solution",
+      "title": "Fixed a CORS preflight failure by adding an explicit OPTIONS handler",
+      "summary": "The browser's preflight OPTIONS request was hitting a 404 because the route only handled GET/POST -- adding an explicit OPTIONS handler that returns the right CORS headers fixed it.",
+      "detail": null,
+      "domain": "web-app",
+      "tags": [
+        "cors",
+        "api"
+      ],
+      "trigger": null,
+      "origin": "collaborative",
+      "attachments": [],
+      "snippet": null,
+      "id": "idea_0003",
+      "state": "seed",
+      "provenance": [
+        {
+          "project": "brainny-demo",
+          "session": "example-build",
+          "ts": "2026-09-10T22:09:42+00:00"
+        }
+      ],
+      "growth_log": [
+        {
+          "session": "example-build",
+          "ts": "2026-09-10T22:09:42+00:00",
+          "event": "seeded",
+          "note": "first captured"
+        }
+      ],
+      "edges": [],
+      "embedding": [],
+      "novelty": null,
+      "recurrence": 1,
+      "last_touched": "2026-09-10T22:09:42+00:00"
+    },
+    {
+      "kind": "skill",
+      "title": "ETL retry-with-backoff pattern",
+      "summary": "Wrap each pipeline stage in exponential backoff with jitter so a transient failure doesn't cascade into a full pipeline restart.",
+      "detail": null,
+      "domain": "data-pipeline",
+      "tags": [
+        "etl",
+        "reliability"
+      ],
+      "trigger": null,
+      "origin": "human",
+      "attachments": [
+        {
+          "type": "code",
+          "filename": "backoff.py",
+          "description": "retry-with-backoff implementation"
+        }
+      ],
+      "snippet": "def with_backoff(fn, max_tries=5, base=0.5):\n    for attempt in range(max_tries):\n        try:\n            return fn()\n        except TransientError:\n            time.sleep(base * (2 ** attempt) + random.uniform(0, 0.3))\n    raise",
+      "id": "idea_0004",
+      "state": "seed",
+      "provenance": [
+        {
+          "project": "brainny-demo",
+          "session": "example-build",
+          "ts": "2026-09-10T22:09:42+00:00"
+        }
+      ],
+      "growth_log": [
+        {
+          "session": "example-build",
+          "ts": "2026-09-10T22:09:42+00:00",
+          "event": "seeded",
+          "note": "first captured"
+        },
+        {
+          "session": "example-build",
+          "ts": "2026-09-10T22:09:54+00:00",
+          "event": "attached",
+          "note": "code: backoff.py"
+        }
+      ],
+      "edges": [],
+      "embedding": [],
+      "novelty": null,
+      "recurrence": 1,
+      "last_touched": "2026-09-10T22:09:54+00:00"
+    },
+    {
+      "kind": "precaution",
+      "title": "Idempotency keys prevent duplicate processing on retry",
+      "summary": "A retried request without an idempotency key can double-charge, double-send, or double-write -- generate one per logical operation, not per HTTP call.",
+      "detail": null,
+      "domain": "data-pipeline",
+      "tags": [
+        "idempotency"
+      ],
+      "trigger": "before adding automatic retries to anything with a side effect",
+      "origin": "ai",
+      "attachments": [],
+      "snippet": null,
+      "id": "idea_0005",
+      "state": "seed",
+      "provenance": [
+        {
+          "project": "brainny-demo",
+          "session": "example-build",
+          "ts": "2026-09-10T22:09:42+00:00"
+        }
+      ],
+      "growth_log": [
+        {
+          "session": "example-build",
+          "ts": "2026-09-10T22:09:42+00:00",
+          "event": "seeded",
+          "note": "first captured"
+        }
+      ],
+      "edges": [],
+      "embedding": [],
+      "novelty": null,
+      "recurrence": 1,
+      "last_touched": "2026-09-10T22:09:42+00:00"
+    },
+    {
+      "kind": "insight",
+      "title": "Batch size trades latency for throughput, not for free",
+      "summary": "Bigger batches improve throughput but increase the latency of the first result in the batch -- the right size depends on which one the user actually feels.",
+      "detail": null,
+      "domain": "data-pipeline",
+      "tags": [
+        "batching"
+      ],
+      "trigger": null,
+      "origin": "collaborative",
+      "attachments": [],
+      "snippet": null,
+      "id": "idea_0006",
+      "state": "seed",
+      "provenance": [
+        {
+          "project": "brainny-demo",
+          "session": "example-build",
+          "ts": "2026-09-10T22:09:42+00:00"
+        }
+      ],
+      "growth_log": [
+        {
+          "session": "example-build",
+          "ts": "2026-09-10T22:09:42+00:00",
+          "event": "seeded",
+          "note": "first captured"
+        }
+      ],
+      "edges": [],
+      "embedding": [],
+      "novelty": null,
+      "recurrence": 1,
+      "last_touched": "2026-09-10T22:09:42+00:00"
+    },
+    {
+      "kind": "skill",
+      "title": "Manhattan-plot-style genome browser plot",
+      "summary": "How to lay out a genome-wide scatter plot: chromosomes on the x-axis by cumulative position, -log10(p) on the y-axis, alternating colors per chromosome, significance line at the genome-wide threshold.",
+      "detail": null,
+      "domain": "data-viz",
+      "tags": [
+        "plotting",
+        "genomics"
+      ],
+      "trigger": null,
+      "origin": "human",
+      "attachments": [
+        {
+          "type": "table",
+          "filename": "manhattan_columns.csv",
+          "description": "required input column format"
+        },
+        {
+          "type": "plot",
+          "filename": "manhattan_example.png",
+          "description": "example output"
+        }
+      ],
+      "snippet": "ax.scatter(df.pos_cum, -np.log10(df.p), c=df.chrom % 2, s=4)\nax.axhline(-np.log10(5e-8), color=\"red\", ls=\"--\")",
+      "id": "idea_0007",
+      "state": "seed",
+      "provenance": [
+        {
+          "project": "brainny-demo",
+          "session": "example-build",
+          "ts": "2026-09-10T22:09:42+00:00"
+        }
+      ],
+      "growth_log": [
+        {
+          "session": "example-build",
+          "ts": "2026-09-10T22:09:42+00:00",
+          "event": "seeded",
+          "note": "first captured"
+        },
+        {
+          "session": "example-build",
+          "ts": "2026-09-10T22:09:54+00:00",
+          "event": "attached",
+          "note": "table: manhattan_columns.csv"
+        },
+        {
+          "session": "example-build",
+          "ts": "2026-09-10T22:09:54+00:00",
+          "event": "attached",
+          "note": "plot: manhattan_example.png"
+        }
+      ],
+      "edges": [],
+      "embedding": [],
+      "novelty": null,
+      "recurrence": 1,
+      "last_touched": "2026-09-10T22:09:54+00:00"
+    },
+    {
+      "kind": "technique",
+      "title": "Pick a color-blind-safe palette by default",
+      "summary": "Use a palette validated for deuteranopia/protanopia (e.g. Okabe-Ito) as the default, not an afterthought toggle.",
+      "detail": null,
+      "domain": "data-viz",
+      "tags": [
+        "accessibility",
+        "color"
+      ],
+      "trigger": null,
+      "origin": "ai",
+      "attachments": [],
+      "snippet": null,
+      "id": "idea_0008",
+      "state": "seed",
+      "provenance": [
+        {
+          "project": "brainny-demo",
+          "session": "example-build",
+          "ts": "2026-09-10T22:09:42+00:00"
+        }
+      ],
+      "growth_log": [
+        {
+          "session": "example-build",
+          "ts": "2026-09-10T22:09:42+00:00",
+          "event": "seeded",
+          "note": "first captured"
+        }
+      ],
+      "edges": [],
+      "embedding": [],
+      "novelty": null,
+      "recurrence": 1,
+      "last_touched": "2026-09-10T22:09:42+00:00"
+    },
+    {
+      "kind": "insight",
+      "title": "Time-based train/test splits leak information that random splits hide",
+      "summary": "A random split can let future information leak backward into training in ways a chronological split exposes immediately -- always check both.",
+      "detail": null,
+      "domain": "ml",
+      "tags": [
+        "leakage",
+        "evaluation"
+      ],
+      "trigger": null,
+      "origin": "collaborative",
+      "attachments": [],
+      "snippet": null,
+      "id": "idea_0009",
+      "state": "seed",
+      "provenance": [
+        {
+          "project": "brainny-demo",
+          "session": "example-build",
+          "ts": "2026-09-10T22:09:42+00:00"
+        }
+      ],
+      "growth_log": [
+        {
+          "session": "example-build",
+          "ts": "2026-09-10T22:09:42+00:00",
+          "event": "seeded",
+          "note": "first captured"
+        }
+      ],
+      "edges": [],
+      "embedding": [],
+      "novelty": null,
+      "recurrence": 1,
+      "last_touched": "2026-09-10T22:09:42+00:00"
+    },
+    {
+      "kind": "precaution",
+      "title": "Never tune hyperparameters against the test set",
+      "summary": "Repeatedly checking test performance while tuning turns the test set into a second validation set -- keep a true holdout untouched until the very end.",
+      "detail": null,
+      "domain": "ml",
+      "tags": [
+        "overfitting"
+      ],
+      "trigger": "before finalizing any model for a report or deployment",
+      "origin": "human",
+      "attachments": [],
+      "snippet": null,
+      "id": "idea_0010",
+      "state": "seed",
+      "provenance": [
+        {
+          "project": "brainny-demo",
+          "session": "example-build",
+          "ts": "2026-09-10T22:09:42+00:00"
+        }
+      ],
+      "growth_log": [
+        {
+          "session": "example-build",
+          "ts": "2026-09-10T22:09:42+00:00",
+          "event": "seeded",
+          "note": "first captured"
+        }
+      ],
+      "edges": [],
+      "embedding": [],
+      "novelty": null,
+      "recurrence": 1,
+      "last_touched": "2026-09-10T22:09:42+00:00"
+    },
+    {
+      "kind": "seed",
+      "title": "Could the same retry-with-backoff pattern apply to LLM API calls?",
+      "summary": "Rate limits and transient 5xxs from LLM providers look a lot like the ETL retry problem -- worth exploring whether the same pattern transfers directly.",
+      "detail": null,
+      "domain": "data-pipeline",
+      "tags": [
+        "llm"
+      ],
+      "trigger": null,
+      "origin": "ai",
+      "attachments": [],
+      "snippet": null,
+      "id": "idea_0011",
+      "state": "seed",
+      "provenance": [
+        {
+          "project": "brainny-demo",
+          "session": "example-build",
+          "ts": "2026-09-10T22:09:42+00:00"
+        }
+      ],
+      "growth_log": [
+        {
+          "session": "example-build",
+          "ts": "2026-09-10T22:09:42+00:00",
+          "event": "seeded",
+          "note": "first captured"
+        }
+      ],
+      "edges": [],
+      "embedding": [],
+      "novelty": null,
+      "recurrence": 1,
+      "last_touched": "2026-09-10T22:09:42+00:00"
+    },
+    {
+      "kind": "insight",
+      "title": "Users pay more for saved time than for saved money",
+      "summary": "Pricing research kept showing the same pattern: a feature that saves an hour a week converts better than one that saves a comparable amount of money.",
+      "detail": null,
+      "domain": "business",
+      "tags": [
+        "pricing"
+      ],
+      "trigger": null,
+      "origin": "human",
+      "attachments": [],
+      "snippet": null,
+      "id": "idea_0012",
+      "state": "seed",
+      "provenance": [
+        {
+          "project": "brainny-demo",
+          "session": "example-build",
+          "ts": "2026-09-10T22:09:42+00:00"
+        }
+      ],
+      "growth_log": [
+        {
+          "session": "example-build",
+          "ts": "2026-09-10T22:09:42+00:00",
+          "event": "seeded",
+          "note": "first captured"
+        }
+      ],
+      "edges": [],
+      "embedding": [],
+      "novelty": null,
+      "recurrence": 1,
+      "last_touched": "2026-09-10T22:09:42+00:00"
+    },
+    {
+      "kind": "precaution",
+      "title": "Rotate API keys before revoking the old one, not after",
+      "summary": "Revoke-then-rotate creates a window where nothing works; issue the new key, deploy it everywhere, confirm it's in use, then revoke the old one.",
+      "detail": null,
+      "domain": "devops",
+      "tags": [
+        "secrets"
+      ],
+      "trigger": null,
+      "origin": "collaborative",
+      "attachments": [],
+      "snippet": null,
+      "id": "idea_0013",
+      "state": "seed",
+      "provenance": [
+        {
+          "project": "brainny-demo",
+          "session": "example-build",
+          "ts": "2026-09-10T22:09:42+00:00"
+        }
+      ],
+      "growth_log": [
+        {
+          "session": "example-build",
+          "ts": "2026-09-10T22:09:42+00:00",
+          "event": "seeded",
+          "note": "first captured"
+        }
+      ],
+      "edges": [],
+      "embedding": [],
+      "novelty": null,
+      "recurrence": 1,
+      "last_touched": "2026-09-10T22:09:42+00:00"
+    },
+    {
+      "kind": "technique",
+      "title": "Blue-green deploys avoid downtime on schema migrations",
+      "summary": "Run the new schema alongside the old one behind a flag, cut traffic over once both are verified, then retire the old schema.",
+      "detail": null,
+      "domain": "devops",
+      "tags": [
+        "deploys",
+        "migrations"
+      ],
+      "trigger": null,
+      "origin": "ai",
+      "attachments": [],
+      "snippet": null,
+      "id": "idea_0014",
+      "state": "seed",
+      "provenance": [
+        {
+          "project": "brainny-demo",
+          "session": "example-build",
+          "ts": "2026-09-10T22:09:42+00:00"
+        }
+      ],
+      "growth_log": [
+        {
+          "session": "example-build",
+          "ts": "2026-09-10T22:09:42+00:00",
+          "event": "seeded",
+          "note": "first captured"
+        }
+      ],
+      "edges": [],
+      "embedding": [],
+      "novelty": null,
+      "recurrence": 1,
+      "last_touched": "2026-09-10T22:09:42+00:00"
+    },
+    {
+      "kind": "solution",
+      "title": "A flaky test traced to unseeded random test data",
+      "summary": "The test failed about 1 in 20 runs -- traced to a fixture generating random data without a fixed seed, so edge-case values occasionally slipped through.",
+      "detail": null,
+      "domain": "testing",
+      "tags": [
+        "flaky-tests"
+      ],
+      "trigger": null,
+      "origin": "human",
+      "attachments": [],
+      "snippet": null,
+      "id": "idea_0015",
+      "state": "seed",
+      "provenance": [
+        {
+          "project": "brainny-demo",
+          "session": "example-build",
+          "ts": "2026-09-10T22:09:42+00:00"
+        }
+      ],
+      "growth_log": [
+        {
+          "session": "example-build",
+          "ts": "2026-09-10T22:09:42+00:00",
+          "event": "seeded",
+          "note": "first captured"
+        }
+      ],
+      "edges": [],
+      "embedding": [],
+      "novelty": null,
+      "recurrence": 1,
+      "last_touched": "2026-09-10T22:09:42+00:00"
+    },
+    {
+      "kind": "skill",
+      "title": "Headless-browser screenshot verification for UI changes",
+      "summary": "Render the page, screenshot it with a headless browser, and actually look at the image instead of trusting that the code change looks right -- catches real visual regressions unit tests miss.",
+      "detail": null,
+      "domain": "testing",
+      "tags": [
+        "verification",
+        "ui"
+      ],
+      "trigger": null,
+      "origin": "collaborative",
+      "attachments": [],
+      "snippet": "chrome --headless=new --window-size=1200,800 --screenshot=out.png file:///path/to/page.html",
+      "id": "idea_0016",
+      "state": "seed",
+      "provenance": [
+        {
+          "project": "brainny-demo",
+          "session": "example-build",
+          "ts": "2026-09-10T22:09:42+00:00"
+        }
+      ],
+      "growth_log": [
+        {
+          "session": "example-build",
+          "ts": "2026-09-10T22:09:42+00:00",
+          "event": "seeded",
+          "note": "first captured"
+        }
+      ],
+      "edges": [],
+      "embedding": [],
+      "novelty": null,
+      "recurrence": 1,
+      "last_touched": "2026-09-10T22:09:42+00:00"
+    }
+  ]
+}

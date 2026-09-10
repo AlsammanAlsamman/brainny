@@ -1,6 +1,6 @@
-"""brainny CLI — entry: capture | attach | query | status | config |
-search | recall | recent | open | central | reassign | badge | grow |
-neglected | install | serve | hook.
+"""brainny CLI — entry: capture | propose | attach | query | status |
+config | search | recall | recent | open | central | reassign | badge |
+grow | neglected | install | serve | hook.
 
 v0 (see SEED.md §7) implements capture + query for real. status/config/
 search/recent/open are OPERATIONS.md §6 step 2 — pure CLI surface on data
@@ -12,6 +12,7 @@ that lands them, rather than being silently absent.
 from __future__ import annotations
 
 import argparse
+import json
 import shutil
 import subprocess
 import sys
@@ -27,7 +28,21 @@ from brainny._version import get_version
 from brainny.banner import render_banner
 from brainny.capture import capture as do_capture
 from brainny.graph import DEFAULT_OUT_DIR, graph_path, html_path, load_graph, next_id, save_graph
-from brainny.schema import Attachment, Graph, GrowthLogEntry, ProvenanceEntry, now_iso
+from brainny.opportunities import (
+    load_opportunities,
+    next_opportunity_id,
+    opportunities_path,
+    save_opportunities,
+)
+from brainny.schema import (
+    Attachment,
+    Graph,
+    GrowthLogEntry,
+    Opportunity,
+    OpportunityInput,
+    ProvenanceEntry,
+    now_iso,
+)
 from brainny.viz import render_tree, save_html
 
 ATTACHMENTS_DIRNAME = "attachments"
@@ -63,6 +78,9 @@ def _sync_to_central(out_dir: Path, graph: Graph, project: str | None) -> Path |
         return None
     central_out = Path(central) / project
     save_graph(graph, central_out)
+    local_opportunities = opportunities_path(out_dir)
+    if local_opportunities.exists():
+        save_opportunities(load_opportunities(out_dir), central_out)
     save_html(graph, central_out)
     local_attachments = out_dir / ATTACHMENTS_DIRNAME
     if local_attachments.is_dir():
@@ -87,6 +105,61 @@ def cmd_capture(args: argparse.Namespace) -> int:
             print(f"  + [{node.kind}] {node.title} ({node.id})")
     print(f"brainny: visualization -> {html_path}")
     central_out = _sync_to_central(out_dir, graph, args.project)
+    if central_out is not None:
+        print(f"brainny: mirrored to central -> {central_out}")
+    return 0
+
+
+def cmd_propose(args: argparse.Namespace) -> int:
+    """The synthesis skill's CLI target (skills/brainny/synthesize.md): an
+    AI proposes that several already-captured ideas genuinely support
+    each other toward something bigger -- a tool, website, statistical
+    module, business idea (SEED.md principle #1, pure semantic judgment,
+    nothing deterministic proposes this). Validates every referenced idea
+    id actually exists in this project's graph before accepting an
+    opportunity -- a dangling reference is a real bug, not a nit."""
+    out_dir = Path(args.out_dir)
+    entries_path = Path(args.entries)
+    if not entries_path.exists():
+        print(f"brainny: no such file: {entries_path}", file=sys.stderr)
+        return 1
+
+    graph = load_graph(out_dir)
+    known_ids = {n.id for n in graph.nodes}
+
+    raw = json.loads(entries_path.read_text(encoding="utf-8"))
+    if not isinstance(raw, list):
+        print("brainny: expected a JSON array of opportunity entries.", file=sys.stderr)
+        return 1
+
+    opportunities = load_opportunities(out_dir)
+    added: list[Opportunity] = []
+    for entry in raw:
+        opp_input = OpportunityInput.model_validate(entry)
+        missing = [i for i in opp_input.idea_ids if i not in known_ids]
+        if missing:
+            print(
+                f"brainny: opportunity '{opp_input.title}' references unknown idea id(s) "
+                f"{', '.join(missing)} in {graph_path(out_dir)} - skipped.",
+                file=sys.stderr,
+            )
+            continue
+        opp = Opportunity(id=next_opportunity_id(opportunities), session=args.session, **opp_input.model_dump())
+        opportunities.items.append(opp)
+        added.append(opp)
+
+    if not added:
+        print("brainny: 0 opportunities proposed (none passed validation, or empty array - correct, common outcome).")
+        return 0
+
+    save_opportunities(opportunities, out_dir)
+    viz_path = save_html(graph, out_dir)
+    print(f"brainny: proposed {len(added)} opportunity(ies) -> {opportunities_path(out_dir)}")
+    for opp in added:
+        print(f"  + [{opp.kind}] {opp.title} (weight {opp.weight:.2f}, {opp.id})")
+    print(f"brainny: visualization -> {viz_path}")
+
+    central_out = _sync_to_central(out_dir, graph, args.project or _infer_project_name(graph))
     if central_out is not None:
         print(f"brainny: mirrored to central -> {central_out}")
     return 0
@@ -444,6 +517,12 @@ def cmd_central(args: argparse.Namespace) -> int:
             print(f"  {folder}/{node_id} says its project is '{claimed}'")
 
     if args.html or args.open:
+        merged_opportunities = central_module.build_merged_opportunities(central_root)
+        if merged_opportunities.items:
+            save_opportunities(merged_opportunities, central_root)
+        # save_html() loads opportunities.json from central_root itself
+        # (see viz.py) -- writing the merged one there first is what makes
+        # it show up, no extra plumbing needed.
         path = save_html(merged, central_root, title="brainny — central")
         print(f"brainny: wrote {path} - open it in a browser.")
         if args.open:
@@ -695,6 +774,14 @@ def build_parser() -> argparse.ArgumentParser:
     p_capture.add_argument("--project", default="default", help="project name for provenance")
     p_capture.add_argument("--session", default="s1", help="session id for provenance")
     p_capture.set_defaults(func=cmd_capture)
+
+    p_propose = sub.add_parser(
+        "propose", help="propose opportunity(ies) -- ideas that combine into a tool/website/module/business idea"
+    )
+    p_propose.add_argument("entries", help="path to opportunities entries.json")
+    p_propose.add_argument("--project", help="project name (default: inferred from the local graph)")
+    p_propose.add_argument("--session", help="session id (default: unknown)")
+    p_propose.set_defaults(func=cmd_propose)
 
     p_attach = sub.add_parser(
         "attach", help="attach a small code/plot/table file to an existing idea as evidence"

@@ -149,3 +149,49 @@ def test_entry_rejects_oversized_snippet():
 
     with pytest.raises(ValidationError):
         EntryInput(kind="skill", title="t", summary="s", domain="d", snippet="x" * (MAX_SNIPPET_CHARS + 1))
+
+
+def test_opportunity_input_accepts_valid_entry():
+    from brainny.schema import OpportunityInput
+
+    opp = OpportunityInput(
+        title="GWAS/PRS toolkit",
+        kind="tool",
+        weight=0.72,
+        summary="Combine three ideas into one package.",
+        idea_ids=["idea_0001", "idea_0002"],
+    )
+    assert opp.weight == 0.72
+    assert opp.rationale is None
+
+
+def test_opportunity_input_requires_at_least_two_ideas():
+    from brainny.schema import OpportunityInput
+
+    with pytest.raises(ValidationError):
+        OpportunityInput(title="t", kind="tool", weight=0.5, summary="s", idea_ids=["idea_0001"])
+
+
+def test_opportunity_input_rejects_weight_out_of_range():
+    from brainny.schema import OpportunityInput
+
+    with pytest.raises(ValidationError):
+        OpportunityInput(title="t", kind="tool", weight=1.5, summary="s", idea_ids=["a", "b"])
+
+
+def test_opportunity_input_rejects_invalid_kind():
+    from brainny.schema import OpportunityInput
+
+    with pytest.raises(ValidationError):
+        OpportunityInput(title="t", kind="not-a-kind", weight=0.5, summary="s", idea_ids=["a", "b"])
+
+
+def test_opportunity_fills_id_and_created():
+    from brainny.schema import Opportunity
+
+    opp = Opportunity(
+        id="opp_0001", title="t", kind="tool", weight=0.5, summary="s", idea_ids=["a", "b"],
+    )
+    assert opp.id == "opp_0001"
+    assert opp.created
+    assert opp.session is None

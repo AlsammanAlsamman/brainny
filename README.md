@@ -58,6 +58,11 @@ purpose — and turn it into something durable:
   table structure kept inline, and/or a small attached script, table, or
   plot — each shown as a badge on the idea so it's visible at a glance
   which ones have something to literally follow, not just read about.
+- Ideas that genuinely **combine into something bigger** — a tool, a
+  website, a statistical module, a business idea — get proposed as an
+  **Opportunity**, with an honest AI-assigned confidence weight, in the
+  dashboard's own tab. Not automatic: pure semantic judgment, and most
+  passes propose nothing at all.
 
 It works for anyone who works with AI, not just developers — a
 precaution, a structure, a working approach is the same shape of thing
@@ -113,7 +118,14 @@ can drive brainny the same way.
   <img src="assets/screenshot-stats.png" alt="brAInny dashboard Stats tab: domain treemap, per-cluster activity table, kind breakdown, origin breakdown, and newest ideas" width="100%">
 </p>
 
-<p align="center"><sub>Stats tab — domain treemap, growth trends, kind + origin breakdown. Both from <code>brainny query --html</code>, on this project's own real, dogfooded ideas — all still "unclassified" here since they predate the origin field.</sub></p>
+<p align="center"><sub>Stats tab — domain treemap, growth trends, kind + origin breakdown. Both from <code>brainny query --html</code>, on this project's own real, dogfooded ideas.</sub></p>
+
+**Want to click around it yourself, not just look at screenshots?**
+[Open the live example dashboard](https://htmlpreview.github.io/?https://raw.githubusercontent.com/AlsammanAlsamman/brainny/master/examples/demo/graph.html) —
+entirely fabricated data (16 ideas across 7 domains, every kind/origin,
+attachments, snippets, and 3 proposed Opportunities), built specifically
+to show the full dashboard, not the maintainer's real ideas. See
+[`examples/demo/`](examples/demo/).
 
 ---
 
@@ -182,6 +194,20 @@ no `brainny attach` call needed. Any capture skill can fill it in; the
 dashboard renders it as monospace text in the idea's expanded view, with
 its own small pencil badge next to the title.
 
+**Ask whether ideas combine into something bigger:**
+**`/brainny-synthesize`** looks over everything already captured in the
+project — not just this session — for genuine combinations that could
+support each other toward a tool, website, statistical module, or
+business idea. Each proposal gets an honest 0.0–1.0 confidence weight
+(never inflated to look better) and shows up in the dashboard's own
+**Opportunities** tab, linked back to the ideas it's built from. This is
+pure AI judgment — nothing deterministic proposes it — so most passes
+propose nothing at all, same GATE discipline as every other capture skill:
+
+```bash
+brainny propose opportunities.json --project myproj --session s1
+```
+
 **2. See what you've kept:**
 
 ```bash
@@ -230,6 +256,7 @@ moment, every time.
 | `/brainny-sync-check` | automatically, once per session | checks for local drift and for an overdue GitHub push, asking before either |
 | `/brainny-onboarding` | automatically, once ever per machine | offers to set up a new central folder, or download an existing one, plus optional GitHub, on first use |
 | `/brainny-recall` | automatically, once per session, after your first message | surfaces anything relevant you've captured before — in this project or any other one — before the task starts |
+| `/brainny-synthesize [focus]` | manually, whenever you want to check | reviews everything captured in the project for genuine combinations, proposing each with an honest confidence weight via `brainny propose` |
 
 All of these are installed globally, once, and then work in any project.
 
@@ -346,7 +373,7 @@ an assistant you've explicitly asked) does deliberately.
 
 ## Status
 
-**v0 · seed** — the core loop above is real and tested (116 tests).
+**v0 · seed** — the core loop above is real and tested (136 tests).
 Capture *and* proactive recall (`brainny recall` + the `brainny-recall`
 skill) both work today. Not yet built: automatic dedup/novelty scoring so
 `recurrence`/`state` truly evolve over time, decay for neglected ideas,
@@ -363,10 +390,12 @@ for the full build order and `SEED.md` for the complete design rationale
 brainny/                 the CLI + engine (Python, assistant-agnostic)
 skills/brainny/          the capture skills (assistant-facing prompts)
 prompts/                 entry + project-nature templates
-tests/                   116 tests, see SEED.md §6 for the testing philosophy
+tests/                   136 tests, see SEED.md §6 for the testing philosophy
 brainny-out/             where captures land when you use brainny *on*
                          this repo (gitignored — same as in any project;
                          not shipped, this is per-user local data)
+examples/demo/           fabricated example dashboard, committed on purpose
+                         — see "Want to click around it yourself?" above
 assets/icon.png          brand mark
 SEED.md                  the living design doc — read this first
 OPERATIONS.md            how it actually runs day to day
