@@ -52,6 +52,12 @@ purpose — and turn it into something durable:
   just reuse it.
 - A stray **insight** that isn't useful yet gets kept as a seed — if it
   keeps coming back across sessions, brAInny notices and lets it grow.
+- A reusable **skill** — how a project should be structured, how a
+  specific analysis or plot should be built — gets kept as a described
+  procedure *plus* real evidence: a small script, a tiny illustrative
+  table, a small plot, each shown as a badge on the idea so it's visible
+  at a glance which ones have something to literally follow, not just
+  read about.
 
 It works for anyone who works with AI, not just developers — a
 precaution, a structure, a working approach is the same shape of thing
@@ -149,6 +155,23 @@ for whatever you describe (not just a recent window), and always tells you what 
 captured. Unlike the ambient skills below, this one doesn't second-guess
 whether it's worth keeping — you already decided that.
 
+For a reusable procedure rather than a fact, use **`/brainny-catch-skill
+how the GWAS manhattan plot should be made`** instead — same
+user-directed contract, but it captures `kind: skill` and looks for real
+evidence in the conversation (a script, a small table, a small plot) to
+attach as proof, via:
+
+```bash
+brainny attach idea_0031 manhattan.py --type code --description "plotting script"
+brainny attach idea_0031 expected_columns.csv --type table --description "required column format"
+brainny attach idea_0031 manhattan_example.png --type plot
+```
+
+Attachments are copied into `brainny-out/attachments/<idea-id>/`, shown
+as small badges (code / plot / table) on the idea in the dashboard, and
+capped at 2&nbsp;MB each — small enough to guide future use, not a copy
+of the full dataset or output.
+
 **2. See what you've kept:**
 
 ```bash
@@ -193,6 +216,7 @@ moment, every time.
 | `/brainny` | manually, end of a session | full two-pass review of the whole session (project-aware + project-blind); project-local only — copy `skills/brainny/SKILL.md` into a project to use it there |
 | `/brainny-catch` | manually, or every ~25 min in the background | lightweight scan of the last ~25 min for anything worth keeping; silent when it finds nothing |
 | `/brainny-catch-this <description>` | manually, whenever you point at something | searches the *whole* session for what you describe and captures it; always tells you what it did |
+| `/brainny-catch-skill <description>` | manually, whenever you point at a reusable procedure | same as above, but captures `kind: skill` and attaches evidence (code/plot/table) via `brainny attach` |
 | `/brainny-sync-check` | automatically, once per session | checks for local drift and for an overdue GitHub push, asking before either |
 | `/brainny-onboarding` | automatically, once ever per machine | offers to set up a new central folder, or download an existing one, plus optional GitHub, on first use |
 | `/brainny-recall` | automatically, once per session, after your first message | surfaces anything relevant you've captured before — in this project or any other one — before the task starts |
@@ -220,7 +244,7 @@ same as it asks before a local sync.
 
 ## Status
 
-**v0 · seed** — the core loop above is real and tested (73 tests).
+**v0 · seed** — the core loop above is real and tested (83 tests).
 Capture *and* proactive recall (`brainny recall` + the `brainny-recall`
 skill) both work today. Not yet built: automatic dedup/novelty scoring so
 `recurrence`/`state` truly evolve over time, decay for neglected ideas,
@@ -237,7 +261,7 @@ for the full build order and `SEED.md` for the complete design rationale
 brainny/                 the CLI + engine (Python, assistant-agnostic)
 skills/brainny/          the capture skills (assistant-facing prompts)
 prompts/                 entry + project-nature templates
-tests/                   73 tests, see SEED.md §6 for the testing philosophy
+tests/                   83 tests, see SEED.md §6 for the testing philosophy
 brainny-out/             where captures land when you use brainny *on*
                          this repo (gitignored — same as in any project;
                          not shipped, this is per-user local data)

@@ -19,6 +19,7 @@ KIND_ICON = {
     "solution": "S",
     "insight": "I",
     "seed": ".",
+    "skill": "K",
 }
 
 KIND_COLOR = {
@@ -27,7 +28,15 @@ KIND_COLOR = {
     "solution": "#2f9e5e",
     "insight": "#8b5cd6",
     "seed": "#8a8f98",
+    "skill": "#e8b23d",
 }
+
+# attachment "signs" -- a short badge glyph shown per idea in the itemized
+# list so a skill's physical evidence (code/plot/table) is visible without
+# opening the entry; small deliberately, per SEED.md's "small enough to
+# guide, not duplicate the dataset" attachment discipline.
+ATTACHMENT_ICON = {"code": "‹/›", "plot": "△", "table": "☷"}
+ATTACHMENT_LABEL = {"code": "code", "plot": "plot", "table": "table"}
 
 # The dashboard header icon — a small (96px) PNG baked in as base64 so
 # graph.html stays a single self-contained file (no external asset
@@ -133,6 +142,10 @@ def _build_payload(graph: Graph, title: str) -> dict:
                 "lastTouched": n.last_touched,
                 "session": prov.session if prov else None,
                 "sessionTs": prov.ts if prov else "",
+                "attachments": [
+                    {"type": a.type, "filename": a.filename, "description": a.description}
+                    for a in n.attachments
+                ],
             }
         )
 
@@ -159,6 +172,8 @@ def _build_payload(graph: Graph, title: str) -> dict:
         "originColor": ORIGIN_COLOR,
         "originLabel": {k: v for k, v in ORIGIN_LABEL.items() if k is not None},
         "unclassifiedColor": UNCLASSIFIED_COLOR,
+        "attachmentIcon": ATTACHMENT_ICON,
+        "attachmentLabel": ATTACHMENT_LABEL,
     }
 
 
@@ -298,6 +313,24 @@ _CSS = """
   .item-meta { margin: 0 0 0.35rem; color: #7c8c79; font-size: 0.72rem; }
   .item-tags { display: flex; flex-wrap: wrap; gap: 0.3rem; }
   .item-tag { background: rgba(255,255,255,0.08); border-radius: 999px; padding: 0.05rem 0.5rem; font-size: 0.7rem; }
+
+  /* attachment "signs" -- code/plot/table evidence badges (SEED.md
+     attachments: small physical proof, not the full dataset) */
+  .item-signs { display: inline-flex; gap: 0.2rem; flex: none; }
+  .item-sign {
+    display: inline-flex; align-items: center; justify-content: center;
+    min-width: 1.3em; height: 1.3em; padding: 0 0.25em; border-radius: 4px;
+    font-size: 0.68rem; font-weight: 600; letter-spacing: -0.02em;
+    background: rgba(255,255,255,0.08); color: #c9d3c6;
+  }
+  .item-sign-code { background: rgba(59,111,214,0.18); color: #9db8ef; }
+  .item-sign-plot { background: rgba(139,92,214,0.18); color: #c4aef0; }
+  .item-sign-table { background: rgba(47,158,94,0.18); color: #8fd6a8; }
+  .item-evidence { display: flex; flex-direction: column; gap: 0.4rem; margin-top: 0.5rem; }
+  .item-evidence-row { display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap; }
+  .item-evidence-row a { color: #9db8ef; font-size: 0.78rem; text-decoration: none; }
+  .item-evidence-row a:hover { text-decoration: underline; }
+  .item-evidence-thumb { max-width: 160px; max-height: 100px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.12); display: block; margin-top: 0.2rem; }
 
   #tooltip {
     position: fixed; z-index: 10; pointer-events: none; max-width: 280px;
@@ -444,6 +477,13 @@ _JS = """
         item.className = 'item' + (isPromising(idea) ? ' item-promising' : '');
         item.dataset.itemId = idea.id;
 
+        var attachments = idea.attachments || [];
+        var signBadges = attachments.map(function (a) {
+          return '<span class="item-sign item-sign-' + escapeHtml(a.type) + '" title="' +
+            escapeHtml((data.attachmentLabel[a.type] || a.type) + ': ' + a.filename) + '">' +
+            escapeHtml(data.attachmentIcon[a.type] || '?') + '</span>';
+        }).join('');
+
         var titleRow = document.createElement('button');
         titleRow.type = 'button';
         titleRow.className = 'item-title-row';
@@ -451,19 +491,33 @@ _JS = """
           '<span class="item-dot" style="background:' + (data.kindColor[idea.kind] || '#8a8f98') + '"></span>' +
           '<span class="item-dot" style="background:' + originColor(idea) + '" title="' + escapeHtml(originLabel(idea)) + '"></span>' +
           '<span class="item-title">' + escapeHtml(idea.title) + '</span>' +
+          (signBadges ? '<span class="item-signs">' + signBadges + '</span>' : '') +
           '<span class="item-caret">\\u25b8</span>';
 
         var body = document.createElement('div');
         body.className = 'item-body';
         body.hidden = true;
         var tags = (idea.tags || []).map(function (t) { return '<span class="item-tag">' + escapeHtml(t) + '</span>'; }).join('');
+        var evidence = attachments.map(function (a) {
+          var href = 'attachments/' + encodeURIComponent(idea.id) + '/' + encodeURIComponent(a.filename);
+          var label = (data.attachmentLabel[a.type] || a.type) + ': ' + a.filename + (a.description ? ' \\u2014 ' + a.description : '');
+          var preview = a.type === 'plot'
+            ? '<a href="' + href + '" target="_blank" rel="noopener"><img class="item-evidence-thumb" src="' + href + '" alt="' + escapeHtml(a.filename) + '" loading="lazy"></a>'
+            : '';
+          return '<div class="item-evidence-row">' +
+            '<span class="item-sign item-sign-' + escapeHtml(a.type) + '">' + escapeHtml(data.attachmentIcon[a.type] || '?') + '</span>' +
+            '<a href="' + href + '" target="_blank" rel="noopener">' + escapeHtml(label) + '</a>' +
+            preview +
+            '</div>';
+        }).join('');
         body.innerHTML =
           '<p class="item-summary">' + escapeHtml(idea.summary) + '</p>' +
           (idea.detail ? '<p class="item-detail">' + escapeHtml(idea.detail) + '</p>' : '') +
           (idea.trigger ? '<p class="item-trigger"><strong>trigger:</strong> ' + escapeHtml(idea.trigger) + '</p>' : '') +
           '<p class="item-meta">' + escapeHtml(idea.kind) + ' \\u00b7 ' + escapeHtml(idea.state) +
           ' \\u00b7 ' + escapeHtml(originLabel(idea)) + ' \\u00b7 ' + escapeHtml(idea.id) + '</p>' +
-          '<div class="item-tags">' + tags + '</div>';
+          '<div class="item-tags">' + tags + '</div>' +
+          (evidence ? '<div class="item-evidence">' + evidence + '</div>' : '');
 
         titleRow.addEventListener('click', function () {
           body.hidden = !body.hidden;

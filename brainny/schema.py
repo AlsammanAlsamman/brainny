@@ -13,7 +13,15 @@ from typing import Literal, Optional
 
 from pydantic import BaseModel, Field, field_validator
 
-Kind = Literal["technique", "precaution", "solution", "insight", "seed"]
+# "skill" vs. "technique": a technique is a described method; a skill is
+# a described method with actual evidence attached (see Attachment below)
+# — a script, a small illustrative table, a small plot — substantial
+# enough to literally follow again, not just read about. Structural
+# how-tos ("how this Snakemake project should be laid out", "how the
+# GWAS QC step works", "how the manhattan plot is made") are the
+# intended shape; use "technique" for anything without real evidence
+# attached.
+Kind = Literal["technique", "precaution", "solution", "insight", "seed", "skill"]
 State = Literal["seed", "sprouting", "mature", "harvested"]
 # Who actually originated the idea's content — not who ran the capture
 # command. "human": the person explicitly pointed at it (e.g.
@@ -28,6 +36,19 @@ EdgeType = Literal[
     "derived-from", "refines", "contradicts", "combines-with", "same-technique"
 ]
 EdgeSource = Literal["extracted", "inferred"]
+# A small, physical piece of evidence attached to an idea — a script, a
+# tiny illustrative table excerpt, a small plot — not the full
+# dataset/output, just enough to show the shape/format so a future
+# session (human or AI) can follow it without re-deriving it. Stored as
+# an actual file under brainny-out/attachments/<idea-id>/ (see
+# cli.py's cmd_attach), referenced here by filename only.
+AttachmentType = Literal["code", "plot", "table"]
+
+
+class Attachment(BaseModel):
+    type: AttachmentType
+    filename: str = Field(min_length=1)
+    description: Optional[str] = None
 
 
 def now_iso() -> str:
@@ -69,6 +90,7 @@ class EntryInput(BaseModel):
     tags: list[str] = Field(default_factory=list)
     trigger: Optional[str] = None
     origin: Optional[Origin] = None
+    attachments: list[Attachment] = Field(default_factory=list)
 
     @field_validator("trigger")
     @classmethod

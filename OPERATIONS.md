@@ -493,5 +493,57 @@ permission-gated local check — see above.
       field — they were never actually re-judged, so leaving them
       unclassified is the truthful choice, not a cosmetic default).
 
+15. The `skill` kind + attachments: `brainny attach` and `brainny-catch-skill`. ✅
+    - Prior kinds (technique/precaution/solution/insight) are all prose —
+      a description of what to do, with nothing to literally follow. The
+      user's framing: some things discussed during a session are genuinely
+      reusable *procedures* (how a Snakemake project should be structured,
+      the GWAS QC steps, how a specific plot should be built), and the
+      thing that makes a procedure actually reusable later — by a human or
+      an AI — is real evidence attached to it, not just a paragraph: a
+      script, a small illustrative table, a small plot.
+    - New `Kind` value `"skill"` (`brainny/schema.py`) — distinguished from
+      `"technique"` by having actual evidence attached, not just richer
+      prose; the schema docstring spells out the distinction so future
+      capture skills judge it consistently.
+    - New `Attachment` model (`type: "code"|"plot"|"table"`, `filename`,
+      optional `description`) and `attachments: list[Attachment]` on
+      `EntryInput`/`Node`. Attachments are never embedded as binary content
+      in `graph.json` (SEED.md §1.6's two-contracts rule still holds) —
+      only the filename is recorded there; the actual file lives under
+      `brainny-out/attachments/<idea-id>/`.
+    - New CLI command `brainny attach <idea-id> <file> --type
+      code|plot|table [--description ...] [--rename ...] [--session ...]`:
+      validates the idea id exists and the file exists, enforces a
+      **2 MB** cap (`MAX_ATTACHMENT_BYTES` in `cli.py`) so evidence stays
+      "enough to guide," not a copy of the real dataset/output, copies the
+      file in, appends the `Attachment` record plus a `growth_log` entry,
+      and updates `last_touched`. `brainny sync` now also copies the whole
+      local `attachments/` tree into the central folder's copy, same
+      project→central-only direction as everything else it syncs.
+    - New skill `brainny-catch-skill`, the fourth capture mode alongside
+      `/brainny`, `/brainny-catch`, and `/brainny-catch-this`:
+      `/brainny-catch-skill <description>` — same user-directed,
+      always-responds contract as `/brainny-catch-this` (search the whole
+      session, `origin` always `"human"`), but captures `kind: "skill"`
+      and walks the conversation for real evidence to attach via
+      `brainny attach` after the initial capture returns the new idea's
+      id, rather than fabricating a placeholder when nothing suitable
+      exists.
+    - Dashboard: each attachment shows as a small colored "sign" badge
+      (code / plot / table) next to the idea's title in the itemized list,
+      and as a linked row (with an inline thumbnail for `plot` type) in
+      the expanded body — `<img>`/`<a>` against the relative
+      `attachments/<id>/<filename>` path, which resolves fine over
+      `file://` for a static `graph.html` even though a `fetch()`/XHR
+      would be CORS-blocked. New `"skill"` entry in `KIND_COLOR`/
+      `KIND_ICON` (`brainny/viz.py`) so skill ideas render distinctly from
+      techniques everywhere kind already drives color.
+    - 10 new tests (4 schema: skill kind accepted, attachments accepted,
+      invalid attachment type rejected, empty filename rejected; 6 CLI:
+      unknown idea id rejected, missing file rejected, oversized file
+      rejected, attach copies file + updates graph, `--rename` honored,
+      sync copies attachments to central) — 83 tests total.
+
 Each step should land, get tested, and get dogfooded (per SEED.md §6
 Layer 7) before the next starts — same discipline as the v0 build.

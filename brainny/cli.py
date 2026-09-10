@@ -1,5 +1,5 @@
-"""brainny CLI — entry: capture | query | status | config | search |
-recall | recent | open | grow | neglected | install | serve | hook.
+"""brainny CLI — entry: capture | attach | query | status | config |
+search | recall | recent | open | grow | neglected | install | serve | hook.
 
 v0 (see SEED.md §7) implements capture + query for real. status/config/
 search/recent/open are OPERATIONS.md §6 step 2 — pure CLI surface on data
@@ -11,6 +11,7 @@ that lands them, rather than being silently absent.
 from __future__ import annotations
 
 import argparse
+import shutil
 import subprocess
 import sys
 import webbrowser
@@ -23,8 +24,13 @@ from brainny._version import get_version
 from brainny.banner import render_banner
 from brainny.capture import capture as do_capture
 from brainny.graph import DEFAULT_OUT_DIR, graph_path, html_path, load_graph, save_graph
-from brainny.schema import Graph
+from brainny.schema import Attachment, Graph, GrowthLogEntry, now_iso
 from brainny.viz import render_tree, save_html
+
+ATTACHMENTS_DIRNAME = "attachments"
+# "small enough to guide, not to duplicate the dataset" -- a hard cap
+# keeps this a pointer/excerpt mechanism, not a file-storage feature.
+MAX_ATTACHMENT_BYTES = 2 * 1024 * 1024
 
 # Resolved defensively so `python -m brainny.cli` works from any directory,
 # even one that shadows the package as a namespace package.
@@ -55,6 +61,55 @@ def cmd_capture(args: argparse.Namespace) -> int:
         for node in nodes:
             print(f"  + [{node.kind}] {node.title} ({node.id})")
     print(f"brainny: visualization -> {html_path}")
+    return 0
+
+
+def cmd_attach(args: argparse.Namespace) -> int:
+    """Attach a small piece of physical evidence -- a script, a tiny
+    illustrative table excerpt, a small plot -- to an existing idea, so a
+    future session can literally follow it instead of re-deriving it from
+    a text description alone. The file itself lives under
+    brainny-out/attachments/<idea-id>/; the graph only ever stores its
+    filename/type/description, matching the two-contracts rule (SEED.md
+    §1.6) -- the JSON entry never carries binary content."""
+    out_dir = Path(args.out_dir)
+    graph = load_graph(out_dir)
+    node = next((n for n in graph.nodes if n.id == args.idea_id), None)
+    if node is None:
+        print(f"brainny: no idea with id '{args.idea_id}' in {graph_path(out_dir)}", file=sys.stderr)
+        return 1
+
+    src = Path(args.file)
+    if not src.exists() or not src.is_file():
+        print(f"brainny: no such file: {src}", file=sys.stderr)
+        return 1
+    size = src.stat().st_size
+    if size > MAX_ATTACHMENT_BYTES:
+        print(
+            f"brainny: {src} is {size / 1024:.0f} KB, over the "
+            f"{MAX_ATTACHMENT_BYTES // 1024} KB attachment cap. Attachments are meant to "
+            "guide, not duplicate a full dataset/output -- trim it to a small excerpt first.",
+            file=sys.stderr,
+        )
+        return 1
+
+    filename = args.rename or src.name
+    dest_dir = out_dir / ATTACHMENTS_DIRNAME / node.id
+    dest_dir.mkdir(parents=True, exist_ok=True)
+    dest = dest_dir / filename
+    shutil.copyfile(src, dest)
+
+    node.attachments.append(Attachment(type=args.type, filename=filename, description=args.description))
+    ts = now_iso()
+    node.last_touched = ts
+    node.growth_log.append(
+        GrowthLogEntry(session=args.session or "unknown", ts=ts, event="attached", note=f"{args.type}: {filename}")
+    )
+    save_graph(graph, out_dir)
+    viz_path = save_html(graph, out_dir)
+
+    print(f"brainny: attached {filename} ({args.type}) to {node.id} -> {dest}")
+    print(f"brainny: visualization -> {viz_path}")
     return 0
 
 
@@ -344,6 +399,11 @@ def cmd_sync(args: argparse.Namespace) -> int:
     central_out = central_root / project
     saved = save_graph(graph, central_out)
     save_html(graph, central_out)
+
+    local_attachments = out_dir / ATTACHMENTS_DIRNAME
+    if local_attachments.is_dir():
+        shutil.copytree(local_attachments, central_out / ATTACHMENTS_DIRNAME, dirs_exist_ok=True)
+
     print(f"brainny: synced {len(graph.nodes)} idea(s) to {saved}")
 
     return _maybe_push(central_root, project, len(graph.nodes), args.push)
@@ -429,6 +489,17 @@ def build_parser() -> argparse.ArgumentParser:
     p_capture.add_argument("--project", default="default", help="project name for provenance")
     p_capture.add_argument("--session", default="s1", help="session id for provenance")
     p_capture.set_defaults(func=cmd_capture)
+
+    p_attach = sub.add_parser(
+        "attach", help="attach a small code/plot/table file to an existing idea as evidence"
+    )
+    p_attach.add_argument("idea_id", help="the idea's id, e.g. idea_0007")
+    p_attach.add_argument("file", help="path to the file to attach (small excerpt, not a full dataset)")
+    p_attach.add_argument("--type", choices=["code", "plot", "table"], required=True)
+    p_attach.add_argument("--description", help="one line describing what this shows")
+    p_attach.add_argument("--rename", help="store under this filename instead of the source file's own name")
+    p_attach.add_argument("--session", help="session id for the growth-log entry (default: unknown)")
+    p_attach.set_defaults(func=cmd_attach)
 
     p_query = sub.add_parser("query", help="print the graph as a terminal tree")
     p_query.add_argument(

@@ -87,3 +87,42 @@ def test_edge_confidence_bounds():
     Edge(target="idea_0001", type="refines", confidence=1.0)
     with pytest.raises(ValidationError):
         Edge(target="idea_0001", type="refines", confidence=1.5)
+
+
+def test_entry_accepts_skill_kind():
+    entry = EntryInput(kind="skill", title="t", summary="s", domain="d")
+    assert entry.kind == "skill"
+    assert entry.attachments == []
+
+
+def test_entry_accepts_attachments():
+    from brainny.schema import Attachment
+
+    entry = EntryInput(
+        kind="skill",
+        title="GWAS manhattan plot",
+        summary="How the manhattan plot is made for this project.",
+        domain="GWAS",
+        attachments=[
+            Attachment(type="code", filename="manhattan.py", description="plotting script"),
+            Attachment(type="plot", filename="manhattan_example.png"),
+            Attachment(type="table", filename="expected_columns.csv", description="required column format"),
+        ],
+    )
+    assert len(entry.attachments) == 3
+    assert entry.attachments[0].type == "code"
+    assert entry.attachments[1].description is None
+
+
+def test_attachment_rejects_invalid_type():
+    from brainny.schema import Attachment
+
+    with pytest.raises(ValidationError):
+        Attachment(type="video", filename="x.mp4")
+
+
+def test_attachment_requires_filename():
+    from brainny.schema import Attachment
+
+    with pytest.raises(ValidationError):
+        Attachment(type="code", filename="")

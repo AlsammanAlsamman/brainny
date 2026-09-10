@@ -643,3 +643,98 @@ def test_python_m_runs_from_parent_of_clone():
         )
         assert r.returncode == 0, f"{target}: {r.stderr or r.stdout}"
         assert "brainny" in (r.stdout + r.stderr).lower()
+
+
+# ---- step 15: `brainny attach` -- small code/plot/table evidence per idea ----
+
+
+def test_attach_rejects_unknown_idea_id(tmp_path, capsys):
+    out_dir = tmp_path / "out"
+    capture(FIXTURES / "sample_entries.json", project="p", session="s1", out_dir=out_dir)
+    src = tmp_path / "script.py"
+    src.write_text("print('hi')")
+
+    code = main(["--out-dir", str(out_dir), "attach", "idea_9999", str(src), "--type", "code"])
+    assert code == 1
+    assert "no idea with id" in capsys.readouterr().err
+
+
+def test_attach_rejects_missing_file(tmp_path, capsys):
+    out_dir = tmp_path / "out"
+    capture(FIXTURES / "sample_entries.json", project="p", session="s1", out_dir=out_dir)
+
+    code = main(["--out-dir", str(out_dir), "attach", "idea_0001", str(tmp_path / "nope.py"), "--type", "code"])
+    assert code == 1
+    assert "no such file" in capsys.readouterr().err
+
+
+def test_attach_rejects_oversized_file(tmp_path, capsys):
+    out_dir = tmp_path / "out"
+    capture(FIXTURES / "sample_entries.json", project="p", session="s1", out_dir=out_dir)
+    big = tmp_path / "big.csv"
+    big.write_bytes(b"x" * (3 * 1024 * 1024))  # over the 2 MB cap
+
+    code = main(["--out-dir", str(out_dir), "attach", "idea_0001", str(big), "--type", "table"])
+    assert code == 1
+    assert "attachment cap" in capsys.readouterr().err
+
+
+def test_attach_copies_file_and_updates_graph(tmp_path, capsys):
+    out_dir = tmp_path / "out"
+    capture(FIXTURES / "sample_entries.json", project="p", session="s1", out_dir=out_dir)
+    script = tmp_path / "manhattan.py"
+    script.write_text("# plots a manhattan plot")
+
+    code = main([
+        "--out-dir", str(out_dir), "attach", "idea_0001", str(script),
+        "--type", "code", "--description", "plotting script", "--session", "s2",
+    ])
+    assert code == 0
+    out = capsys.readouterr().out
+    assert "attached manhattan.py (code) to idea_0001" in out
+
+    dest = out_dir / "attachments" / "idea_0001" / "manhattan.py"
+    assert dest.exists()
+    assert dest.read_text() == "# plots a manhattan plot"
+
+    from brainny.graph import load_graph
+
+    graph = load_graph(out_dir)
+    node = next(n for n in graph.nodes if n.id == "idea_0001")
+    assert len(node.attachments) == 1
+    assert node.attachments[0].type == "code"
+    assert node.attachments[0].filename == "manhattan.py"
+    assert node.attachments[0].description == "plotting script"
+    assert node.growth_log[-1].event == "attached"
+
+
+def test_attach_rename_uses_alternate_filename(tmp_path):
+    out_dir = tmp_path / "out"
+    capture(FIXTURES / "sample_entries.json", project="p", session="s1", out_dir=out_dir)
+    src = tmp_path / "original_name.png"
+    src.write_bytes(b"fake-png-bytes")
+
+    code = main([
+        "--out-dir", str(out_dir), "attach", "idea_0001", str(src),
+        "--type", "plot", "--rename", "manhattan_example.png",
+    ])
+    assert code == 0
+    assert (out_dir / "attachments" / "idea_0001" / "manhattan_example.png").exists()
+    assert not (out_dir / "attachments" / "idea_0001" / "original_name.png").exists()
+
+
+def test_sync_copies_attachments_to_central(tmp_path, capsys, isolated_config):
+    out_dir = tmp_path / "out"
+    capture(FIXTURES / "sample_entries.json", project="myproj", session="s1", out_dir=out_dir)
+    src = tmp_path / "qc_table.csv"
+    src.write_text("col1,col2\n1,2\n")
+    main(["--out-dir", str(out_dir), "attach", "idea_0001", str(src), "--type", "table"])
+    capsys.readouterr()
+
+    central = tmp_path / "central"
+    main(["config", "set-central", str(central)])
+    capsys.readouterr()
+
+    code = main(["--out-dir", str(out_dir), "sync"])
+    assert code == 0
+    assert (central / "myproj" / "attachments" / "idea_0001" / "qc_table.csv").exists()
