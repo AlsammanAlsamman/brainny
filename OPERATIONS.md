@@ -577,5 +577,53 @@ permission-gated local check — see above.
     - 3 new schema tests (snippet accepted, defaults to `None`, oversized
       snippet rejected) — 86 tests total.
 
+17. Automatic project → central mirroring on every capture/attach. ✅
+    - Real gap, found by a real user hitting it: they'd been working in
+      another project for a while and its ideas simply weren't showing up
+      in the central folder. Root cause, confirmed by checking the actual
+      central folder directly: that project had captured locally many
+      times but never once run `brainny sync` — sync was fully manual
+      (step 3/13), and the once-per-session `brainny-sync-check` nudge
+      only fires at session *start*, so ideas captured mid-session (the
+      common case) went un-synced until the *next* session started, and
+      even then only if the user said yes to the ask. Central existing
+      and working correctly (it does, since step 3 — onboarding, central
+      folder, `brainny sync`, `brainny recall`, GitHub push cadence are
+      all real and tested) doesn't help if nothing ever tells it about a
+      given project's ideas.
+    - SEED.md §1.7 already says "Project → central: always" — the gap was
+      that "always" was being satisfied by an opt-in command, not
+      actually happening on every capture. Fixed to match the letter of
+      that line: new `_sync_to_central()` helper in `cli.py`, called
+      automatically at the end of both `cmd_capture` and `cmd_attach`
+      (when a central folder is configured; silent no-op otherwise, so a
+      fresh install with nothing configured yet behaves exactly as
+      before). `cmd_sync` refactored to reuse the same helper — it still
+      exists, now mainly for backfilling ideas captured before a central
+      folder existed, and for `--push`, its only GitHub-touching job.
+      Still local-disk-only, still never touches git on its own — the
+      "Central → project: only on explicit request, never auto-committed"
+      half of §1.7 is completely unaffected; only the project → central
+      direction got tightened.
+    - Caught and fixed a real bug this introduced along the way: several
+      existing `attach` tests didn't use the `isolated_config` fixture
+      (fine before this change, since attach never touched config), so
+      once attach started auto-mirroring, those tests started writing
+      into whatever central folder is configured on the machine actually
+      running the suite — confirmed this had already happened to the
+      maintainer's own real `~/brainny-central` (a stray `p/` project
+      directory from a test run). Cleaned up the polluted real folder and
+      made `isolated_config` `autouse=True` for the whole test module so
+      this class of bug can't recur silently.
+    - 4 new CLI tests (capture doesn't mirror when no central configured,
+      capture mirrors and matches node count when central is configured,
+      two captures in a row keep the central copy in sync end-to-end
+      confirmed via `brainny status` showing "(in sync)", attach mirrors
+      too) — 90 tests total. Verified for real against the maintainer's
+      actual central folder: captured and attached with central
+      configured, confirmed the mirror lands immediately without a
+      separate `brainny sync` call, then confirmed the real folder was
+      clean of test pollution afterward.
+
 Each step should land, get tested, and get dogfooded (per SEED.md §6
 Layer 7) before the next starts — same discipline as the v0 build.

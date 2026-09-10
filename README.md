@@ -236,22 +236,28 @@ skill above offers to do this for you on first run — or by hand):
 ```bash
 brainny config set-central ~/brainny-central          # point at a new shared folder
 brainny config set-central ~/brainny-central --clone <git-url>  # ...or download an existing one (another machine, GitHub)
-brainny sync                                            # push this project's ideas there
-brainny sync --push                                      # + commit & push, if that folder has a git remote
 ```
 
+Once a central folder is configured, `brainny capture` and `brainny
+attach` mirror to it **automatically, immediately, on every call** — no
+extra step, and nothing to remember. You only need `brainny sync` by hand
+for two cases: backfilling ideas that were captured *before* a central
+folder existed, or `brainny sync --push` to also commit & push, if the
+central folder has a GitHub remote.
+
 Sync only ever flows project → central. Central never overwrites a
-project's own copy unless you explicitly ask for that. If the central
-folder is GitHub-backed, `brainny status` tracks how long it's been
-since the last push and flags it as due once `sync-interval-days` has
-passed (default **1 day**) — `brainny-sync-check` asks before pushing,
-same as it asks before a local sync.
+project's own copy unless you explicitly ask for that, and none of this
+ever touches git on its own — pushing to GitHub is always a separate,
+explicit step. If the central folder is GitHub-backed, `brainny status`
+tracks how long it's been since the last push and flags it as due once
+`sync-interval-days` has passed (default **1 day**) —
+`brainny-sync-check` asks before pushing.
 
 ---
 
 ## Status
 
-**v0 · seed** — the core loop above is real and tested (86 tests).
+**v0 · seed** — the core loop above is real and tested (90 tests).
 Capture *and* proactive recall (`brainny recall` + the `brainny-recall`
 skill) both work today. Not yet built: automatic dedup/novelty scoring so
 `recurrence`/`state` truly evolve over time, decay for neglected ideas,
@@ -268,7 +274,7 @@ for the full build order and `SEED.md` for the complete design rationale
 brainny/                 the CLI + engine (Python, assistant-agnostic)
 skills/brainny/          the capture skills (assistant-facing prompts)
 prompts/                 entry + project-nature templates
-tests/                   86 tests, see SEED.md §6 for the testing philosophy
+tests/                   90 tests, see SEED.md §6 for the testing philosophy
 brainny-out/             where captures land when you use brainny *on*
                          this repo (gitignored — same as in any project;
                          not shipped, this is per-user local data)

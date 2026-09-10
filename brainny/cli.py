@@ -45,6 +45,28 @@ NOT_YET = {
 }
 
 
+def _sync_to_central(out_dir: Path, graph: Graph, project: str | None) -> Path | None:
+    """Project -> central, always, on-disk only -- SEED.md §1.7's "Project
+    -> central: always" half, made literal: every capture/attach mirrors
+    into the configured central folder immediately, not just when someone
+    remembers to run `brainny sync`. Silent no-op if no central folder is
+    configured, or `project` can't be determined -- a brand-new install
+    with nothing set up yet must behave exactly like today. Never touches
+    git: pushing to GitHub stays a separate, fully explicit step
+    (`brainny sync --push`), same as always -- this only ever writes local
+    files, matching "never auto-committed" for the OTHER direction too."""
+    central = config.get_value("central-folder")
+    if not central or not project:
+        return None
+    central_out = Path(central) / project
+    save_graph(graph, central_out)
+    save_html(graph, central_out)
+    local_attachments = out_dir / ATTACHMENTS_DIRNAME
+    if local_attachments.is_dir():
+        shutil.copytree(local_attachments, central_out / ATTACHMENTS_DIRNAME, dirs_exist_ok=True)
+    return central_out
+
+
 def cmd_capture(args: argparse.Namespace) -> int:
     out_dir = Path(args.out_dir)
     entries_path = Path(args.entries)
@@ -61,6 +83,9 @@ def cmd_capture(args: argparse.Namespace) -> int:
         for node in nodes:
             print(f"  + [{node.kind}] {node.title} ({node.id})")
     print(f"brainny: visualization -> {html_path}")
+    central_out = _sync_to_central(out_dir, graph, args.project)
+    if central_out is not None:
+        print(f"brainny: mirrored to central -> {central_out}")
     return 0
 
 
@@ -110,6 +135,9 @@ def cmd_attach(args: argparse.Namespace) -> int:
 
     print(f"brainny: attached {filename} ({args.type}) to {node.id} -> {dest}")
     print(f"brainny: visualization -> {viz_path}")
+    central_out = _sync_to_central(out_dir, graph, _infer_project_name(graph))
+    if central_out is not None:
+        print(f"brainny: mirrored to central -> {central_out}")
     return 0
 
 
@@ -394,17 +422,15 @@ def cmd_sync(args: argparse.Namespace) -> int:
         return 1
 
     # local -> central only, always (never the reverse without an explicit
-    # pull command) — see SEED.md §1.7 and OPERATIONS.md §3
+    # pull command) — see SEED.md §1.7 and OPERATIONS.md §3. Capture/attach
+    # already do this same mirror automatically on every call (OPERATIONS.md
+    # step 17) -- this command exists for backfilling ideas captured before
+    # a central folder was configured, and for `--push`, its only GitHub-
+    # touching job.
     central_root = Path(central)
-    central_out = central_root / project
-    saved = save_graph(graph, central_out)
-    save_html(graph, central_out)
+    central_out = _sync_to_central(out_dir, graph, project)
 
-    local_attachments = out_dir / ATTACHMENTS_DIRNAME
-    if local_attachments.is_dir():
-        shutil.copytree(local_attachments, central_out / ATTACHMENTS_DIRNAME, dirs_exist_ok=True)
-
-    print(f"brainny: synced {len(graph.nodes)} idea(s) to {saved}")
+    print(f"brainny: synced {len(graph.nodes)} idea(s) to {graph_path(central_out)}")
 
     return _maybe_push(central_root, project, len(graph.nodes), args.push)
 

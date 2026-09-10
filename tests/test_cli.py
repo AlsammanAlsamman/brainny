@@ -61,9 +61,18 @@ def test_render_banner_colored(monkeypatch):
 # ---- step 2: status / config / search / recent / open ----
 
 
-@pytest.fixture
+@pytest.fixture(autouse=True)
 def isolated_config(tmp_path, monkeypatch):
-    """Never let CLI tests touch the real ~/.brainny/config.json."""
+    """Never let CLI tests touch the real ~/.brainny/config.json -- autouse
+    so this is impossible to forget. Concretely bit once: capture/attach
+    auto-mirroring to central (OPERATIONS.md step 17) means any test that
+    exercises them through `main()` now writes into whatever central
+    folder is configured; without this being unconditional, a test left
+    off this fixture on a dev machine that *has* a real central folder set
+    up (as this repo's own maintainer does) silently pollutes it -- which
+    is exactly what happened to `~/brainny-central` before this was made
+    autouse. Explicit `isolated_config` params on individual tests are
+    harmless leftovers, not load-bearing anymore."""
     config_dir = tmp_path / "home-brainny"
     monkeypatch.setattr(config_module, "DEFAULT_CONFIG_DIR", config_dir)
     return config_dir
@@ -738,3 +747,81 @@ def test_sync_copies_attachments_to_central(tmp_path, capsys, isolated_config):
     code = main(["--out-dir", str(out_dir), "sync"])
     assert code == 0
     assert (central / "myproj" / "attachments" / "idea_0001" / "qc_table.csv").exists()
+
+
+# ---- step 17: capture/attach auto-mirror to central (project -> central,
+# always, per SEED.md §1.7 -- no more relying on someone remembering to
+# run `brainny sync`) ----
+
+
+def test_capture_with_no_central_configured_does_not_mirror(tmp_path, capsys):
+    out_dir = tmp_path / "out"
+    code = main([
+        "--out-dir", str(out_dir), "capture", str(FIXTURES / "sample_entries.json"),
+        "--project", "myproj", "--session", "s1",
+    ])
+    assert code == 0
+    assert "mirrored to central" not in capsys.readouterr().out
+
+
+def test_capture_auto_mirrors_to_central_when_configured(tmp_path, capsys):
+    central = tmp_path / "central"
+    main(["config", "set-central", str(central)])
+    capsys.readouterr()
+
+    out_dir = tmp_path / "out"
+    code = main([
+        "--out-dir", str(out_dir), "capture", str(FIXTURES / "sample_entries.json"),
+        "--project", "myproj", "--session", "s1",
+    ])
+    assert code == 0
+    out = capsys.readouterr().out
+    assert f"mirrored to central -> {central / 'myproj'}" in out
+
+    assert (central / "myproj" / "graph.json").exists()
+    from brainny.graph import load_graph
+
+    assert len(load_graph(central / "myproj").nodes) == len(load_graph(out_dir).nodes)
+
+
+def test_capture_twice_keeps_central_mirror_current(tmp_path, capsys):
+    central = tmp_path / "central"
+    main(["config", "set-central", str(central)])
+    capsys.readouterr()
+    out_dir = tmp_path / "out"
+
+    main([
+        "--out-dir", str(out_dir), "capture", str(FIXTURES / "sample_entries.json"),
+        "--project", "myproj", "--session", "s1",
+    ])
+    capsys.readouterr()
+
+    extra = tmp_path / "extra.json"
+    extra.write_text('[{"kind": "insight", "title": "t3", "summary": "s3", "domain": "d"}]', encoding="utf-8")
+    main(["--out-dir", str(out_dir), "capture", str(extra), "--project", "myproj", "--session", "s2"])
+    capsys.readouterr()
+
+    from brainny.graph import load_graph
+
+    assert len(load_graph(central / "myproj").nodes) == len(load_graph(out_dir).nodes) == 3
+
+    code = main(["--out-dir", str(out_dir), "status"])
+    assert code == 0
+    assert "(in sync)" in capsys.readouterr().out
+
+
+def test_attach_auto_mirrors_to_central_when_configured(tmp_path, capsys):
+    out_dir = tmp_path / "out"
+    capture(FIXTURES / "sample_entries.json", project="myproj", session="s1", out_dir=out_dir)
+
+    central = tmp_path / "central"
+    main(["config", "set-central", str(central)])
+    capsys.readouterr()
+
+    src = tmp_path / "manhattan.py"
+    src.write_text("# plots a manhattan plot")
+    code = main(["--out-dir", str(out_dir), "attach", "idea_0001", str(src), "--type", "code"])
+    assert code == 0
+    out = capsys.readouterr().out
+    assert "mirrored to central" in out
+    assert (central / "myproj" / "attachments" / "idea_0001" / "manhattan.py").exists()

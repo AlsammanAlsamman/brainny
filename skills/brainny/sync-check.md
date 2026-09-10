@@ -15,6 +15,15 @@ substitute — piggyback on whenever a session actually starts, check
 cheaply, and ask before doing anything, rather than trying to force a
 timer that can't exist for this architecture.
 
+## Note: local drift should now be rare
+
+`brainny capture` and `brainny attach` auto-mirror to the central folder
+on every call now (OPERATIONS.md step 17) — local drift mostly only
+happens for ideas captured before a central folder was configured, or on
+an older `brainny` build. This skill still checks for it (belt-and-
+suspenders, and it's the only thing that catches those backfill cases),
+but expect it to fire far less often than the GitHub-push-staleness half.
+
 ## What to do
 
 1. If the `brainny` CLI isn't installed/on PATH: do nothing, silently.
