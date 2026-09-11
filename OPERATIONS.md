@@ -1116,5 +1116,51 @@ permission-gated local check — see above.
       light treatment and are easy to miss since nothing about them
       *looks* like a color.
 
+28. Ambient `brainny-propose-check` — synthesis gets a free look every session. ✅
+    - User's ask: "I want it to run on all sessions if non were selected
+      brainny propose" — read as: run `/brainny-synthesize`'s judgment
+      automatically, once per session, rather than only when someone
+      remembers to type `/brainny-synthesize` themselves. Confirmed
+      cadence with the user before building (three options offered: once
+      per session, on the existing ~25-min catch loop, or folded into
+      the end-of-session `/brainny` review) — they picked once per
+      session, matching `brainny-sync-check`/`brainny-recall`'s existing
+      pattern, since synthesis reviews a project's *entire* history every
+      time regardless of how much of it is new, so running it on a tight
+      loop like `catch` would be wasted, repeated work for no new signal.
+    - New `skills/brainny/propose-check.md` (+ global mirror
+      `~/.claude/skills/brainny-propose-check/SKILL.md`, installed
+      directly since this session doesn't have a scripted install step
+      for new skills): the ambient sibling of `/brainny-synthesize`, the
+      same relationship `/brainny-catch` already has to the full
+      `/brainny` review. Delegates to the exact same GATE and `weight`
+      honesty discipline the manual skill already documents (referenced,
+      not duplicated) -- ambient framing is not an excuse to relax
+      either. The one real behavioral difference from the manual skill:
+      `/brainny-synthesize` always responds, even on a null result,
+      because it's a direct request; this ambient version stays
+      **silent** on a null result, same discipline as `/brainny-catch`,
+      since "checked, nothing to propose" every session start would be
+      exactly the kind of narration the existing guardrails already
+      forbid for the other ambient skills.
+    - Wired into `~/.claude/CLAUDE.md`'s "brAInny ambient capture"
+      section as step 4 (between `sync-check` and `recall` -- it doesn't
+      need to wait for the user's first message the way recall does,
+      since it isn't reacting to anything said in the session, just the
+      project's already-captured history), plus its own guardrail bullet
+      and an entry in the "Full skill instructions" list mapping the
+      global copy back to this repo's source file, matching every other
+      ambient skill's documented pairing.
+    - Runs "on all sessions" in the sense the user asked for by reading
+      the *whole* project's captured ideas every time (inherited
+      directly from `/brainny-synthesize`'s own instruction to read
+      `brainny query`/`graph.json` rather than relying on session
+      context, since a genuine combination may span ideas captured
+      across many past sessions) -- not by literally re-running for
+      every session that ever existed, which isn't a meaningful
+      operation; "if none were selected" is the once-per-session guard:
+      it only fires if this exact check hasn't already run for this
+      project earlier in the same session.
+
 Each step should land, get tested, and get dogfooded (per SEED.md §6
 Layer 7) before the next starts — same discipline as the v0 build.
