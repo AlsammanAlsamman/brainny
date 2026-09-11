@@ -1059,17 +1059,25 @@ permission-gated local check — see above.
       140 tests total. Verified with headless Chrome against two real
       scenarios: the existing single-project example dataset (correctly
       shows one small brain with a "sync another project to see it join"
-      note), and a genuine 4-project central folder built through the
-      real `capture()`/`build_merged_graph()` functions directly (not
-      the CLI, so no `_sync_to_central` mirroring risk, and confirmed no
-      pollution of the real central folder afterward) -- confirmed
-      node sizing scales with idea count, and confirmed clicking a
-      project node correctly filters the dashboard (dims the other
-      nodes, updates the project dropdown to match, and the merged-view
-      subtitle/counts respond) via an injected click event. This second
-      dataset became `assets/screenshot-network.png` for the README,
-      since the single-project example dataset can't show what this tab
-      is actually for.
+      note), and a genuine multi-project central folder built through
+      the real `capture()`/`build_merged_graph()` functions directly
+      (not the CLI, so no `_sync_to_central` mirroring risk, and
+      confirmed no pollution of the real central folder afterward) --
+      confirmed node sizing scales with idea count, and confirmed
+      clicking a project node correctly filters the dashboard (dims the
+      other nodes, updates the project dropdown to match, and the
+      merged-view subtitle/counts respond) via an injected click event.
+    - README screenshot went through the same two-pass "start small,
+      then user asked for more" refresh step 24's screenshots did: first
+      pass used 4 fabricated projects, which read as sparse for a README
+      hero shot; a follow-up ask ("more sub brains, just for the readme
+      purpose") expanded the same scratch central folder to 10 fabricated
+      projects (still built the same way, `capture()`/
+      `build_merged_graph()` directly, never hand-edited JSON) before
+      re-shooting `assets/screenshot-network.png` -- a denser ring of
+      small brains around the hub, matching the illustrative intent
+      (this dataset was always fabricated-for-the-README, never claimed
+      to be the maintainer's real projects).
 
 Each step should land, get tested, and get dogfooded (per SEED.md §6
 Layer 7) before the next starts — same discipline as the v0 build.

@@ -152,10 +152,10 @@ Click a project to filter the whole dashboard to it (the same filter the
 clear it.
 
 <p align="center">
-  <img src="assets/screenshot-network.png" alt="brAInny dashboard Network tab: a central brain hub in the middle connected to four smaller project brains (brainny, gwas-pipeline, lab-manuscript, lab-website), each sized by its idea count" width="100%">
+  <img src="assets/screenshot-network.png" alt="brAInny dashboard Network tab: a central brain hub in the middle connected to ten smaller project brains of varying sizes, each linked back to the hub and sized by its idea count" width="100%">
 </p>
 
-<p align="center"><sub>Network tab — a separate example central folder with 4 real projects (built through the real CLI, not hand-edited), to actually show more than one brain connected.</sub></p>
+<p align="center"><sub>Network tab — a separate, fabricated example central folder with 10 projects (built by calling brainny's own capture/merge functions directly, not hand-edited JSON), so there's actually enough connected to be worth looking at.</sub></p>
 
 All screenshots (and the preview above), except the Network tab's — that
 one needs more than one project to be worth showing, so it's a separate
