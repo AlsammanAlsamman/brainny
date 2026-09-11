@@ -1079,5 +1079,42 @@ permission-gated local check — see above.
       (this dataset was always fabricated-for-the-README, never claimed
       to be the maintainer's real projects).
 
+27. Fix: Brain tab links invisible in light theme (real user report). ✅
+    - A real user hit this on their own project's dashboard: the Brain
+      tab's bundled mesh links were essentially invisible in day theme,
+      though the rim arcs and everything else looked fine. Root cause:
+      `.bundle-link { mix-blend-mode: screen; }` was a hardcoded literal,
+      never made theme-aware in step 25's original theming pass.
+      "screen" brightens a layer toward white -- exactly the glowing-
+      line-on-near-black look the dark theme wants, but
+      `screen(any color, near-white background)` is itself near-white,
+      so on the light theme every link washed out to almost nothing
+      while the page around it looked completely normal (no error, no
+      obviously broken layout -- just links that silently stopped being
+      visible, easy to miss testing only the dark theme).
+    - Fix: a new `--brain-link-blend` custom property, `screen` in dark
+      (`:root`), `multiply` in light (`:root[data-theme="light"]`) --
+      multiply darkens toward the link's color instead of brightening,
+      the equivalent "stands out from the background" effect for a light
+      backdrop. `.bundle-link` now reads `mix-blend-mode:
+      var(--brain-link-blend)` instead of the literal.
+    - New test `test_render_html_brain_link_blend_mode_is_theme_aware`
+      asserts the literal `mix-blend-mode: screen` is gone from the CSS
+      entirely and that the light theme's `:root` block actually
+      overrides the variable to `multiply` -- 141 tests total. Verified
+      with headless Chrome: light theme now shows the full colored mesh
+      clearly, dark theme unchanged from before.
+    - Broader lesson worth naming: this is the second real bug this
+      session found only because a person actually looked at rendered
+      output rather than just checking "does it render/do the tests
+      pass" (the first was step 25's constellation-callout contrast bug,
+      caught by the assistant's own headless screenshots; this one
+      needed a real user's own dashboard, on their own data, in a
+      browser). CSS custom properties cover most theme-dependent colors
+      cleanly, but non-color properties that interact with a background
+      -- blend modes chief among them -- need the same explicit dark/
+      light treatment and are easy to miss since nothing about them
+      *looks* like a color.
+
 Each step should land, get tested, and get dogfooded (per SEED.md §6
 Layer 7) before the next starts — same discipline as the v0 build.

@@ -252,6 +252,14 @@ _CSS = """
     --code-bg: rgba(0,0,0,0.28);
     --active-tab-fg: #f0e2bb;
     --graph-link: rgba(190,205,180,0.28);
+    /* "screen" blend mode brightens toward white -- exactly the "glowing
+       lines on near-black" look the Brain tab's bundled mesh wants in
+       dark theme, but on a light background it washes every link out to
+       nearly nothing (screen(anything, near-white) ~= near-white). Light
+       theme swaps to "multiply" instead, which darkens toward the color
+       the same way screen brightens -- the equivalent glow, inverted for
+       a light backdrop. */
+    --brain-link-blend: screen;
   }
   :root[data-theme="light"] {
     --bg: #eef1e4;
@@ -269,6 +277,7 @@ _CSS = """
     --code-bg: rgba(20,32,24,0.06);
     --active-tab-fg: #5a4315;
     --graph-link: rgba(60,80,64,0.35);
+    --brain-link-blend: multiply;
   }
 
   * { box-sizing: border-box; }
@@ -520,7 +529,7 @@ _CSS = """
      examples/viz-prototypes/12-neural-bundle.html -- see renderBrainView()
      in the JS below for the full port notes. ---- */
   #brain-main svg { display: block; width: 100%; height: 100%; }
-  .bundle-link { fill: none; mix-blend-mode: screen; }
+  .bundle-link { fill: none; mix-blend-mode: var(--brain-link-blend); }
   .rim-arc { fill: none; stroke-width: 5; opacity: 0.85; }
   .brain-leaf { cursor: pointer; }
   .brain-leaf-label { font-size: 9px; fill: var(--fg); opacity: 0.85; pointer-events: none; }

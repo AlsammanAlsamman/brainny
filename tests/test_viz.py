@@ -150,6 +150,23 @@ def test_render_html_theme_variables_cover_backgrounds():
     assert "color: var(--fg)" in out
 
 
+def test_render_html_brain_link_blend_mode_is_theme_aware():
+    # a real user hit this: .bundle-link's `mix-blend-mode: screen` (a
+    # hardcoded value) brightens toward white, which reads as a glow on
+    # the dark theme's near-black background but washes every link out to
+    # nearly invisible on the light theme's near-white one -- screen(any
+    # color, near-white) is itself near-white. Must resolve through a
+    # variable that actually differs per theme (light swaps to
+    # "multiply", which darkens instead of brightens -- the equivalent
+    # glow for a light backdrop), not a literal "screen" in the CSS.
+    out = render_html(Graph())
+    assert "mix-blend-mode: screen" not in out
+    assert "mix-blend-mode: var(--brain-link-blend)" in out
+    assert "--brain-link-blend: screen;" in out
+    _, _, light_block = out.partition(':root[data-theme="light"]')
+    assert "--brain-link-blend: multiply;" in light_block.split("}")[0]
+
+
 def test_render_html_domain_split_for_sub_branches():
     graph = Graph(
         nodes=[
