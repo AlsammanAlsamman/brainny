@@ -136,10 +136,10 @@ live scrolling report as it passes. Click anywhere to open the mesh into
 real, labeled, clickable idea circles.
 
 <p align="center">
-  <img src="examples/demo/brain-preview.svg" alt="Animated preview of brainny's Brain view: hierarchical edge-bundled idea connections forming a brain silhouette, with a probe circling it and a readiness percentage fading in" width="100%">
+  <img src="examples/demo/brain-preview.gif" alt="Animated preview of brainny's Brain tab on the same 50-idea example dataset: hierarchical edge-bundled connections forming a brain silhouette, with an old-style robot probe circling it and an Opportunity lit up in the mesh" width="100%">
 </p>
 
-<p align="center"><sub>Brain tab (stylized preview — the real thing runs on your captured ideas). Every view, including this one, has a day/night toggle (top-right) that defaults to your system's preference and remembers your choice.</sub></p>
+<p align="center"><sub>Brain tab — same 50-idea example dataset as the screenshots above, not a mockup. Every view, including this one, has a day/night toggle (top-right) that defaults to your system's preference and remembers your choice.</sub></p>
 
 All screenshots (and the preview above) are from the same fabricated
 example dataset (50 ideas across 14 domains, every kind/origin,

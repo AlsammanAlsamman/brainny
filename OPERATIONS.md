@@ -982,16 +982,35 @@ permission-gated local check — see above.
       switch) to avoid orphaned loops accumulating — the same class of
       bug the graph tab's `currentCleanup` pattern already exists to
       prevent.
-    - New `examples/demo/brain-preview.svg`: a small, hand-authored,
-      SMIL-animated SVG (no external tooling — headless Chrome has no
-      ffmpeg/ImageMagick available in this environment, and Windows'
-      built-in `convert.exe` is the disk-partition tool, not ImageMagick,
-      a real near-miss caught before using it) giving the README a
-      genuinely moving preview of the Brain tab's concept (a probe
-      orbiting a bundled mesh, synapse pulses, a fading readiness readout)
-      without needing a live dashboard or a captured GIF. Embedded via
-      plain markdown image syntax, which GitHub renders with SMIL
-      animation intact.
+    - New `examples/demo/brain-preview.gif`: an actual animation of the
+      real Brain tab against the real 50-idea/15-domain example dataset
+      (not a mockup, and not the maintainer's real ideas) -- first tried
+      as a small hand-authored SMIL SVG, but the user explicitly wanted
+      "the densed big example," not a small illustration, so that was
+      replaced. No ffmpeg/ImageMagick is available in this environment
+      (Windows' built-in `convert.exe` is the disk-partition tool, not
+      ImageMagick -- a real near-miss caught before using it) and
+      Pillow was already a dependency, so the GIF was assembled from real
+      headless-Chrome screenshots instead: 16 frames of the actual demo
+      dashboard's Brain tab, each with the probe deterministically placed
+      at an even angle around the mesh via a temporary debug hook
+      (`window.__brainFrame(angle)`, injected into a monkey-patched copy
+      of `_JS` for generation only, never shipped) that freezes the
+      animation loop (`alive = false` + `cancelAnimationFrame`) and
+      repositions the robot directly, then stitched with
+      `PIL.Image.save(..., save_all=True)`. Getting deterministic frames
+      took two real fixes along the way: the freeze itself (without it,
+      the still-running `requestAnimationFrame` loop kept incrementing
+      `probeAngle` on its own and overwrote every manual placement), and
+      disabling the Brain tab's resize handler for the generation harness
+      specifically -- headless Chrome fires a genuine `resize` event
+      while finalizing the screenshot viewport, and the real (correct,
+      intentional) resize behavior re-renders the view from scratch,
+      which was silently discarding every deliberately-placed frame back
+      to the default starting angle. Neither of these is a bug in the
+      shipped dashboard -- both are artifacts of the offline frame-
+      generation script, which is discarded after producing the GIF, not
+      committed.
     - Verified with headless Chrome in both themes: the demo dataset's
       dashboard (all 4 tabs), the Brain tab specifically (mesh renders,
       constellation callout legible in both themes after fixing an
