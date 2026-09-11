@@ -1,0 +1,220 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>11. Living Brain</title>
+<link rel="stylesheet" href="shared.css">
+<style>
+  body { padding: 0; overflow: hidden; height: 100vh; }
+  header { position: fixed; top: 0; left: 0; right: 0; z-index: 5; padding: 1rem 1.4rem 0.8rem;
+    background: linear-gradient(180deg, rgba(6,10,8,0.92), rgba(6,10,8,0)); pointer-events: none; }
+  header a, header h1, header p, .legend-row { pointer-events: auto; }
+  h1 { font-size: 1.15rem; }
+  p.desc { max-width: 640px; }
+  canvas { display: block; position: fixed; inset: 0; }
+  #panel {
+    position: fixed; top: 0; right: 0; bottom: 0; width: 320px; z-index: 6;
+    background: rgba(9,15,12,0.94); border-left: 1px solid rgba(255,255,255,0.1);
+    padding: 1.2rem 1.1rem; transform: translateX(100%); transition: transform 0.25s ease;
+    overflow-y: auto;
+  }
+  #panel.open { transform: translateX(0); }
+  #panel .kind-badge { display: inline-block; font-size: 0.68rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.04em; padding: 0.15rem 0.5rem; border-radius: 999px; margin-bottom: 0.5rem; }
+  #panel h2 { font-size: 1rem; margin: 0 0 0.5rem; }
+  #panel .meta { color: #8fa08c; font-size: 0.76rem; margin-bottom: 0.7rem; }
+  #panel .summary { font-size: 0.86rem; color: #d7ddd4; line-height: 1.5; }
+  #panel .evidence { margin-top: 0.9rem; font-size: 0.76rem; color: #9aab97; }
+  #panel .close { position: absolute; top: 0.8rem; right: 0.9rem; background: none; border: none; color: #8fa08c; font-size: 1.1rem; cursor: pointer; }
+  #hint { position: fixed; bottom: 1rem; left: 1.4rem; z-index: 5; font-size: 0.74rem; color: #5c6b63; }
+  .legend-row { margin: 0.5rem 0 0; }
+</style>
+</head>
+<body>
+<header>
+  <a class="back" href="index.html">&larr; all options</a>
+  <h1>11. Living Brain</h1>
+  <p class="desc">A custom-built visualization, not a generic chart type: ideas as glowing neurons (brightness = real evidence — attachments, snippets, opportunity membership), synapses that pulse between ideas proven to combine, gentle ambient drift so it reads as alive rather than frozen. Canvas + D3's force simulation, nothing new vendored.</p>
+  <div class="legend-row" id="legend"></div>
+</header>
+<canvas id="canvas"></canvas>
+<div id="panel">
+  <button class="close" id="panelClose">&times;</button>
+  <div id="panelBody"></div>
+</div>
+<div id="hint">Drag to pan · scroll to zoom · click a neuron for details</div>
+<script src="d3.min.js"></script>
+<script src="data.js"></script>
+<script>
+(function () {
+  function evidence(n) { return (n.hasAttachment ? 1 : 0) + (n.hasSnippet ? 1 : 0) + n.opportunityCount * 1.6; }
+
+  var legend = document.getElementById('legend');
+  Object.keys(DATA.kindColor).forEach(function (k) {
+    legend.innerHTML += '<span class="legend-item"><span class="dot" style="background:' + DATA.kindColor[k] + '"></span>' + k + '</span>';
+  });
+
+  var nodes = DATA.nodes.map(function (n) {
+    return Object.assign({}, n, { r: 5 + Math.min(evidence(n), 6) * 2.6, ev: evidence(n) });
+  });
+  var byId = {}; nodes.forEach(function (n) { byId[n.id] = n; });
+
+  var linkSet = {};
+  var links = [];
+  DATA.opportunities.forEach(function (opp) {
+    for (var i = 0; i < opp.ideaIds.length; i++) {
+      for (var j = i + 1; j < opp.ideaIds.length; j++) {
+        var a = opp.ideaIds[i], b = opp.ideaIds[j];
+        var key = [a, b].sort().join('|');
+        if (linkSet[key]) continue;
+        linkSet[key] = true;
+        links.push({ source: a, target: b, phase: Math.random(), speed: 0.00035 + Math.random() * 0.00025 });
+      }
+    }
+  });
+
+  var canvas = document.getElementById('canvas');
+  var ctx = canvas.getContext('2d');
+  var dpr = window.devicePixelRatio || 1;
+  var width, height;
+
+  function resize() {
+    width = window.innerWidth; height = window.innerHeight;
+    canvas.width = width * dpr; canvas.height = height * dpr;
+    canvas.style.width = width + 'px'; canvas.style.height = height + 'px';
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+  resize();
+  window.addEventListener('resize', function () { resize(); simulation.force('center', d3.forceCenter(width / 2, height / 2)); });
+
+  function wander(alpha) {
+    for (var i = 0; i < nodes.length; i++) {
+      var n = nodes[i];
+      n.vx += (Math.random() - 0.5) * 0.06;
+      n.vy += (Math.random() - 0.5) * 0.06;
+    }
+  }
+  wander.initialize = function () {};
+
+  var simulation = d3.forceSimulation(nodes)
+    .force('charge', d3.forceManyBody().strength(-320))
+    .force('center', d3.forceCenter(width / 2, height / 2))
+    .force('collide', d3.forceCollide().radius(function (d) { return d.r + 14; }))
+    .force('link', d3.forceLink(links).id(function (d) { return d.id; }).distance(110).strength(0.1))
+    .force('wander', wander)
+    .alphaDecay(0)
+    .alphaTarget(0.02)
+    .velocityDecay(0.55);
+
+  var transform = { x: 0, y: 0, k: 1 };
+  d3.select(canvas).call(
+    d3.zoom().scaleExtent([0.3, 4]).on('zoom', function (e) {
+      transform = e.transform;
+    })
+  );
+
+  function worldPoint(clientX, clientY) {
+    return { x: (clientX - transform.x) / transform.k, y: (clientY - transform.y) / transform.k };
+  }
+
+  var hovered = null, selected = null;
+  canvas.addEventListener('mousemove', function (e) {
+    var p = worldPoint(e.clientX, e.clientY);
+    hovered = null;
+    for (var i = 0; i < nodes.length; i++) {
+      var n = nodes[i];
+      var dx = n.x - p.x, dy = n.y - p.y;
+      if (dx * dx + dy * dy <= (n.r + 4) * (n.r + 4)) { hovered = n; break; }
+    }
+    canvas.style.cursor = hovered ? 'pointer' : 'grab';
+  });
+
+  var panel = document.getElementById('panel'), panelBody = document.getElementById('panelBody');
+  document.getElementById('panelClose').addEventListener('click', function () { panel.classList.remove('open'); selected = null; });
+
+  canvas.addEventListener('click', function () {
+    if (!hovered) return;
+    selected = hovered;
+    var n = selected;
+    var color = DATA.kindColor[n.kind] || '#8a8f98';
+    panelBody.innerHTML =
+      '<span class="kind-badge" style="background:' + color + '22;color:' + color + ';border:1px solid ' + color + '66">' + n.kind + '</span>' +
+      '<h2>' + n.title + '</h2>' +
+      '<div class="meta">' + n.domain + ' · ' + (n.origin || 'unclassified') + '</div>' +
+      '<div class="summary">' + n.summary + '</div>' +
+      '<div class="evidence">' +
+        (n.hasAttachment ? '📎 has an attachment<br>' : '') +
+        (n.hasSnippet ? '✎ has an inline snippet<br>' : '') +
+        (n.opportunityCount ? '⚙ part of ' + n.opportunityCount + ' opportunity(ies)' : '') +
+      '</div>';
+    panel.classList.add('open');
+  });
+
+  function hexToRgb(hex) {
+    var m = /^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec(hex);
+    return m ? [parseInt(m[1], 16), parseInt(m[2], 16), parseInt(m[3], 16)] : [200, 200, 200];
+  }
+  var kindRgb = {}; Object.keys(DATA.kindColor).forEach(function (k) { kindRgb[k] = hexToRgb(DATA.kindColor[k]); });
+
+  function draw(now) {
+    ctx.save();
+    ctx.fillStyle = '#070c0a';
+    ctx.fillRect(0, 0, width, height);
+
+    ctx.translate(transform.x, transform.y);
+    ctx.scale(transform.k, transform.k);
+
+    // synapses
+    links.forEach(function (l) {
+      var s = typeof l.source === 'object' ? l.source : byId[l.source];
+      var t = typeof l.target === 'object' ? l.target : byId[l.target];
+      if (!s || !t) return;
+      ctx.strokeStyle = 'rgba(190,205,180,0.14)';
+      ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(s.x, s.y); ctx.lineTo(t.x, t.y); ctx.stroke();
+
+      var phase = (l.phase + now * l.speed) % 1;
+      var px = s.x + (t.x - s.x) * phase, py = s.y + (t.y - s.y) * phase;
+      var glow = ctx.createRadialGradient(px, py, 0, px, py, 6);
+      glow.addColorStop(0, 'rgba(255,224,140,0.95)');
+      glow.addColorStop(1, 'rgba(255,224,140,0)');
+      ctx.fillStyle = glow;
+      ctx.beginPath(); ctx.arc(px, py, 6, 0, Math.PI * 2); ctx.fill();
+    });
+
+    // neurons
+    nodes.forEach(function (n) {
+      var rgb = kindRgb[n.kind] || [138, 143, 152];
+      var pulse = 0.75 + 0.25 * Math.sin(now * 0.0016 + (n.id.charCodeAt(5) || 0));
+      var glowR = n.r + 6 + n.ev * 2.2;
+
+      var isFocused = n === hovered || n === selected;
+      var grad = ctx.createRadialGradient(n.x, n.y, 0, n.x, n.y, glowR * pulse);
+      grad.addColorStop(0, 'rgba(' + rgb.join(',') + ',' + (isFocused ? 0.55 : 0.32) + ')');
+      grad.addColorStop(1, 'rgba(' + rgb.join(',') + ',0)');
+      ctx.fillStyle = grad;
+      ctx.beginPath(); ctx.arc(n.x, n.y, glowR * pulse, 0, Math.PI * 2); ctx.fill();
+
+      ctx.beginPath(); ctx.arc(n.x, n.y, n.r, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgb(' + rgb.join(',') + ')';
+      ctx.fill();
+      ctx.lineWidth = isFocused ? 2.5 : 1.6;
+      ctx.strokeStyle = DATA.originColor[n.origin] || DATA.unclassifiedColor;
+      ctx.stroke();
+
+      if (isFocused || transform.k > 1.6) {
+        ctx.font = '11px -apple-system, Segoe UI, sans-serif';
+        ctx.fillStyle = 'rgba(238,243,234,0.9)';
+        ctx.fillText(n.title.length > 40 ? n.title.slice(0, 38) + '…' : n.title, n.x + n.r + 8, n.y + 4);
+      }
+    });
+
+    ctx.restore();
+    requestAnimationFrame(draw);
+  }
+  requestAnimationFrame(draw);
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>4. Sparkline stats table</title>
+<link rel="stylesheet" href="shared.css">
+<style>
+  table { width: 100%; max-width: 900px; border-collapse: collapse; font-size: 0.86rem; }
+  th { text-align: left; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.03em; color: #7c8c79; padding: 0.4rem 0.6rem; border-bottom: 1px solid rgba(255,255,255,0.12); }
+  td { padding: 0.5rem 0.6rem; border-bottom: 1px solid rgba(255,255,255,0.06); vertical-align: middle; }
+  tr:hover td { background: rgba(255,255,255,0.03); }
+  .spark { display: block; }
+</style>
+</head>
+<body>
+<header>
+  <a class="back" href="index.html">&larr; all 10 options</a>
+  <h1>4. Sparkline stats table</h1>
+  <p class="desc">The existing Stats tab's cluster table, upgraded: the flat "GROWTH" bar becomes a real per-domain trend line. Cheapest option here — no new tab needed, just a richer version of a table that already exists.</p>
+</header>
+<div class="note"><strong>Adapted for this demo:</strong> real elapsed time is ~flat in this one-session dataset, so the sparkline's x-axis is capture order (the sequence ideas were added in) rather than wall-clock time — on real, longer-lived data this would use actual timestamps directly, no adaptation needed.</div>
+<div id="viz"></div>
+<script src="d3.min.js"></script>
+<script src="data.js"></script>
+<script>
+(function () {
+  var byDomain = {};
+  DATA.nodes.forEach(function (n) {
+    (byDomain[n.domain] = byDomain[n.domain] || []).push(n);
+  });
+  var domains = Object.keys(byDomain).sort(function (a, b) { return byDomain[b].length - byDomain[a].length; });
+
+  var table = document.createElement('table');
+  table.innerHTML = '<thead><tr><th>Domain</th><th>Ideas</th><th>Trend</th><th>Evidence</th></tr></thead>';
+  var tbody = document.createElement('tbody');
+  table.appendChild(tbody);
+  document.getElementById('viz').appendChild(table);
+
+  var sparkW = 140, sparkH = 30;
+
+  domains.forEach(function (dom) {
+    var ideas = byDomain[dom].slice().sort(function (a, b) { return a.id.localeCompare(b.id); });
+    var cumulative = ideas.map(function (_, i) { return i + 1; });
+    var evidence = ideas.reduce(function (s, n) { return s + (n.hasAttachment ? 1 : 0) + (n.hasSnippet ? 1 : 0) + n.opportunityCount; }, 0);
+
+    var tr = document.createElement('tr');
+    var tdDom = document.createElement('td'); tdDom.textContent = dom;
+    var tdCount = document.createElement('td'); tdCount.textContent = ideas.length;
+    var tdSpark = document.createElement('td');
+    var tdEvidence = document.createElement('td'); tdEvidence.textContent = evidence + ' signal(s)';
+
+    var svg = d3.select(tdSpark).append('svg').attr('class', 'spark').attr('width', sparkW).attr('height', sparkH);
+    var x = d3.scaleLinear().domain([0, cumulative.length - 1]).range([2, sparkW - 2]);
+    var y = d3.scaleLinear().domain([0, d3.max(cumulative)]).range([sparkH - 4, 4]);
+    var line = d3.line().x(function (_, i) { return x(i); }).y(function (v) { return y(v); }).curve(d3.curveMonotoneX);
+    svg.append('path').datum(cumulative).attr('d', line).attr('fill', 'none').attr('stroke', '#6fae5c').attr('stroke-width', 2);
+    svg.append('circle').attr('cx', x(cumulative.length - 1)).attr('cy', y(cumulative[cumulative.length - 1])).attr('r', 3).attr('fill', '#8fd67a');
+
+    tr.appendChild(tdDom); tr.appendChild(tdCount); tr.appendChild(tdSpark); tr.appendChild(tdEvidence);
+    tbody.appendChild(tr);
+  });
+})();
+</script>
+</body>
+</html>

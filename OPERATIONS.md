@@ -924,5 +924,87 @@ permission-gated local check — see above.
       auto-mirrored into the maintainer's real central folder before
       being deleted.
 
+25. Brain tab (4th dashboard view) + day/night theme + README motion preview. ✅
+    - `viz.py`'s CSS was fully rewritten onto CSS custom properties (a
+      dark `:root` default, a `:root[data-theme="light"]` override block)
+      — every structural/chrome color (backgrounds, borders, text grays,
+      panel tints) now resolves through a variable; data-semantic colors
+      (kind/origin/opportunity-kind/trend colors, the gold brand accent,
+      the robot's own "metal" palette) were deliberately left constant
+      across both themes since they encode meaning, not chrome. The light
+      palette is a soft warm sage-paper tone, explicitly NOT stark white
+      — a pure-white version read as harsh next to the dark original. A
+      tiny inline `<script>` in `<head>` sets `[data-theme]` before first
+      paint (localStorage if the user has toggled before, else
+      `prefers-color-scheme`), avoiding a flash of the wrong theme; a new
+      `#theme-toggle` button in the header flips it and persists the
+      choice. A handful of colors are set via D3's `.attr()` directly on
+      SVG elements rather than through CSS (graph-tab link strokes and
+      labels) — those can't reference `var(--x)` as a plain CSS value, so
+      a small `cssVar()` helper resolves the custom property to its
+      literal value at render time instead; the theme toggle also calls
+      `refreshActiveTab()` so any already-rendered view picks up the new
+      theme's resolved colors immediately, not just on the next tab
+      switch. Two overlay panels (the Brain tab's live report and
+      opportunity callout) float directly over the mesh itself, which can
+      show any color behind them regardless of page theme — those
+      deliberately stay a fixed dark glass with light text in both
+      themes, like a tooltip or toast would, rather than chasing enough
+      contrast against an arbitrary, constantly-shifting backdrop.
+    - New 4th tab, "Brain": `examples/viz-prototypes/12-neural-bundle.html`
+      (built across several earlier, separate rounds of exploration —
+      hierarchical edge-bundling so the connections themselves resolve
+      into a brain silhouette with no literal neuron dots, three link
+      layers of increasing brightness — kinship/same-kind, local/same-
+      domain, signal/proven-to-combine with animated bidirectional
+      synapse pulses — an old-tin-robot probe that circles continuously
+      and stops to show a percent-ready readout on ideas with real
+      evidence behind them, a comet trail, and a periodic "constellation"
+      reveal that cycles through real Opportunities) was ported into
+      `viz.py` as `renderBrainView()`, wired into `switchTab`/
+      `refreshActiveTab`/the resize handler exactly like the other three
+      tabs. The port deliberately differs from the standalone prototype
+      in three ways: it reads `filteredData()` (origin + project filters)
+      like every other tab instead of a fixed demo dataset; it derives
+      evidence from the real payload fields (`attachments`, `snippet`,
+      actual opportunity co-membership) instead of the prototype's
+      precomputed convenience fields, which don't exist on the real
+      dashboard payload; and it uses `itemKey()` for idea identity (so it
+      namespaces correctly on a merged multi-project central view, like
+      every other view) instead of the prototype's raw `idea.id`, routing
+      a leaf click to the existing Graph-tab item list
+      (`switchTab('graph')` + `focusItem()`) instead of duplicating a
+      separate detail side-panel. Because this view runs a
+      `requestAnimationFrame` loop plus interval/timeout timers and
+      recursive D3 transitions, it needed explicit teardown on tab-away
+      or re-render (an `alive` flag checked before every reschedule,
+      `brainCleanup()` cancelling the frame/interval/timeout on tab
+      switch) to avoid orphaned loops accumulating — the same class of
+      bug the graph tab's `currentCleanup` pattern already exists to
+      prevent.
+    - New `examples/demo/brain-preview.svg`: a small, hand-authored,
+      SMIL-animated SVG (no external tooling — headless Chrome has no
+      ffmpeg/ImageMagick available in this environment, and Windows'
+      built-in `convert.exe` is the disk-partition tool, not ImageMagick,
+      a real near-miss caught before using it) giving the README a
+      genuinely moving preview of the Brain tab's concept (a probe
+      orbiting a bundled mesh, synapse pulses, a fading readiness readout)
+      without needing a live dashboard or a captured GIF. Embedded via
+      plain markdown image syntax, which GitHub renders with SMIL
+      animation intact.
+    - Verified with headless Chrome in both themes: the demo dataset's
+      dashboard (all 4 tabs), the Brain tab specifically (mesh renders,
+      constellation callout legible in both themes after fixing an
+      initial low-contrast bug in light mode, click-to-open confirmed via
+      a temporary synchronous debug readout — not by screenshotting the
+      animated transition itself, since `--virtual-time-budget` still
+      doesn't reliably advance `requestAnimationFrame`/timer-driven state
+      across a single headless launch, the same limitation noted in step
+      23), and the theme toggle itself. Full test suite (136 tests)
+      still green — this was a pure `viz.py`/frontend change, no schema
+      or CLI surface touched. Checked the real central folder for
+      pollution after testing (none — this step didn't exercise
+      capture/attach).
+
 Each step should land, get tested, and get dogfooded (per SEED.md §6
 Layer 7) before the next starts — same discipline as the v0 build.

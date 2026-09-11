@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>1. Opportunity co-occurrence graph</title>
+<link rel="stylesheet" href="shared.css">
+</head>
+<body>
+<header>
+  <a class="back" href="index.html">&larr; all 10 options</a>
+  <h1>1. Opportunity co-occurrence graph</h1>
+  <p class="desc">Only ideas that appear in at least one proposed Opportunity — sized by how many opportunities they're part of, connected whenever two ideas co-occur in the same opportunity. This is the most direct "what's proven useful" signal that already exists in real data: an idea an assistant chose to combine repeatedly is demonstrably reusable, not just captured.</p>
+</header>
+<div class="legend-row" id="legend"></div>
+<div id="viz"></div>
+<div id="tooltip"></div>
+<script src="d3.min.js"></script>
+<script src="data.js"></script>
+<script>
+(function () {
+  var legend = document.getElementById('legend');
+  Object.keys(DATA.kindColor).forEach(function (k) {
+    legend.innerHTML += '<span class="legend-item"><span class="dot" style="background:' + DATA.kindColor[k] + '"></span>' + k + '</span>';
+  });
+
+  var byId = {};
+  DATA.nodes.forEach(function (n) { byId[n.id] = n; });
+
+  var participating = DATA.nodes.filter(function (n) { return n.opportunityCount > 0; });
+  var nodes = participating.map(function (n) { return Object.assign({}, n); });
+  var nodeIds = {};
+  nodes.forEach(function (n, i) { nodeIds[n.id] = i; });
+
+  var linkCount = {};
+  var links = [];
+  DATA.opportunities.forEach(function (opp) {
+    for (var i = 0; i < opp.ideaIds.length; i++) {
+      for (var j = i + 1; j < opp.ideaIds.length; j++) {
+        var a = opp.ideaIds[i], b = opp.ideaIds[j];
+        if (nodeIds[a] === undefined || nodeIds[b] === undefined) continue;
+        var key = [a, b].sort().join('|');
+        linkCount[key] = (linkCount[key] || 0) + 1;
+        links.push({ source: a, target: b, opp: opp.title });
+      }
+    }
+  });
+
+  var width = document.getElementById('viz').clientWidth || 1100;
+  var height = 640;
+  var svg = d3.select('#viz').append('svg').attr('viewBox', [0, 0, width, height]).attr('width', '100%').attr('height', height);
+  var g = svg.append('g');
+  svg.call(d3.zoom().scaleExtent([0.4, 3]).on('zoom', function (e) { g.attr('transform', e.transform); }));
+
+  var simulation = d3.forceSimulation(nodes)
+    .force('link', d3.forceLink(links).id(function (d) { return d.id; }).distance(90).strength(0.5))
+    .force('charge', d3.forceManyBody().strength(-220))
+    .force('center', d3.forceCenter(width / 2, height / 2))
+    .force('collide', d3.forceCollide().radius(function (d) { return 10 + d.opportunityCount * 6 + 6; }));
+
+  var link = g.append('g').selectAll('line').data(links).join('line')
+    .attr('stroke', 'rgba(190,205,180,0.35)').attr('stroke-width', 1.5);
+
+  var node = g.append('g').selectAll('circle').data(nodes).join('circle')
+    .attr('r', function (d) { return 8 + d.opportunityCount * 6; })
+    .attr('fill', function (d) { return DATA.kindColor[d.kind] || '#8a8f98'; })
+    .attr('stroke', function (d) { return DATA.originColor[d.origin] || DATA.unclassifiedColor; })
+    .attr('stroke-width', 2.5)
+    .style('cursor', 'pointer')
+    .call(d3.drag()
+      .on('start', function (e, d) { if (!e.active) simulation.alphaTarget(0.3).restart(); d.fx = d.x; d.fy = d.y; })
+      .on('drag', function (e, d) { d.fx = e.x; d.fy = e.y; })
+      .on('end', function (e, d) { if (!e.active) simulation.alphaTarget(0); d.fx = null; d.fy = null; }));
+
+  var label = g.append('g').selectAll('text').data(nodes).join('text')
+    .text(function (d) { return d.title.length > 28 ? d.title.slice(0, 26) + '…' : d.title; })
+    .attr('font-size', 10).attr('fill', '#c9d3c6').attr('dx', function (d) { return 12 + d.opportunityCount * 6; }).attr('dy', 4)
+    .style('pointer-events', 'none');
+
+  var tooltip = document.getElementById('tooltip');
+  node.on('mouseenter', function (e, d) {
+    tooltip.innerHTML = '<div class="tt-title">' + d.title + '</div><div class="tt-meta">' + d.kind + ' · ' + d.domain + ' · in ' + d.opportunityCount + ' opportunity(ies)</div>';
+    tooltip.style.display = 'block';
+  }).on('mousemove', function (e) {
+    tooltip.style.left = (e.clientX + 14) + 'px'; tooltip.style.top = (e.clientY + 14) + 'px';
+  }).on('mouseleave', function () { tooltip.style.display = 'none'; });
+
+  simulation.on('tick', function () {
+    link.attr('x1', function (d) { return d.source.x; }).attr('y1', function (d) { return d.source.y; })
+        .attr('x2', function (d) { return d.target.x; }).attr('y2', function (d) { return d.target.y; });
+    node.attr('cx', function (d) { return d.x; }).attr('cy', function (d) { return d.y; });
+    label.attr('x', function (d) { return d.x; }).attr('y', function (d) { return d.y; });
+  });
+})();
+</script>
+</body>
+</html>

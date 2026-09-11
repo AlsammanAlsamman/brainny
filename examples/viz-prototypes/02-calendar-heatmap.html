@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>2. Calendar heatmap</title>
+<link rel="stylesheet" href="shared.css">
+<style>
+  .day { stroke: rgba(11,19,16,0.8); stroke-width: 1.5; }
+  .month-label { fill: #8fa08c; font-size: 10px; }
+  .weekday-label { fill: #7c8c79; font-size: 9px; }
+</style>
+</head>
+<body>
+<header>
+  <a class="back" href="index.html">&larr; all 10 options</a>
+  <h1>2. Calendar heatmap</h1>
+  <p class="desc">GitHub-contributions-style grid — one cell per day, shaded by how many ideas were captured/touched that day. Directly shows real activity rhythm: bursts, dry spells, streaks.</p>
+</header>
+<div class="note"><strong>Adapted for this demo:</strong> this fabricated dataset was generated in one real session, so every idea's actual <code>last_touched</code> is the same day — a real calendar heatmap of it would be one dark cell and 89 empty ones. To show what the pattern looks like with real accumulated usage, each idea's date below is deterministically jittered across the last 90 days (seeded from its id, not random per reload). On real data this uses the genuine <code>last_touched</code> timestamp, no jitter.</div>
+<div id="viz"></div>
+<div id="tooltip"></div>
+<script src="d3.min.js"></script>
+<script src="data.js"></script>
+<script>
+(function () {
+  function seedRand(str) {
+    var h = 0;
+    for (var i = 0; i < str.length; i++) { h = (h * 31 + str.charCodeAt(i)) >>> 0; }
+    return function () { h = (h * 1103515245 + 12345) >>> 0; return (h >>> 8) / 16777216; };
+  }
+
+  var today = new Date(); today.setHours(0, 0, 0, 0);
+  var days = 90;
+  var counts = {};
+  DATA.nodes.forEach(function (n) {
+    var rand = seedRand(n.id);
+    var offset = Math.floor(rand() * days);
+    var d = new Date(today); d.setDate(d.getDate() - offset);
+    var key = d.toISOString().slice(0, 10);
+    counts[key] = (counts[key] || 0) + 1;
+  });
+
+  var cell = 14, gap = 3;
+  var start = new Date(today); start.setDate(start.getDate() - days);
+  start.setDate(start.getDate() - start.getDay());
+
+  var weeks = Math.ceil((days + start.getDay() + 7) / 7);
+  var width = weeks * (cell + gap) + 40;
+  var height = 7 * (cell + gap) + 40;
+
+  var svg = d3.select('#viz').append('svg').attr('viewBox', [0, 0, width, height]).attr('width', width).attr('height', height);
+  var g = svg.append('g').attr('transform', 'translate(30,20)');
+
+  var maxCount = Math.max(1, d3.max(Object.values(counts)) || 1);
+  var color = d3.scaleSequential(d3.interpolateGreens).domain([0, maxCount]);
+
+  var weekdayLabels = ['', 'Mon', '', 'Wed', '', 'Fri', ''];
+  weekdayLabels.forEach(function (lbl, i) {
+    if (!lbl) return;
+    g.append('text').attr('class', 'weekday-label').attr('x', -6).attr('y', i * (cell + gap) + cell - 2).attr('text-anchor', 'end').text(lbl);
+  });
+
+  var tooltip = document.getElementById('tooltip');
+  var lastMonth = -1;
+  for (var i = 0; i <= days + start.getDay(); i++) {
+    var d = new Date(start); d.setDate(d.getDate() + i);
+    if (d > today) continue;
+    var week = Math.floor(i / 7), dow = d.getDay();
+    var key = d.toISOString().slice(0, 10);
+    var count = counts[key] || 0;
+    if (d.getDate() <= 7 && d.getMonth() !== lastMonth) {
+      lastMonth = d.getMonth();
+      g.append('text').attr('class', 'month-label').attr('x', week * (cell + gap)).attr('y', -6).text(d.toLocaleString('en', { month: 'short' }));
+    }
+    g.append('rect').attr('class', 'day')
+      .attr('x', week * (cell + gap)).attr('y', dow * (cell + gap))
+      .attr('width', cell).attr('height', cell).attr('rx', 3)
+      .attr('fill', count ? color(count) : 'rgba(255,255,255,0.05)')
+      .on('mouseenter', function (key, count) { return function (e) {
+        tooltip.innerHTML = '<div class="tt-title">' + count + ' idea(s)</div><div class="tt-meta">' + key + '</div>';
+        tooltip.style.display = 'block';
+      }; }(key, count))
+      .on('mousemove', function (e) { tooltip.style.left = (e.clientX + 14) + 'px'; tooltip.style.top = (e.clientY + 14) + 'px'; })
+      .on('mouseleave', function () { tooltip.style.display = 'none'; });
+  }
+})();
+</script>
+</body>
+</html>

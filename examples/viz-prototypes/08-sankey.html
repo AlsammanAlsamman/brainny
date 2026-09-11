@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>8. Flow diagram: domain → kind → origin</title>
+<link rel="stylesheet" href="shared.css">
+<style>
+  .node-label { fill: #c9d3c6; font-size: 10.5px; }
+  .col-title { fill: #8fa08c; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; }
+</style>
+</head>
+<body>
+<header>
+  <a class="back" href="index.html">&larr; all 10 options</a>
+  <h1>8. Flow diagram: domain → kind → origin</h1>
+  <p class="desc">Hand-built flow ribbons (no d3-sankey dependency, same vendored-D3-only discipline as the real dashboard). Shows which domains lean toward which kinds, and who tends to originate them.</p>
+</header>
+<div class="note"><strong>Adapted for this demo:</strong> the natural version of this idea is session → domain → kind, but this dataset has only one session, which would make that first column pointless. Domain → kind → origin uses three dimensions that actually vary in this data; on real, multi-session data, session → domain → kind becomes worth building instead (or alongside).</div>
+<div id="viz"></div>
+<div id="tooltip"></div>
+<script src="d3.min.js"></script>
+<script src="data.js"></script>
+<script>
+(function () {
+  var domains = Array.from(new Set(DATA.nodes.map(function (n) { return n.domain; }))).sort();
+  var kinds = Object.keys(DATA.kindColor);
+  var origins = ['human', 'ai', 'collaborative', 'unclassified'];
+
+  function originOf(n) { return n.origin || 'unclassified'; }
+
+  var dk = {}, ko = {};
+  DATA.nodes.forEach(function (n) {
+    var k1 = n.domain + '|' + n.kind; dk[k1] = (dk[k1] || 0) + 1;
+    var k2 = n.kind + '|' + originOf(n); ko[k2] = (ko[k2] || 0) + 1;
+  });
+
+  var width = 1000, height = 800, colW = 210, gap = 2;
+  var scale = (height - 40) / DATA.nodes.length;
+
+  function layout(items, totalFn) {
+    var y = 20;
+    var out = {};
+    items.forEach(function (it) {
+      var v = totalFn(it);
+      out[it] = { y0: y, y1: y + v * scale, value: v };
+      y += v * scale + gap;
+    });
+    return out;
+  }
+
+  var domainTotal = {}; domains.forEach(function (d) { domainTotal[d] = DATA.nodes.filter(function (n) { return n.domain === d; }).length; });
+  var kindTotal = {}; kinds.forEach(function (k) { kindTotal[k] = DATA.nodes.filter(function (n) { return n.kind === k; }).length; });
+  var originTotal = {}; origins.forEach(function (o) { originTotal[o] = DATA.nodes.filter(function (n) { return originOf(n) === o; }).length; });
+
+  var domainPos = layout(domains, function (d) { return domainTotal[d]; });
+  var kindPos = layout(kinds.filter(function (k) { return kindTotal[k] > 0; }), function (k) { return kindTotal[k]; });
+  var originPos = layout(origins.filter(function (o) { return originTotal[o] > 0; }), function (o) { return originTotal[o]; });
+
+  var x0 = 40, x1 = x0 + colW, x2 = x1 + colW;
+  var svg = d3.select('#viz').append('svg').attr('viewBox', [0, 0, width, height]).attr('width', '100%').attr('height', height);
+
+  svg.append('text').attr('class', 'col-title').attr('x', x0).attr('y', 14).text('domain');
+  svg.append('text').attr('class', 'col-title').attr('x', x1).attr('y', 14).text('kind');
+  svg.append('text').attr('class', 'col-title').attr('x', x2).attr('y', 14).text('origin');
+
+  var tooltip = document.getElementById('tooltip');
+  function ribbon(sx, sy0, sy1, tx, ty0, ty1, color, label, value) {
+    var path = 'M' + sx + ',' + sy0 + 'C' + (sx + colW / 2) + ',' + sy0 + ' ' + (tx - colW / 2) + ',' + ty0 + ' ' + tx + ',' + ty0 +
+      'L' + tx + ',' + ty1 + 'C' + (tx - colW / 2) + ',' + ty1 + ' ' + (sx + colW / 2) + ',' + sy1 + ' ' + sx + ',' + sy1 + 'Z';
+    svg.append('path').attr('d', path).attr('fill', color).attr('fill-opacity', 0.32).attr('stroke', 'none')
+      .style('cursor', 'default')
+      .on('mouseenter', function (e) {
+        d3.select(this).attr('fill-opacity', 0.6);
+        tooltip.innerHTML = '<div class="tt-title">' + label + '</div><div class="tt-meta">' + value + ' idea(s)</div>';
+        tooltip.style.display = 'block';
+      })
+      .on('mousemove', function (e) { tooltip.style.left = (e.clientX + 14) + 'px'; tooltip.style.top = (e.clientY + 14) + 'px'; })
+      .on('mouseleave', function () { d3.select(this).attr('fill-opacity', 0.32); tooltip.style.display = 'none'; });
+  }
+
+  // domain -> kind ribbons, stacking within each node as we go
+  var domainCursor = {}, kindInCursor = {};
+  domains.forEach(function (d) { domainCursor[d] = domainPos[d].y0; });
+  Object.keys(kindPos).forEach(function (k) { kindInCursor[k] = kindPos[k].y0; });
+  domains.forEach(function (d) {
+    kinds.forEach(function (k) {
+      var v = dk[d + '|' + k] || 0;
+      if (!v || !kindPos[k]) return;
+      var h = v * scale;
+      ribbon(x0 + 6, domainCursor[d], domainCursor[d] + h, x1 - 6, kindInCursor[k], kindInCursor[k] + h, DATA.kindColor[k], d + ' → ' + k, v);
+      domainCursor[d] += h; kindInCursor[k] += h;
+    });
+  });
+
+  // kind -> origin ribbons
+  var kindOutCursor = {}, originCursor = {};
+  Object.keys(kindPos).forEach(function (k) { kindOutCursor[k] = kindPos[k].y0; });
+  Object.keys(originPos).forEach(function (o) { originCursor[o] = originPos[o].y0; });
+  kinds.forEach(function (k) {
+    if (!kindPos[k]) return;
+    origins.forEach(function (o) {
+      var v = ko[k + '|' + o] || 0;
+      if (!v || !originPos[o]) return;
+      var h = v * scale;
+      ribbon(x1 + 6, kindOutCursor[k], kindOutCursor[k] + h, x2 - 6, originCursor[o], originCursor[o] + h, DATA.originColor[o] || DATA.unclassifiedColor, k + ' → ' + o, v);
+      kindOutCursor[k] += h; originCursor[o] += h;
+    });
+  });
+
+  function drawNodes(pos, x, colorFn) {
+    Object.keys(pos).forEach(function (key) {
+      var p = pos[key];
+      svg.append('rect').attr('x', x).attr('y', p.y0).attr('width', 8).attr('height', Math.max(2, p.y1 - p.y0))
+        .attr('fill', colorFn(key));
+      svg.append('text').attr('class', 'node-label').attr('x', x + 14).attr('y', (p.y0 + p.y1) / 2 + 4).text(key + ' (' + p.value + ')');
+    });
+  }
+  drawNodes(domainPos, x0, function () { return '#7c8c6e'; });
+  drawNodes(kindPos, x1, function (k) { return DATA.kindColor[k] || '#8a8f98'; });
+  drawNodes(originPos, x2, function (o) { return DATA.originColor[o] || DATA.unclassifiedColor; });
+})();
+</script>
+</body>
+</html>

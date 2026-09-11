@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>6. Needs-attention ranked list</title>
+<link rel="stylesheet" href="shared.css">
+<style>
+  .row-label { fill: #c9d3c6; font-size: 11.5px; }
+  .row-count { fill: #eef3ea; font-size: 11px; font-weight: 700; }
+  .bar { rx: 4; }
+</style>
+</head>
+<body>
+<header>
+  <a class="back" href="index.html">&larr; all 10 options</a>
+  <h1>6. Needs-attention ranked list</h1>
+  <p class="desc">The ideas with the least evidence behind them — no attachment, no snippet, not part of any opportunity — ranked first. A visual home for the still-unbuilt <code>brainny neglected</code> command, using honest evidence-based scoring today rather than the real decay/recency model that will eventually replace it.</p>
+</header>
+<div class="note"><strong>Adapted for this demo:</strong> the real <code>brainny neglected</code> is meant to rank by staleness (old <code>last_touched</code> + low <code>recurrence</code>) once v0.1's decay model exists. Neither field is real yet (every idea is <code>recurrence: 1</code>), so this ranks by evidence instead — a legitimate, real signal today, and one the eventual decay-based ranking would layer on top of, not replace.</div>
+<div id="viz"></div>
+<script src="d3.min.js"></script>
+<script src="data.js"></script>
+<script>
+(function () {
+  function evidence(n) { return (n.hasAttachment ? 1 : 0) + (n.hasSnippet ? 1 : 0) + n.opportunityCount; }
+  var ranked = DATA.nodes.slice()
+    .filter(function (n) { return evidence(n) === 0; })
+    .sort(function (a, b) { return a.title.localeCompare(b.title); })
+    .slice(0, 18);
+
+  var barH = 26, gap = 6, labelW = 420;
+  var width = 900, height = ranked.length * (barH + gap) + 20;
+  var svg = d3.select('#viz').append('svg').attr('viewBox', [0, 0, width, height]).attr('width', '100%').attr('height', height);
+
+  ranked.forEach(function (n, i) {
+    var y = i * (barH + gap);
+    var row = svg.append('g').attr('transform', 'translate(0,' + y + ')');
+    row.append('text').attr('class', 'row-label').attr('x', 0).attr('y', barH / 2 + 4)
+      .text((n.title.length > 58 ? n.title.slice(0, 56) + '…' : n.title));
+    row.append('rect').attr('x', labelW).attr('y', 2).attr('width', width - labelW - 90).attr('height', barH - 4)
+      .attr('rx', 4).attr('fill', DATA.kindColor[n.kind] || '#8a8f98').attr('fill-opacity', 0.28)
+      .attr('stroke', DATA.kindColor[n.kind] || '#8a8f98').attr('stroke-width', 1.2);
+    row.append('text').attr('class', 'row-count').attr('x', width - 8).attr('y', barH / 2 + 4).attr('text-anchor', 'end')
+      .text(n.domain);
+  });
+
+  if (!ranked.length) {
+    svg.append('text').attr('x', 20).attr('y', 30).attr('fill', '#9aab97').text('Every idea has at least one piece of evidence — nothing needs attention right now.');
+  }
+})();
+</script>
+</body>
+</html>

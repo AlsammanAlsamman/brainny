@@ -1,0 +1,31 @@
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; background: #0b1310; }
+body {
+  font: 14px/1.5 -apple-system, Segoe UI, Helvetica, Arial, sans-serif;
+  color: #eef3ea; padding: 1.4rem 1.6rem 3rem;
+}
+header { margin-bottom: 1.1rem; }
+header a.back { color: #8fa08c; font-size: 0.82rem; text-decoration: none; }
+header a.back:hover { text-decoration: underline; }
+h1 { margin: 0.4rem 0 0.2rem; font-size: 1.3rem; }
+p.desc { margin: 0 0 1.2rem; color: #9aab97; font-size: 0.86rem; max-width: 780px; }
+.note {
+  margin: 0 0 1.2rem; padding: 0.6rem 0.9rem; border-radius: 8px;
+  background: rgba(232,178,61,0.08); border: 1px solid rgba(232,178,61,0.25);
+  font-size: 0.78rem; color: #d7c9a0; max-width: 780px;
+}
+#viz { position: relative; }
+svg { display: block; }
+.axis text { fill: #8fa08c; font-size: 10px; }
+.axis path, .axis line { stroke: rgba(255,255,255,0.14); }
+.axis .domain { stroke: rgba(255,255,255,0.2); }
+#tooltip {
+  position: fixed; z-index: 10; pointer-events: none; max-width: 300px;
+  background: rgba(12,20,14,0.97); border: 1px solid rgba(255,255,255,0.14);
+  border-radius: 10px; padding: 0.55rem 0.75rem; font-size: 0.78rem; display: none;
+}
+#tooltip .tt-title { font-weight: 600; margin-bottom: 0.2rem; color: #eef3ea; }
+#tooltip .tt-meta { color: #9aab97; font-size: 0.72rem; }
+.legend-row { display: flex; flex-wrap: wrap; gap: 0.7rem; margin: 0 0 1rem; font-size: 0.78rem; color: #c9d3c6; }
+.legend-item { display: inline-flex; align-items: center; gap: 0.3rem; }
+.dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; flex: none; }

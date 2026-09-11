@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>9. Timeline scatter</title>
+<link rel="stylesheet" href="shared.css">
+</head>
+<body>
+<header>
+  <a class="back" href="index.html">&larr; all 10 options</a>
+  <h1>9. Timeline scatter</h1>
+  <p class="desc">One dot per idea: x = when it was captured, y = domain, size = evidence weight, color = kind. A denser, more analytical sibling of the calendar heatmap — good for spotting exactly which domains were active in the same stretch of work.</p>
+</header>
+<div class="note"><strong>Adapted for this demo:</strong> x-axis uses capture order (the sequence ideas were added in), not wall-clock time — this one-session dataset's real timestamps span minutes, not the days/weeks this view is meant to show. On real, longer-lived data this uses actual <code>last_touched</code> timestamps directly.</div>
+<div id="viz"></div>
+<div id="tooltip"></div>
+<script src="d3.min.js"></script>
+<script src="data.js"></script>
+<script>
+(function () {
+  var nodes = DATA.nodes.slice().sort(function (a, b) { return a.id.localeCompare(b.id); });
+  var domains = Array.from(new Set(nodes.map(function (n) { return n.domain; })));
+
+  function weight(n) { return 1 + (n.hasAttachment ? 1 : 0) + (n.hasSnippet ? 1 : 0) + n.opportunityCount; }
+
+  var margin = { top: 20, right: 20, bottom: 30, left: 140 };
+  var width = 1000, height = domains.length * 34 + margin.top + margin.bottom;
+
+  var x = d3.scaleLinear().domain([0, nodes.length - 1]).range([margin.left, width - margin.right]);
+  var y = d3.scalePoint().domain(domains).range([margin.top, height - margin.bottom]).padding(0.6);
+  var r = d3.scaleSqrt().domain([1, 4]).range([4, 12]);
+
+  var svg = d3.select('#viz').append('svg').attr('viewBox', [0, 0, width, height]).attr('width', '100%').attr('height', height);
+
+  svg.append('g').attr('class', 'axis').attr('transform', 'translate(0,' + (height - margin.bottom) + ')')
+    .call(d3.axisBottom(x).ticks(10).tickFormat(function (i) { return '#' + (i + 1); }));
+  svg.append('g').attr('class', 'axis').attr('transform', 'translate(' + margin.left + ',0)')
+    .call(d3.axisLeft(y));
+
+  domains.forEach(function (d) {
+    svg.append('line').attr('x1', margin.left).attr('x2', width - margin.right).attr('y1', y(d)).attr('y2', y(d))
+      .attr('stroke', 'rgba(255,255,255,0.05)');
+  });
+
+  var tooltip = document.getElementById('tooltip');
+  svg.selectAll('circle').data(nodes).join('circle')
+    .attr('cx', function (d, i) { return x(i); }).attr('cy', function (d) { return y(d.domain); })
+    .attr('r', function (d) { return r(weight(d)); })
+    .attr('fill', function (d) { return DATA.kindColor[d.kind] || '#8a8f98'; })
+    .attr('stroke', function (d) { return DATA.originColor[d.origin] || DATA.unclassifiedColor; })
+    .attr('stroke-width', 1.5).attr('fill-opacity', 0.85).style('cursor', 'pointer')
+    .on('mouseenter', function (e, d) {
+      tooltip.innerHTML = '<div class="tt-title">' + d.title + '</div><div class="tt-meta">' + d.kind + ' · ' + d.domain + '</div>';
+      tooltip.style.display = 'block';
+    })
+    .on('mousemove', function (e) { tooltip.style.left = (e.clientX + 14) + 'px'; tooltip.style.top = (e.clientY + 14) + 'px'; })
+    .on('mouseleave', function () { tooltip.style.display = 'none'; });
+})();
+</script>
+</body>
+</html>

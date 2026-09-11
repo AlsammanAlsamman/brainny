@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>brainny — visualization options</title>
+<link rel="stylesheet" href="shared.css">
+<style>
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 1rem; margin-top: 1.2rem; }
+  .card {
+    background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 12px; padding: 1rem 1.1rem; text-decoration: none; color: inherit;
+    display: block; transition: background 0.15s, border-color 0.15s;
+  }
+  .card:hover { background: rgba(255,255,255,0.06); border-color: rgba(232,178,61,0.4); }
+  .card .num { color: #e8b23d; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.05em; }
+  .card h2 { margin: 0.25rem 0 0.4rem; font-size: 1.02rem; color: #eef3ea; }
+  .card p { margin: 0; font-size: 0.82rem; color: #9aab97; }
+  .card .readiness { display: inline-block; margin-top: 0.6rem; font-size: 0.68rem; padding: 0.12rem 0.5rem; border-radius: 999px; }
+  .ready-now { background: rgba(79,143,82,0.18); color: #8fd67a; }
+  .ready-adapted { background: rgba(232,178,61,0.16); color: #e8c877; }
+  .ready-custom { background: rgba(224,90,154,0.18); color: #f0a8c8; }
+  .card.featured { border-color: rgba(224,90,154,0.5); background: rgba(224,90,154,0.05); }
+</style>
+</head>
+<body>
+<header>
+  <h1>brAInny — visualization prototypes</h1>
+  <p class="desc">
+    Standalone mockups for a third dashboard tab, on top of the existing
+    Graph and Stats views — each answering "what's growing" and "what's
+    proven useful" a different way. All use the same fabricated example
+    dataset as <code>examples/demo/</code> (never real captured ideas).
+    <span class="ready-now" style="padding:0.1rem 0.4rem;border-radius:6px;">real data</span>
+    uses the dataset's actual fields as-is;
+    <span class="ready-adapted" style="padding:0.1rem 0.4rem;border-radius:6px;">adapted</span>
+    reshapes something (e.g. capture order instead of wall-clock time) because
+    this one-session demo dataset doesn't span enough real time/sessions to
+    show the pattern otherwise — noted on each page;
+    <span class="ready-custom" style="padding:0.1rem 0.4rem;border-radius:6px;">custom-built</span>
+    is a bespoke visualization, not one of the 10 generic chart-type options.
+  </p>
+</header>
+<div class="grid" id="grid"></div>
+<script>
+  var pages = [
+    ["01-opportunity-graph.html", "1. Opportunity co-occurrence graph", "Only ideas that appear in ≥1 Opportunity, sized by how many. The most direct “what's proven useful” signal that already exists.", "ready-now"],
+    ["02-calendar-heatmap.html", "2. Calendar heatmap", "GitHub-contributions-style day grid of capture/touch activity.", "ready-adapted"],
+    ["03-domain-kind-matrix.html", "3. Domain × Kind matrix", "Heatmap grid revealing coverage gaps at a glance.", "ready-now"],
+    ["04-sparkline-stats.html", "4. Sparkline stats table", "The existing Stats cluster table, with a real per-domain trend line instead of a static bar.", "ready-adapted"],
+    ["05-packed-circles.html", "5. Packed circle bubbles", "One circle per idea, sized by evidence (attachment/snippet/opportunity), grouped by domain.", "ready-now"],
+    ["06-needs-attention.html", "6. Needs-attention ranked list", "Lowest-evidence ideas surfaced first — a visual home for the still-unbuilt `brainny neglected`.", "ready-now"],
+    ["07-tag-cloud.html", "7. Tag cloud", "Classic frequency-weighted cloud across every tag ever used.", "ready-now"],
+    ["08-sankey.html", "8. Flow diagram: domain → kind → origin", "Hand-built flow ribbons (no session variety yet to make session → domain → kind worthwhile).", "ready-adapted"],
+    ["09-timeline-scatter.html", "9. Timeline scatter", "One dot per idea, x = capture order, y = domain, size = evidence weight.", "ready-adapted"],
+    ["10-growth-rings.html", "10. Growth rings (radial)", "Concentric ring per domain, ideas as points ordered around it — ties into the tree metaphor already in the copy.", "ready-adapted"],
+    ["11-living-brain.html", "11. Living Brain (rejected — too generic)", "Glowing-neuron force graph. Feedback: no real innovation over a standard network diagram.", "ready-custom"],
+    ["12-neural-bundle.html", "12. Neural Bundle", "The links themselves form the brain silhouette (hierarchical edge-bundling, no literal neuron dots) — three layers of connections (same-kind, same-domain, proven-to-combine) fill the whole mesh densely. A probe orb sweeps it continuously, gathering ideas into a live generated report. Click anywhere to make it open — the mesh relaxes outward into real, labeled, clickable idea circles.", "ready-custom"],
+  ];
+  var labels = { 'ready-now': 'real data as-is', 'ready-adapted': 'adapted for this demo', 'ready-custom': 'custom-built for brainny' };
+  var grid = document.getElementById('grid');
+  pages.forEach(function (p, i) {
+    var a = document.createElement('a');
+    a.className = 'card' + (p[3] === 'ready-custom' ? ' featured' : '');
+    a.href = p[0];
+    a.innerHTML = '<div class="num">OPTION ' + (i + 1) + '</div><h2>' + p[1].replace(/^\d+\.\s*/, '') + '</h2><p>' + p[2] + '</p>' +
+      '<span class="readiness ' + p[3] + '">' + labels[p[3]] + '</span>';
+    grid.appendChild(a);
+  });
+</script>
+</body>
+</html>

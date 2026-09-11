@@ -225,50 +225,103 @@ def _build_payload(graph: Graph, opportunities: Opportunities, title: str) -> di
 
 
 _CSS = """
-  * { box-sizing: border-box; }
-  html, body { margin: 0; padding: 0; height: 100%; background: #0b1310; }
-  body {
-    font: 14px/1.5 -apple-system, Segoe UI, Helvetica, Arial, sans-serif;
-    color: #eef3ea; display: flex; flex-direction: column; height: 100%;
+  /* ---- theming: CSS custom properties for every structural/chrome color.
+     Dark is the default (:root, no attribute needed); a tiny inline
+     script in <head> (see render_html) sets [data-theme] before first
+     paint -- from localStorage if the user has toggled before, else from
+     prefers-color-scheme -- so there's no flash of the wrong theme. The
+     light palette is deliberately NOT stark white (a
+     soft warm sage-paper tone instead) per explicit design direction: a
+     pure-white dashboard read as harsh next to the dark original. Data-
+     semantic colors (kind/origin/opportunity-kind/trend colors, the gold
+     brand accent) are intentionally left constant across both themes --
+     they encode meaning, not chrome, and should stay recognizable. */
+  :root {
+    --bg: #0b1310;
+    --bg-rgb: 11,19,16;
+    --fg: #eef3ea;
+    --overlay-rgb: 255,255,255;
+    --text: #d7ddd4;
+    --text-muted: #c9d3c6;
+    --text-dim: #a9b7a6;
+    --text-dimmer: #9aab97;
+    --text-faint: #8fa08c;
+    --text-fainter: #7c8c79;
+    --text-faintest: #6b7a68;
+    --note-fg: #d7c9a0;
+    --code-bg: rgba(0,0,0,0.28);
+    --active-tab-fg: #f0e2bb;
+    --graph-link: rgba(190,205,180,0.28);
+  }
+  :root[data-theme="light"] {
+    --bg: #eef1e4;
+    --bg-rgb: 238,241,228;
+    --fg: #24302a;
+    --overlay-rgb: 20,32,24;
+    --text: #3c4a40;
+    --text-muted: #47564a;
+    --text-dim: #55654f;
+    --text-dimmer: #5e6f5a;
+    --text-faint: #687a62;
+    --text-fainter: #74876c;
+    --text-faintest: #869781;
+    --note-fg: #7a5f1f;
+    --code-bg: rgba(20,32,24,0.06);
+    --active-tab-fg: #5a4315;
+    --graph-link: rgba(60,80,64,0.35);
   }
 
-  header { padding: 0.9rem 1.25rem; border-bottom: 1px solid rgba(255,255,255,0.08); background: rgba(10,18,12,0.85); flex: none; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; height: 100%; background: var(--bg); }
+  body {
+    font: 14px/1.5 -apple-system, Segoe UI, Helvetica, Arial, sans-serif;
+    color: var(--fg); display: flex; flex-direction: column; height: 100%;
+  }
+
+  header { padding: 0.9rem 1.25rem; border-bottom: 1px solid rgba(var(--overlay-rgb),0.08); background: rgba(var(--bg-rgb),0.85); flex: none; }
   header .row { display: flex; align-items: center; gap: 0.9rem; flex-wrap: wrap; }
   #brand-icon { width: 28px; height: 28px; object-fit: contain; flex: none; }
   header h1 { margin: 0; font-size: 1.15rem; }
-  header p { margin: 0.35rem 0 0; color: #9aab97; font-size: 0.82rem; }
+  header p { margin: 0.35rem 0 0; color: var(--text-dimmer); font-size: 0.82rem; }
   #view-select {
-    background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.16); color: #eef3ea;
+    background: rgba(var(--overlay-rgb),0.06); border: 1px solid rgba(var(--overlay-rgb),0.16); color: var(--fg);
     padding: 0.3rem 0.6rem; border-radius: 8px; font: inherit; font-size: 0.85rem; cursor: pointer;
   }
-  #view-select:hover { background: rgba(255,255,255,0.1); }
-  /* the dropdown's open popup is native-rendered with a white background
-     regardless of the select's own styling, so its options need their
-     own dark text or they're invisible against it */
+  #view-select:hover { background: rgba(var(--overlay-rgb),0.1); }
+  /* the dropdown's open popup is native-rendered by the OS, outside CSS
+     theme control -- force it light-with-dark-text always, a universal
+     fallback that stays readable regardless of the page's own theme */
   #view-select option { color: #111; background: #fff; }
   .note {
     margin: 0.6rem 0 0; padding: 0.6rem 0.8rem; border-radius: 8px;
     background: rgba(232,178,61,0.08); border: 1px solid rgba(232,178,61,0.25);
-    font-size: 0.78rem; color: #d7c9a0;
+    font-size: 0.78rem; color: var(--note-fg);
   }
+
+  #theme-toggle {
+    margin-left: auto; background: rgba(var(--overlay-rgb),0.06); border: 1px solid rgba(var(--overlay-rgb),0.16);
+    color: var(--fg); font: inherit; font-size: 0.9rem; width: 2.1rem; height: 2.1rem; border-radius: 8px;
+    cursor: pointer; display: inline-flex; align-items: center; justify-content: center; flex: none;
+  }
+  #theme-toggle:hover { background: rgba(var(--overlay-rgb),0.1); }
 
   #tab-bar { display: flex; gap: 0.3rem; margin-left: 0.4rem; }
   .tab-btn {
-    background: none; border: 1px solid transparent; color: #9aab97; font: inherit;
+    background: none; border: 1px solid transparent; color: var(--text-dimmer); font: inherit;
     font-size: 0.85rem; padding: 0.3rem 0.8rem; border-radius: 8px; cursor: pointer;
   }
-  .tab-btn:hover { background: rgba(255,255,255,0.06); color: #eef3ea; }
-  .tab-btn.active { background: rgba(232,178,61,0.14); border-color: rgba(232,178,61,0.4); color: #f0e2bb; }
+  .tab-btn:hover { background: rgba(var(--overlay-rgb),0.06); color: var(--fg); }
+  .tab-btn.active { background: rgba(232,178,61,0.14); border-color: rgba(232,178,61,0.4); color: var(--active-tab-fg); }
 
   /* who originated an idea: human / AI / collaborative / all -- an axis
      independent of kind/state, filterable across every view */
   #origin-filter { display: flex; gap: 0.3rem; align-items: center; flex-wrap: wrap; }
   .origin-btn {
-    background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.14); color: #c9d3c6;
+    background: rgba(var(--overlay-rgb),0.04); border: 1px solid rgba(var(--overlay-rgb),0.14); color: var(--text-muted);
     font: inherit; font-size: 0.78rem; padding: 0.25rem 0.65rem; border-radius: 999px; cursor: pointer;
     display: inline-flex; align-items: center; gap: 0.35rem;
   }
-  .origin-btn:hover { background: rgba(255,255,255,0.09); }
+  .origin-btn:hover { background: rgba(var(--overlay-rgb),0.09); }
   .origin-btn .dot { width: 8px; height: 8px; border-radius: 50%; flex: none; }
   .origin-btn.active { font-weight: 600; }
 
@@ -276,25 +329,26 @@ _CSS = """
      central --html) spanning more than one project */
   #project-filter-row { display: flex; align-items: center; gap: 0.4rem; margin-left: 0.6rem; }
   #project-filter {
-    background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.16); color: #eef3ea;
+    background: rgba(var(--overlay-rgb),0.06); border: 1px solid rgba(var(--overlay-rgb),0.16); color: var(--fg);
     padding: 0.25rem 0.55rem; border-radius: 8px; font: inherit; font-size: 0.82rem; cursor: pointer;
   }
   #project-filter option { color: #111; background: #fff; }
   .item-project-group { margin-bottom: 1.1rem; }
   .item-project-group:last-child { margin-bottom: 0; }
   .item-project-heading {
-    font-size: 0.82rem; font-weight: 600; color: #eef3ea; margin: 0 0 0.5rem; padding: 0.3rem 0.5rem;
+    font-size: 0.82rem; font-weight: 600; color: var(--fg); margin: 0 0 0.5rem; padding: 0.3rem 0.5rem;
     background: rgba(232,178,61,0.1); border: 1px solid rgba(232,178,61,0.25); border-radius: 6px;
   }
 
   main { flex: 1; display: grid; grid-template-columns: 300px 1fr; min-height: 0; }
   main#stats-main, main#opportunities-main { display: block; overflow-y: auto; padding: 1.1rem 1.4rem 2rem; }
-  #graph-main[hidden], #stats-main[hidden], #opportunities-main[hidden] { display: none !important; }
+  main#brain-main { display: block; overflow: hidden; padding: 0; position: relative; }
+  #graph-main[hidden], #stats-main[hidden], #opportunities-main[hidden], #brain-main[hidden] { display: none !important; }
 
   /* ---- opportunities tab: AI-proposed combinations of ideas ---- */
   .opp-list { display: flex; flex-direction: column; gap: 0.9rem; max-width: 760px; margin: 0 auto; }
   .opp-card {
-    background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08);
+    background: rgba(var(--overlay-rgb),0.03); border: 1px solid rgba(var(--overlay-rgb),0.08);
     border-radius: 10px; padding: 0.9rem 1.1rem;
   }
   .opp-header { display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.5rem; flex-wrap: wrap; }
@@ -302,35 +356,35 @@ _CSS = """
     font-size: 0.7rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.03em;
     padding: 0.15rem 0.55rem; border-radius: 999px; border: 1px solid; flex: none;
   }
-  .opp-title { font-size: 0.98rem; font-weight: 600; color: #eef3ea; }
+  .opp-title { font-size: 0.98rem; font-weight: 600; color: var(--fg); }
   .opp-weight-row { display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.6rem; }
-  .opp-weight-track { flex: 1; height: 8px; border-radius: 999px; background: rgba(255,255,255,0.07); overflow: hidden; }
+  .opp-weight-track { flex: 1; height: 8px; border-radius: 999px; background: rgba(var(--overlay-rgb),0.07); overflow: hidden; }
   .opp-weight-fill { height: 100%; border-radius: 999px; }
-  .opp-weight-pct { font-size: 0.76rem; color: #9aab97; width: 2.6rem; text-align: right; flex: none; }
-  .opp-summary { margin: 0 0 0.4rem; color: #d7ddd4; font-size: 0.86rem; }
-  .opp-rationale { margin: 0 0 0.6rem; color: #9aab97; font-size: 0.8rem; font-style: italic; }
-  .opp-ideas-label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.03em; color: #7c8c79; margin-bottom: 0.35rem; }
+  .opp-weight-pct { font-size: 0.76rem; color: var(--text-dimmer); width: 2.6rem; text-align: right; flex: none; }
+  .opp-summary { margin: 0 0 0.4rem; color: var(--text); font-size: 0.86rem; }
+  .opp-rationale { margin: 0 0 0.6rem; color: var(--text-dimmer); font-size: 0.8rem; font-style: italic; }
+  .opp-ideas-label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.03em; color: var(--text-fainter); margin-bottom: 0.35rem; }
   .opp-ideas { display: flex; flex-wrap: wrap; gap: 0.35rem; }
   .opp-idea-chip {
-    background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.14); color: #c9d3c6;
+    background: rgba(var(--overlay-rgb),0.06); border: 1px solid rgba(var(--overlay-rgb),0.14); color: var(--text-muted);
     font: inherit; font-size: 0.76rem; padding: 0.2rem 0.6rem; border-radius: 999px; cursor: pointer;
   }
-  .opp-idea-chip:hover { background: rgba(255,255,255,0.11); color: #eef3ea; }
+  .opp-idea-chip:hover { background: rgba(var(--overlay-rgb),0.11); color: var(--fg); }
 
   /* ---- stats tab ---- */
   .stat-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 0.7rem; margin: 0 0 1.4rem; }
   .stat-card {
-    background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08);
+    background: rgba(var(--overlay-rgb),0.03); border: 1px solid rgba(var(--overlay-rgb),0.08);
     border-radius: 10px; padding: 0.7rem 0.9rem;
   }
-  .stat-card .stat-num { font-size: 1.6rem; font-weight: 600; color: #eef3ea; line-height: 1.1; }
-  .stat-card .stat-label { font-size: 0.74rem; color: #8fa08c; margin-top: 0.2rem; text-transform: uppercase; letter-spacing: 0.03em; }
+  .stat-card .stat-num { font-size: 1.6rem; font-weight: 600; color: var(--fg); line-height: 1.1; }
+  .stat-card .stat-label { font-size: 0.74rem; color: var(--text-faint); margin-top: 0.2rem; text-transform: uppercase; letter-spacing: 0.03em; }
 
   .stats-grid { display: grid; grid-template-columns: minmax(280px, 1fr) minmax(320px, 1.2fr); gap: 1.4rem; align-items: start; }
   @media (max-width: 900px) { .stats-grid { grid-template-columns: 1fr; } }
 
-  .stats-block h2 { font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.04em; color: #8fa08c; margin: 0 0 0.6rem; }
-  .stats-caption { font-size: 0.74rem; color: #7c8c79; margin: 0.5rem 0 0; }
+  .stats-block h2 { font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-faint); margin: 0 0 0.6rem; }
+  .stats-caption { font-size: 0.74rem; color: var(--text-fainter); margin: 0.5rem 0 0; }
 
   #treemap-mount svg { display: block; width: 100%; }
   .tm-cell rect { stroke: rgba(11,19,16,0.7); stroke-width: 1.5; cursor: pointer; }
@@ -338,34 +392,34 @@ _CSS = """
   .tm-cell .tm-count { font-weight: 400; opacity: 0.75; }
 
   .domain-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
-  .domain-table th { text-align: left; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.03em; color: #7c8c79; padding: 0.3rem 0.5rem; border-bottom: 1px solid rgba(255,255,255,0.1); }
-  .domain-table td { padding: 0.4rem 0.5rem; border-bottom: 1px solid rgba(255,255,255,0.05); vertical-align: middle; }
-  .domain-table tr:hover td { background: rgba(255,255,255,0.03); }
+  .domain-table th { text-align: left; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.03em; color: var(--text-fainter); padding: 0.3rem 0.5rem; border-bottom: 1px solid rgba(var(--overlay-rgb),0.1); }
+  .domain-table td { padding: 0.4rem 0.5rem; border-bottom: 1px solid rgba(var(--overlay-rgb),0.05); vertical-align: middle; }
+  .domain-table tr:hover td { background: rgba(var(--overlay-rgb),0.03); }
   .spark { display: inline-block; vertical-align: middle; }
   .trend-badge { display: inline-flex; align-items: center; gap: 0.3rem; padding: 0.1rem 0.5rem; border-radius: 999px; font-size: 0.72rem; white-space: nowrap; }
   .trend-growing { background: rgba(111,174,92,0.16); color: #8fd67a; }
-  .trend-steady { background: rgba(255,255,255,0.06); color: #9aab97; }
+  .trend-steady { background: rgba(var(--overlay-rgb),0.06); color: var(--text-dimmer); }
   .trend-quiet { background: rgba(201,67,44,0.12); color: #d68a7a; }
 
   .kind-bars { display: flex; flex-direction: column; gap: 0.4rem; margin-top: 0.4rem; }
   .kind-bar-row { display: flex; align-items: center; gap: 0.6rem; font-size: 0.78rem; }
-  .kind-bar-label { width: 110px; flex: none; color: #c9d3c6; }
-  .kind-bar-track { flex: 1; height: 10px; border-radius: 999px; background: rgba(255,255,255,0.06); overflow: hidden; }
+  .kind-bar-label { width: 110px; flex: none; color: var(--text-muted); }
+  .kind-bar-track { flex: 1; height: 10px; border-radius: 999px; background: rgba(var(--overlay-rgb),0.06); overflow: hidden; }
   .kind-bar-fill { height: 100%; border-radius: 999px; }
-  .kind-bar-count { width: 24px; flex: none; text-align: right; color: #8fa08c; }
+  .kind-bar-count { width: 24px; flex: none; text-align: right; color: var(--text-faint); }
 
   .recent-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.5rem; }
-  .recent-item { display: flex; flex-direction: column; gap: 0.1rem; padding: 0.45rem 0.6rem; border-radius: 8px; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.06); cursor: pointer; }
-  .recent-item:hover { background: rgba(255,255,255,0.05); }
-  .recent-item .ri-title { color: #eef3ea; font-size: 0.84rem; }
-  .recent-item .ri-meta { color: #7c8c79; font-size: 0.72rem; }
-  #panel { border-right: 1px solid rgba(255,255,255,0.08); overflow-y: auto; padding: 0.75rem; }
-  #panel h2 { font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.04em; color: #8fa08c; margin: 0.25rem 0.25rem 0.6rem; }
+  .recent-item { display: flex; flex-direction: column; gap: 0.1rem; padding: 0.45rem 0.6rem; border-radius: 8px; background: rgba(var(--overlay-rgb),0.02); border: 1px solid rgba(var(--overlay-rgb),0.06); cursor: pointer; }
+  .recent-item:hover { background: rgba(var(--overlay-rgb),0.05); }
+  .recent-item .ri-title { color: var(--fg); font-size: 0.84rem; }
+  .recent-item .ri-meta { color: var(--text-fainter); font-size: 0.72rem; }
+  #panel { border-right: 1px solid rgba(var(--overlay-rgb),0.08); overflow-y: auto; padding: 0.75rem; }
+  #panel h2 { font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-faint); margin: 0.25rem 0.25rem 0.6rem; }
   #viz { position: relative; overflow: hidden; }
   #viz svg { display: block; width: 100%; height: 100%; }
-  .empty-note { padding: 0.75rem; color: #8fa08c; font-size: 0.85rem; }
+  .empty-note { padding: 0.75rem; color: var(--text-faint); font-size: 0.85rem; }
 
-  .legend-row { display: flex; flex-wrap: wrap; gap: 0.6rem; margin: 0 0 0.6rem; padding: 0 0.25rem; font-size: 0.76rem; color: #c9d3c6; }
+  .legend-row { display: flex; flex-wrap: wrap; gap: 0.6rem; margin: 0 0 0.6rem; padding: 0 0.25rem; font-size: 0.76rem; color: var(--text-muted); }
   .legend-item { display: inline-flex; align-items: center; gap: 0.3rem; }
   .dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; flex: none; }
   .state-dot.state-seed { width: 6px; height: 6px; background: #6b7a68; }
@@ -376,31 +430,31 @@ _CSS = """
   /* ---- itemized accordion list ---- */
   .item-list { display: flex; flex-direction: column; gap: 0.9rem; }
   .item-group { border-radius: 8px; padding: 0.15rem; }
-  .item-group-heading { font-size: 0.76rem; color: #8fa08c; margin: 0 0 0.35rem; padding: 0 0.25rem; }
-  .item { border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; margin-bottom: 0.4rem; overflow: hidden; background: rgba(255,255,255,0.02); }
+  .item-group-heading { font-size: 0.76rem; color: var(--text-faint); margin: 0 0 0.35rem; padding: 0 0.25rem; }
+  .item { border: 1px solid rgba(var(--overlay-rgb),0.08); border-radius: 8px; margin-bottom: 0.4rem; overflow: hidden; background: rgba(var(--overlay-rgb),0.02); }
   .item-promising { border-color: rgba(232,178,61,0.55); box-shadow: 0 0 0 1px rgba(232,178,61,0.15) inset; }
   .item-flash { animation: item-flash-kf 1.4s ease-out; }
   @keyframes item-flash-kf {
     0% { background: rgba(191,227,107,0.28); border-color: rgba(191,227,107,0.8); }
-    100% { background: rgba(255,255,255,0.02); }
+    100% { background: rgba(var(--overlay-rgb),0.02); }
   }
   .item-title-row {
     width: 100%; display: flex; align-items: center; gap: 0.5rem;
-    background: none; border: none; color: #eef3ea; text-align: left;
+    background: none; border: none; color: var(--fg); text-align: left;
     padding: 0.5rem 0.6rem; cursor: pointer; font: inherit; font-size: 0.85rem;
   }
-  .item-title-row:hover { background: rgba(255,255,255,0.04); }
+  .item-title-row:hover { background: rgba(var(--overlay-rgb),0.04); }
   .item-dot { width: 8px; height: 8px; border-radius: 50%; flex: none; }
   .item-title { flex: 1; }
-  .item-caret { color: #6b7a68; transition: transform 0.15s; font-size: 0.7rem; }
+  .item-caret { color: var(--text-faintest); transition: transform 0.15s; font-size: 0.7rem; }
   .item-title-row.open .item-caret { transform: rotate(90deg); }
   .item-body { padding: 0 0.75rem 0.7rem 1.85rem; font-size: 0.82rem; }
-  .item-summary { margin: 0 0 0.35rem; color: #d7ddd4; }
-  .item-detail { margin: 0 0 0.35rem; color: #a9b7a6; }
-  .item-trigger { margin: 0 0 0.35rem; color: #c9d3c6; font-size: 0.8rem; }
-  .item-meta { margin: 0 0 0.35rem; color: #7c8c79; font-size: 0.72rem; }
+  .item-summary { margin: 0 0 0.35rem; color: var(--text); }
+  .item-detail { margin: 0 0 0.35rem; color: var(--text-dim); }
+  .item-trigger { margin: 0 0 0.35rem; color: var(--text-muted); font-size: 0.8rem; }
+  .item-meta { margin: 0 0 0.35rem; color: var(--text-fainter); font-size: 0.72rem; }
   .item-tags { display: flex; flex-wrap: wrap; gap: 0.3rem; }
-  .item-tag { background: rgba(255,255,255,0.08); border-radius: 999px; padding: 0.05rem 0.5rem; font-size: 0.7rem; }
+  .item-tag { background: rgba(var(--overlay-rgb),0.08); border-radius: 999px; padding: 0.05rem 0.5rem; font-size: 0.7rem; }
 
   /* attachment "signs" -- code/plot/table evidence badges (SEED.md
      attachments: small physical proof, not the full dataset) */
@@ -409,7 +463,7 @@ _CSS = """
     display: inline-flex; align-items: center; justify-content: center;
     min-width: 1.3em; height: 1.3em; padding: 0 0.25em; border-radius: 4px;
     font-size: 0.68rem; font-weight: 600; letter-spacing: -0.02em;
-    background: rgba(255,255,255,0.08); color: #c9d3c6;
+    background: rgba(var(--overlay-rgb),0.08); color: var(--text-muted);
   }
   .item-sign-code { background: rgba(59,111,214,0.18); color: #9db8ef; }
   .item-sign-plot { background: rgba(139,92,214,0.18); color: #c4aef0; }
@@ -420,25 +474,67 @@ _CSS = """
      `snippet` field) */
   .item-snippet {
     margin: 0 0 0.5rem; padding: 0.55rem 0.7rem; border-radius: 6px;
-    background: rgba(0,0,0,0.28); border: 1px solid rgba(255,255,255,0.08);
+    background: var(--code-bg); border: 1px solid rgba(var(--overlay-rgb),0.08);
     font: 0.76rem/1.45 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-    color: #d7ddd4; white-space: pre-wrap; word-break: break-word; overflow-x: auto;
+    color: var(--text); white-space: pre-wrap; word-break: break-word; overflow-x: auto;
   }
   .item-evidence { display: flex; flex-direction: column; gap: 0.4rem; margin-top: 0.5rem; }
   .item-evidence-row { display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap; }
-  .item-evidence-row a { color: #9db8ef; font-size: 0.78rem; text-decoration: none; }
+  .item-evidence-row a { color: #6f96e0; font-size: 0.78rem; text-decoration: none; }
   .item-evidence-row a:hover { text-decoration: underline; }
-  .item-evidence-thumb { max-width: 160px; max-height: 100px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.12); display: block; margin-top: 0.2rem; }
+  .item-evidence-thumb { max-width: 160px; max-height: 100px; border-radius: 6px; border: 1px solid rgba(var(--overlay-rgb),0.12); display: block; margin-top: 0.2rem; }
 
   #tooltip {
     position: fixed; z-index: 10; pointer-events: none; max-width: 280px;
-    background: rgba(12,20,14,0.96); border: 1px solid rgba(255,255,255,0.12);
-    border-radius: 10px; padding: 0.6rem 0.75rem; font-size: 0.8rem; display: none;
+    background: rgba(var(--bg-rgb),0.96); border: 1px solid rgba(var(--overlay-rgb),0.12);
+    border-radius: 10px; padding: 0.6rem 0.75rem; font-size: 0.8rem; display: none; color: var(--fg);
   }
   #tooltip .tt-title { font-weight: 600; margin-bottom: 0.2rem; }
-  #tooltip .tt-meta { color: #8fa08c; font-size: 0.72rem; }
+  #tooltip .tt-meta { color: var(--text-faint); font-size: 0.72rem; }
 
-  #fallback { padding: 2rem; white-space: pre-wrap; color: #eef3ea; background: #0b1310; height: 100%; margin: 0; overflow: auto; }
+  #fallback { padding: 2rem; white-space: pre-wrap; color: var(--fg); background: var(--bg); height: 100%; margin: 0; overflow: auto; }
+
+  /* ---- brain tab: hierarchical edge-bundled connections resolve into a
+     brain silhouette (no literal neuron dots), a probe circles it
+     continuously gathering ideas into a live report, and clicking opens
+     the mesh into real labeled/clickable idea circles. Ported from
+     examples/viz-prototypes/12-neural-bundle.html -- see renderBrainView()
+     in the JS below for the full port notes. ---- */
+  #brain-main svg { display: block; width: 100%; height: 100%; }
+  .bundle-link { fill: none; mix-blend-mode: screen; }
+  .rim-arc { fill: none; stroke-width: 5; opacity: 0.85; }
+  .brain-leaf { cursor: pointer; }
+  .brain-leaf-label { font-size: 9px; fill: var(--fg); opacity: 0.85; pointer-events: none; }
+  .brain-caption {
+    position: absolute; top: 0; left: 0; right: 0; z-index: 2; padding: 0.8rem 1.1rem;
+    background: linear-gradient(180deg, rgba(var(--bg-rgb),0.85), rgba(var(--bg-rgb),0));
+    font-size: 0.78rem; color: var(--text-dimmer); pointer-events: none; max-width: 640px;
+  }
+  .brain-caption strong { color: var(--fg); }
+  /* the report/constellation HUD panels float directly over the mesh
+     itself, which passes all sorts of colors behind them regardless of
+     page theme -- so unlike the rest of the chrome, these deliberately
+     stay a fixed dark glass with light text in BOTH themes (like a
+     tooltip or toast does), rather than trying to keep enough contrast
+     against an arbitrary, constantly-shifting backdrop. */
+  #brain-report {
+    position: absolute; left: 1.1rem; bottom: 1.1rem; z-index: 3; width: 300px; max-height: 220px;
+    background: rgba(9,15,12,0.88); border: 1px solid rgba(255,255,255,0.1); border-radius: 10px;
+    padding: 0.65rem 0.8rem; font-size: 0.72rem; color: #c9d3c6; overflow: hidden;
+  }
+  #brain-report h3 { margin: 0 0 0.4rem; font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.04em; color: #e8b23d; }
+  #brain-report .line { padding: 0.12rem 0; border-bottom: 1px dashed rgba(255,255,255,0.06); opacity: 0; animation: brain-fade-in 0.4s forwards; }
+  @keyframes brain-fade-in { to { opacity: 1; } }
+  #brain-constellation {
+    position: absolute; top: 46%; left: 50%; transform: translate(-50%, -50%); z-index: 3;
+    text-align: center; pointer-events: none; opacity: 0; transition: opacity 0.4s ease;
+    background: rgba(9,15,12,0.85); border: 1px solid rgba(255,224,140,0.3); border-radius: 12px;
+    padding: 0.65rem 1.2rem; max-width: 400px;
+  }
+  #brain-constellation .opp-kind { font-size: 0.66rem; text-transform: uppercase; letter-spacing: 0.05em; color: #e8b23d; }
+  #brain-constellation .opp-title { font-size: 0.96rem; font-weight: 700; color: #fff3d0; margin: 0.15rem 0; }
+  #brain-constellation .opp-conf { font-size: 0.74rem; color: #9aab97; }
+  #brain-hint { position: absolute; bottom: 1rem; right: 1.2rem; z-index: 2; font-size: 0.72rem; color: var(--text-faintest); text-align: right; pointer-events: none; }
 """
 
 _JS = """
@@ -526,6 +622,17 @@ _JS = """
     var div = document.createElement('div');
     div.textContent = s == null ? '' : String(s);
     return div.innerHTML;
+  }
+
+  // resolves a CSS custom property to its actual current value (the
+  // literal hex/rgb string, not the token) -- for the handful of places
+  // that set a chrome color via D3's .attr() on an SVG element (fill/
+  // stroke), which is a genuine SVG attribute, not a CSS declaration, so
+  // it can't just reference var(--x) the way ordinary CSS/inline styles
+  // can. Re-read on every (re)render, so it always reflects whichever
+  // theme is active right now.
+  function cssVar(name) {
+    return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
   }
 
   // domain path ("GWAS / sub-analysis") -> nested {name, kind, children}
@@ -760,7 +867,7 @@ _JS = """
 
     g.append('g')
       .attr('fill', 'none')
-      .attr('stroke', 'rgba(190,205,180,0.28)')
+      .attr('stroke', cssVar('--graph-link'))
       .selectAll('path')
       .data(root.links())
       .join('path')
@@ -794,7 +901,7 @@ _JS = """
       .attr('dy', '0.31em')
       .attr('x', function (d) { return radialPoint(d.x, d.y)[0] < 0 ? -8 : 8; })
       .attr('text-anchor', function (d) { return radialPoint(d.x, d.y)[0] < 0 ? 'end' : 'start'; })
-      .attr('fill', '#c9d3c6')
+      .attr('fill', cssVar('--text-muted'))
       .style('font-size', '10px')
       .style('pointer-events', 'none')
       .text(function (d) { return d.data.kind === 'root' ? d.data.name : (d.data.name.length > 28 ? d.data.name.slice(0, 27) + '\\u2026' : d.data.name); });
@@ -869,7 +976,7 @@ _JS = """
       .force('collide', d3.forceCollide().radius(function (d) { return radiusOf(d) + 4; }))
       .force('cluster', forceCluster(0.12));
 
-    var link = linkLayer.selectAll('line').data(links).join('line').attr('stroke', 'rgba(190,205,180,0.25)');
+    var link = linkLayer.selectAll('line').data(links).join('line').attr('stroke', cssVar('--graph-link'));
 
     var node = nodeLayer.selectAll('circle')
       .data(nodes)
@@ -880,7 +987,7 @@ _JS = """
         if (d.kind === 'branch') return '#7c8c6e';
         return DATA.kindColor[d.idea.kind] || '#8a8f98';
       })
-      .attr('stroke', function (d) { return d.kind === 'idea' ? originColor(d.idea) : 'rgba(255,255,255,0.15)'; })
+      .attr('stroke', function (d) { return d.kind === 'idea' ? originColor(d.idea) : 'rgba(' + cssVar('--overlay-rgb') + ',0.15)'; })
       .attr('stroke-width', function (d) { return d.kind === 'idea' && isPromising(d.idea) ? 3 : 1.5; })
       .style('cursor', 'pointer')
       .on('mouseenter', function (event, d) { showTooltip(event, tooltipHtml(d)); })
@@ -1343,6 +1450,531 @@ _JS = """
     return _sparkIds[domain];
   }
 
+  // ---- brain tab: hierarchical edge-bundled connections, a probe that
+  // circles gathering ideas into a live report, click-to-open into real
+  // labeled circles. Ported from examples/viz-prototypes/12-neural-
+  // bundle.html, which was built and refined standalone against a
+  // fabricated demo dataset with its own DATA.nodes[].hasAttachment/
+  // hasSnippet/opportunityCount fields and a own detail side-panel. This
+  // port differs from that prototype in three deliberate ways:
+  //   1. reads filteredData() (origin + project filters) like every other
+  //      tab, instead of a fixed standalone DATA;
+  //   2. derives evidence from the REAL payload fields (attachments[],
+  //      snippet, and actual opportunity co-membership) instead of the
+  //      prototype's precomputed convenience fields, which don't exist
+  //      on the real dashboard payload;
+  //   3. uses itemKey() for all idea identity (so it namespaces correctly
+  //      on a merged multi-project central view, like every other view
+  //      here) instead of the prototype's raw idea.id, and routes a leaf
+  //      click to the existing Graph-tab item list (switchTab + focusItem)
+  //      instead of duplicating a separate detail panel.
+  // Because this view runs a requestAnimationFrame loop plus a couple of
+  // setInterval/setTimeout timers and recursive D3 transitions, it needs
+  // explicit teardown when the tab is left or re-rendered (filter change,
+  // resize) -- see the `alive` flag below and brainCleanup().
+  var brainCleanup = null;
+
+  function renderBrainView() {
+    if (brainCleanup) { brainCleanup(); brainCleanup = null; }
+    var mount = document.getElementById('brain-main');
+    mount.innerHTML = '';
+
+    var data = filteredData();
+    if (!data.nodes.length) {
+      mount.innerHTML = '<p class="empty-note" style="padding:2rem">' +
+        ((DATA.nodes.length && (activeOrigin !== 'all' || activeProject !== 'all'))
+          ? 'No ideas match this filter \\u2014 try a different one, or "All".'
+          : 'No ideas captured yet \\u2014 nothing to bundle into a brain yet.') +
+        '</p>';
+      return;
+    }
+
+    var alive = true;
+
+    mount.innerHTML =
+      '<svg id="brain-viz"></svg>' +
+      '<div class="brain-caption"><strong>Brain view</strong> \\u2014 every connection (same kind, same domain, ' +
+      'proven to combine in an Opportunity) bundled into one living mesh; a probe circles it gathering ideas into ' +
+      'the report below, pausing to show readiness on ones with real evidence behind them. Click anywhere to open it.</div>' +
+      '<div id="brain-report"><h3>Scanning\\u2026</h3><div id="brain-report-lines"></div></div>' +
+      '<div id="brain-constellation"><div class="opp-kind"></div><div class="opp-title"></div><div class="opp-conf"></div></div>' +
+      '<div id="brain-hint">Click the brain to open it \\u00b7 click a circle once open to jump to it</div>';
+
+    function evidence(n) {
+      var k = itemKey(n);
+      return (n.attachments && n.attachments.length ? 1 : 0) + (n.snippet ? 1 : 0) + (oppCountByKey[k] || 0) * 1.6;
+    }
+
+    var byKey = {};
+    data.nodes.forEach(function (n) { byKey[itemKey(n)] = n; });
+
+    // project-filtered (not origin-filtered, matching renderOpportunitiesView's
+    // convention) so a signal link only needs BOTH its endpoints to still be
+    // present among the current (origin-filtered) leaves -- checked per-pair
+    // below via byIdeaId, not by discarding the whole opportunity.
+    var opps = (DATA.opportunities || []).filter(opportunityMatchesProjectFilter);
+    var oppCountByKey = {};
+    opps.forEach(function (opp) {
+      (opp.ideaIds || []).forEach(function (k) { if (byKey[k]) oppCountByKey[k] = (oppCountByKey[k] || 0) + 1; });
+    });
+
+    var domains = Array.from(new Set(data.nodes.map(function (n) { return n.domain; }))).sort();
+    var domainColor = d3.scaleOrdinal().domain(domains).range([
+      '#e05a9a', '#e8b23d', '#3bb0a8', '#3b6fd6', '#c9432c', '#2f9e5e', '#8b5cd6',
+      '#e07a3b', '#4fa8e0', '#c94fa0', '#7abf5e', '#d6c53b', '#5e7ac9', '#c96f5e',
+    ]);
+
+    var hierarchyData = {
+      name: 'root',
+      children: domains.map(function (dom) {
+        return {
+          name: dom,
+          children: data.nodes.filter(function (n) { return n.domain === dom; }).map(function (n) {
+            return { name: itemKey(n), idea: n };
+          }),
+        };
+      }),
+    };
+
+    var mountEl = document.getElementById('brain-viz');
+    var width = mount.clientWidth || 800;
+    var height = mount.clientHeight || 600;
+    var cx = width / 2, cy = height / 2;
+    var outerR = Math.max(60, Math.min(width, height) / 2 - 60);
+
+    var root = d3.hierarchy(hierarchyData);
+    var cluster = d3.cluster().size([2 * Math.PI, outerR]);
+    cluster(root);
+
+    var leaves = root.leaves();
+    var byIdeaId = {};
+    leaves.forEach(function (l) { byIdeaId[itemKey(l.data.idea)] = l; });
+
+    var linkSet = {}, localPairs = [], signalPairs = [];
+    domains.forEach(function (dom) {
+      var domLeaves = leaves.filter(function (l) { return l.data.idea.domain === dom; });
+      for (var i = 0; i < domLeaves.length; i++) {
+        for (var j = i + 1; j < domLeaves.length; j++) localPairs.push([domLeaves[i], domLeaves[j], 'local']);
+      }
+    });
+    opps.forEach(function (opp) {
+      var ids = (opp.ideaIds || []).filter(function (k) { return byIdeaId[k]; });
+      for (var i = 0; i < ids.length; i++) {
+        for (var j = i + 1; j < ids.length; j++) {
+          var a = ids[i], b = ids[j];
+          var key = [a, b].sort().join('|');
+          if (linkSet[key]) continue;
+          linkSet[key] = true;
+          signalPairs.push([byIdeaId[a], byIdeaId[b], 'signal', opp.id]);
+        }
+      }
+    });
+    var byKind = {};
+    leaves.forEach(function (l) { (byKind[l.data.idea.kind] = byKind[l.data.idea.kind] || []).push(l); });
+    var kinshipPairs = [];
+    Object.keys(byKind).forEach(function (k) {
+      var group = byKind[k];
+      for (var i = 0; i < group.length; i++) {
+        kinshipPairs.push([group[i], group[(i + 1) % group.length], 'kinship']);
+        if (group.length > 3) kinshipPairs.push([group[i], group[(i + 2) % group.length], 'kinship']);
+      }
+    });
+    var pairs = kinshipPairs.concat(localPairs);
+
+    var tagSetOf = {};
+    data.nodes.forEach(function (n) { tagSetOf[itemKey(n)] = n.tags || []; });
+    function sharedTagCount(aId, bId) {
+      var a = tagSetOf[aId] || [], b = tagSetOf[bId] || [], c = 0;
+      for (var i = 0; i < a.length; i++) if (b.indexOf(a[i]) !== -1) c++;
+      return c;
+    }
+    var oppCoCount = {};
+    opps.forEach(function (opp) {
+      var ids = (opp.ideaIds || []).filter(function (k) { return byIdeaId[k]; });
+      for (var i = 0; i < ids.length; i++) {
+        for (var j = i + 1; j < ids.length; j++) {
+          var k2 = [ids[i], ids[j]].sort().join('|');
+          oppCoCount[k2] = (oppCoCount[k2] || 0) + 1;
+        }
+      }
+    });
+    var signalMeta = signalPairs.map(function (pr) {
+      var aId = itemKey(pr[0].data.idea), bId = itemKey(pr[1].data.idea);
+      var weight = (oppCoCount[[aId, bId].sort().join('|')] || 1) + sharedTagCount(aId, bId);
+      return { weight: weight, pulses: Math.max(1, Math.min(4, weight)) };
+    });
+
+    var svg = d3.select(mountEl).attr('viewBox', [0, 0, width, height]).attr('width', '100%').attr('height', '100%');
+    var g = svg.append('g').attr('transform', 'translate(' + cx + ',' + cy + ')');
+
+    var rimG = g.append('g');
+    domains.forEach(function (dom) {
+      var domLeaves = leaves.filter(function (l) { return l.data.idea.domain === dom; });
+      if (!domLeaves.length) return;
+      var a0 = d3.min(domLeaves, function (l) { return l.x; }) - 0.01;
+      var a1 = d3.max(domLeaves, function (l) { return l.x; }) + 0.01;
+      var arc = d3.arc().innerRadius(outerR + 14).outerRadius(outerR + 14).startAngle(a0).endAngle(a1);
+      var avgEvidence = d3.mean(domLeaves, function (l) { return evidence(l.data.idea); });
+      var brightness = Math.min(1, avgEvidence / 2.2);
+      var color = domainColor(dom);
+      var arcEl = rimG.append('path').attr('class', 'rim-arc').attr('d', arc())
+        .attr('stroke', color)
+        .attr('stroke-width', 2 + brightness * 7)
+        .attr('opacity', 0.16 + brightness * 0.84)
+        .style('filter', brightness > 0.25 ? 'drop-shadow(0 0 ' + (2 + brightness * 9) + 'px ' + color + ')' : 'none');
+      if (brightness > 0.25) {
+        (function loopBreath() {
+          if (!alive) return;
+          arcEl.transition().duration(1400 + Math.random() * 600).attr('opacity', 0.16 + brightness * 0.5)
+            .transition().duration(1400 + Math.random() * 600).attr('opacity', 0.16 + brightness * 0.84)
+            .on('end', loopBreath);
+        })();
+      }
+    });
+
+    var linkG = g.append('g');
+    var line = d3.lineRadial().angle(function (d) { return d.x; }).radius(function (d) { return d.y; }).curve(d3.curveBundle.beta(0.82));
+
+    function linkType(d) { return d[2]; }
+    var LINK_STYLE = {
+      kinship: { color: function (d) { return DATA.kindColor[d[0].data.idea.kind] || '#8a8f98'; }, width: 0.8, opacity: 0.32 },
+      local: { color: function (d) { return domainColor(d[0].data.idea.domain); }, width: 1.1, opacity: 0.4 },
+      signal: { color: function () { return '#ffe08c'; }, width: 2, opacity: 0.7 },
+    };
+    var linkPaths = linkG.selectAll('path').data(pairs).join('path')
+      .attr('class', 'bundle-link')
+      .attr('stroke', function (d) { return LINK_STYLE[linkType(d)].color(d); })
+      .attr('stroke-width', function (d) { return LINK_STYLE[linkType(d)].width; })
+      .attr('opacity', function (d) { return LINK_STYLE[linkType(d)].opacity; });
+
+    var signalPathSel = linkG.selectAll('path.signal').data(signalPairs).join('path')
+      .attr('class', 'bundle-link signal')
+      .attr('stroke', LINK_STYLE.signal.color())
+      .attr('stroke-width', LINK_STYLE.signal.width)
+      .attr('opacity', LINK_STYLE.signal.opacity);
+    var signalPathNodes = signalPathSel.nodes();
+
+    var pulseLayer = g.append('g');
+    var pulses = [];
+    signalMeta.forEach(function (meta, idx) {
+      for (var k = 0; k < meta.pulses; k++) {
+        ['fwd', 'back'].forEach(function (dir) {
+          pulses.push({
+            pathIndex: idx, dir: dir, phase: Math.random(), speed: 0.00028 + Math.random() * 0.00018,
+            el: pulseLayer.append('circle').attr('r', 2.6).attr('fill', '#fff3d0')
+              .style('filter', 'drop-shadow(0 0 5px #ffe08c) drop-shadow(0 0 2px #fff3d0)'),
+          });
+        });
+      }
+    });
+
+    function leafXY(l, r) {
+      var rad = r !== undefined ? r : l.y;
+      var ang = l.x - Math.PI / 2;
+      return [Math.cos(ang) * rad, Math.sin(ang) * rad];
+    }
+
+    var nodeG = g.append('g');
+    var nodeSel = nodeG.selectAll('circle').data(leaves).join('circle')
+      .attr('class', 'brain-leaf')
+      .attr('r', function (l) { return 2 + Math.min(evidence(l.data.idea), 6); })
+      .attr('fill', function (l) { return DATA.kindColor[l.data.idea.kind] || '#8a8f98'; })
+      .attr('fill-opacity', 0.55)
+      .attr('stroke', function (l) { return originColor(l.data.idea); })
+      .attr('stroke-width', 1);
+
+    var labelSel = nodeG.selectAll('text').data(leaves).join('text')
+      .attr('class', 'brain-leaf-label').attr('opacity', 0)
+      .text(function (l) { return l.data.idea.title.length > 30 ? l.data.idea.title.slice(0, 28) + '\\u2026' : l.data.idea.title; });
+
+    function positionNodes() {
+      nodeSel.attr('transform', function (l) { var p = leafXY(l); return 'translate(' + p[0] + ',' + p[1] + ')'; });
+      labelSel.attr('transform', function (l) {
+        var p = leafXY(l, l.y + 8);
+        var deg = (l.x * 180 / Math.PI) - 90;
+        var flip = l.x > Math.PI;
+        return 'translate(' + p[0] + ',' + p[1] + ') rotate(' + (flip ? deg + 180 : deg) + ')';
+      }).attr('text-anchor', function (l) { return l.x > Math.PI ? 'end' : 'start'; });
+    }
+
+    var opened = false, beta = 0.82;
+
+    function bundlePath(d, t) {
+      var path = d[0].path(d[1]).map(function (node, i) {
+        var wob = opened ? 0 : Math.sin(t * 0.0009 + i) * 0.012;
+        return { x: node.x + wob, y: node.y };
+      });
+      return line(path);
+    }
+
+    function render(t) {
+      line.curve(d3.curveBundle.beta(beta));
+      linkPaths.attr('d', function (d) { return bundlePath(d, t); });
+      signalPathSel.attr('d', function (d) { return bundlePath(d, t); });
+      positionNodes();
+      updatePulses(t);
+    }
+
+    function updatePulses(t) {
+      pulses.forEach(function (p) {
+        var pathEl = signalPathNodes[p.pathIndex];
+        if (!pathEl) return;
+        var len = pathEl.getTotalLength();
+        if (!len) return;
+        var phase = (p.phase + t * p.speed) % 1;
+        var frac = p.dir === 'fwd' ? phase : 1 - phase;
+        var pt = pathEl.getPointAtLength(frac * len);
+        p.el.attr('cx', pt.x).attr('cy', pt.y)
+          .attr('opacity', opened ? 0.15 : (0.55 + 0.45 * Math.sin(phase * Math.PI)));
+      });
+    }
+
+    // ---- scanning probe (old-tin-robot) + report ----
+    var reportLines = document.getElementById('brain-report-lines');
+    var reportedThisLap = {};
+    var lapCount = 0;
+    var MAX_LINES = 10;
+
+    function addReportLine(html) {
+      var div = document.createElement('div');
+      div.className = 'line';
+      div.innerHTML = html;
+      reportLines.insertBefore(div, reportLines.firstChild);
+      while (reportLines.children.length > MAX_LINES) reportLines.removeChild(reportLines.lastChild);
+    }
+
+    var templates = [
+      function (n) { return 'Passing <b>' + escapeHtml(n.domain) + '</b> \\u2014 "' + escapeHtml(n.title) + '" (' + escapeHtml(n.kind) + ')'; },
+      function (n) { return escapeHtml(n.kind) + ' from ' + escapeHtml(originLabel(n)) + ': "' + escapeHtml(n.title) + '"'; },
+      function (n) { return 'Signal in <b>' + escapeHtml(n.domain) + '</b>: ' + escapeHtml(n.title.toLowerCase()); },
+    ];
+
+    var probeAngle = 0;
+    var probeR = outerR + 30;
+    var METAL = '#9aab97', METAL_DARK = '#5c6b63', LIGHT = '#ffe08c', LIGHT_BRIGHT = '#fff3d0';
+
+    var TRAIL_LEN = 16;
+    var trailG = g.append('g');
+    var trailPts = [];
+    var trailEls = [];
+    for (var ti = 0; ti < TRAIL_LEN; ti++) trailEls.push(trailG.append('circle').attr('r', 0).attr('fill', LIGHT).attr('opacity', 0));
+
+    var robot = g.append('g').attr('class', 'robot');
+    robot.append('circle').attr('r', 15).attr('cy', -13).attr('fill', 'rgba(255,224,140,0.16)');
+    robot.append('line').attr('x1', 0).attr('y1', -23).attr('x2', 0).attr('y2', -27).attr('stroke', METAL_DARK).attr('stroke-width', 1.3);
+    robot.append('circle').attr('r', 1.6).attr('cy', -27.5).attr('fill', LIGHT).style('filter', 'drop-shadow(0 0 4px #ffe08c)');
+    robot.append('rect').attr('x', -5).attr('y', -23).attr('width', 10).attr('height', 8).attr('rx', 1).attr('fill', METAL).attr('stroke', METAL_DARK).attr('stroke-width', 1);
+    var eyeL = robot.append('rect').attr('x', -3.2).attr('y', -20.5).attr('width', 2.4).attr('height', 2.4).attr('fill', LIGHT).style('filter', 'drop-shadow(0 0 3px #ffe08c)');
+    var eyeR = robot.append('rect').attr('x', 0.8).attr('y', -20.5).attr('width', 2.4).attr('height', 2.4).attr('fill', LIGHT).style('filter', 'drop-shadow(0 0 3px #ffe08c)');
+    robot.append('rect').attr('x', -1.3).attr('y', -15).attr('width', 2.6).attr('height', 2).attr('fill', METAL_DARK);
+    robot.append('rect').attr('x', -5.5).attr('y', -13).attr('width', 11).attr('height', 13).attr('rx', 1.5).attr('fill', METAL).attr('stroke', METAL_DARK).attr('stroke-width', 1);
+    robot.append('circle').attr('r', 1.8).attr('cy', -7).attr('fill', LIGHT).attr('opacity', 0.85);
+    robot.append('circle').attr('r', 0.8).attr('cx', -3.5).attr('cy', -3).attr('fill', METAL_DARK);
+    robot.append('circle').attr('r', 0.8).attr('cx', 3.5).attr('cy', -3).attr('fill', METAL_DARK);
+
+    var armL = robot.append('line').attr('stroke', METAL).attr('stroke-width', 2.6).attr('stroke-linecap', 'square');
+    var armR = robot.append('line').attr('stroke', METAL).attr('stroke-width', 2.6).attr('stroke-linecap', 'square');
+    var elbowL = robot.append('circle').attr('r', 1.3).attr('fill', METAL_DARK);
+    var elbowR = robot.append('circle').attr('r', 1.3).attr('fill', METAL_DARK);
+    var handL = robot.append('circle').attr('r', 2.4).attr('fill', LIGHT_BRIGHT).style('filter', 'drop-shadow(0 0 4px #ffe08c)');
+    var handR = robot.append('circle').attr('r', 2.4).attr('fill', LIGHT_BRIGHT).style('filter', 'drop-shadow(0 0 4px #ffe08c)');
+    var legL = robot.append('line').attr('stroke', METAL).attr('stroke-width', 2.8).attr('stroke-linecap', 'square');
+    var legR = robot.append('line').attr('stroke', METAL).attr('stroke-width', 2.8).attr('stroke-linecap', 'square');
+    var kneeL = robot.append('circle').attr('r', 1.3).attr('fill', METAL_DARK);
+    var kneeR = robot.append('circle').attr('r', 1.3).attr('fill', METAL_DARK);
+    var footL = robot.append('rect').attr('width', 5).attr('height', 2.4).attr('fill', METAL_DARK).attr('rx', 0.6);
+    var footR = robot.append('rect').attr('width', 5).attr('height', 2.4).attr('fill', METAL_DARK).attr('rx', 0.6);
+
+    var pctLabel = robot.append('text').attr('class', 'pct-label')
+      .attr('text-anchor', 'middle').attr('font-size', 10).attr('font-weight', 700)
+      .attr('fill', LIGHT_BRIGHT).style('paint-order', 'stroke').style('stroke', '#070c0a').style('stroke-width', '3px')
+      .attr('opacity', 0);
+
+    // Minimal angular distance, 0..PI -- NOT `Math.abs(a - b)` alone, which
+    // breaks across the 0/2*PI wrap point.
+    function angleDist(a, b) {
+      var raw = Math.abs(a - b) % (Math.PI * 2);
+      return raw > Math.PI ? Math.PI * 2 - raw : raw;
+    }
+
+    function limbEnd(pivotY, angRad, len) { return [Math.sin(angRad) * len, pivotY + Math.cos(angRad) * len]; }
+    function placeFoot(rectSel, end, angRad) {
+      rectSel.attr('transform', 'translate(' + end[0] + ',' + end[1] + ') rotate(' + (angRad * 180 / Math.PI) + ') translate(-2.5,-1.2)');
+    }
+
+    var shoulderY = -12, hipY = -1, armLen = 9, legLen = 10;
+    function poseRobot(runPhase) {
+      var swing = Math.sin(runPhase);
+      var armSwing = swing * 0.9, legSwing = swing * 0.65;
+      var aL = limbEnd(shoulderY, armSwing, armLen), aR = limbEnd(shoulderY, -armSwing, armLen);
+      var lL = limbEnd(hipY, -legSwing, legLen), lR = limbEnd(hipY, legSwing, legLen);
+      armL.attr('x1', 0).attr('y1', shoulderY).attr('x2', aL[0]).attr('y2', aL[1]);
+      armR.attr('x1', 0).attr('y1', shoulderY).attr('x2', aR[0]).attr('y2', aR[1]);
+      elbowL.attr('cx', aL[0] * 0.55).attr('cy', shoulderY + (aL[1] - shoulderY) * 0.55);
+      elbowR.attr('cx', aR[0] * 0.55).attr('cy', shoulderY + (aR[1] - shoulderY) * 0.55);
+      handL.attr('cx', aL[0]).attr('cy', aL[1]);
+      handR.attr('cx', aR[0]).attr('cy', aR[1]);
+      legL.attr('x1', 0).attr('y1', hipY).attr('x2', lL[0]).attr('y2', lL[1]);
+      legR.attr('x1', 0).attr('y1', hipY).attr('x2', lR[0]).attr('y2', lR[1]);
+      kneeL.attr('cx', lL[0] * 0.55).attr('cy', hipY + (lL[1] - hipY) * 0.55);
+      kneeR.attr('cx', lR[0] * 0.55).attr('cy', hipY + (lR[1] - hipY) * 0.55);
+      placeFoot(footL, lL, -legSwing);
+      placeFoot(footR, lR, legSwing);
+      return Math.abs(swing) * 2.2;
+    }
+    function poseIdle(t) {
+      poseRobot(0);
+      var shimmer = 0.75 + 0.25 * Math.sin(t * 0.006);
+      eyeL.attr('opacity', shimmer); eyeR.attr('opacity', shimmer);
+      return 0;
+    }
+
+    var readiness = {};
+    data.nodes.forEach(function (n) { readiness[itemKey(n)] = Math.round(Math.min(1, evidence(n) / 4) * 100); });
+
+    var stopUntilTs = -1;
+    var showingPct = false;
+    var rafId = null;
+
+    function tick(t) {
+      if (!alive) return;
+      if (!opened) {
+        var stopped = t < stopUntilTs;
+        if (!stopped) {
+          probeAngle += 0.004;
+          if (probeAngle > Math.PI * 2) { probeAngle -= Math.PI * 2; lapCount++; reportedThisLap = {}; summarizeLap(); }
+          if (showingPct) { showingPct = false; pctLabel.transition().duration(250).attr('opacity', 0); }
+        }
+        var pp = leafXY({ x: probeAngle, y: 1 }, probeR);
+        var facingDeg = probeAngle * 180 / Math.PI;
+        var bounce = stopped ? poseIdle(t) : poseRobot(t * 0.014);
+        robot.attr('transform', 'translate(' + pp[0] + ',' + (pp[1] + bounce) + ') rotate(' + facingDeg + ')').attr('opacity', 1);
+        pctLabel.attr('transform', 'translate(0,-32) rotate(' + (-facingDeg) + ')');
+
+        if (!stopped) {
+          trailPts.unshift([pp[0], pp[1] + bounce]);
+          if (trailPts.length > TRAIL_LEN) trailPts.length = TRAIL_LEN;
+        }
+        trailEls.forEach(function (el, i) {
+          var pt = trailPts[i];
+          if (!pt) { el.attr('opacity', 0); return; }
+          var frac = 1 - i / TRAIL_LEN;
+          el.attr('cx', pt[0]).attr('cy', pt[1]).attr('r', 3.2 * frac).attr('opacity', 0.5 * frac * frac);
+        });
+
+        if (!stopped) {
+          leaves.forEach(function (l) {
+            var near = angleDist(l.x, probeAngle) < 0.035;
+            var key = itemKey(l.data.idea);
+            if (!near || reportedThisLap[key]) return;
+            reportedThisLap[key] = true;
+            var tmpl = templates[Math.floor(Math.random() * templates.length)];
+            addReportLine(tmpl(l.data.idea));
+            d3.select(nodeSel.nodes()[leaves.indexOf(l)]).attr('fill-opacity', 1).transition().duration(1200).attr('fill-opacity', 0.55);
+
+            var pct = readiness[key];
+            if (pct > 0) {
+              stopUntilTs = t + 1100;
+              showingPct = true;
+              pctLabel.text(pct + '% ready').transition().duration(150).attr('opacity', 1);
+            }
+          });
+        }
+      } else {
+        robot.attr('opacity', 0);
+        if (trailPts.length) { trailPts.length = 0; trailEls.forEach(function (el) { el.attr('opacity', 0); }); }
+      }
+      render(t);
+      rafId = requestAnimationFrame(tick);
+    }
+
+    function summarizeLap() {
+      var byKindCount = {};
+      data.nodes.forEach(function (n) { byKindCount[n.kind] = (byKindCount[n.kind] || 0) + 1; });
+      var top = Object.keys(byKindCount).sort(function (a, b) { return byKindCount[b] - byKindCount[a]; })[0];
+      document.querySelector('#brain-report h3').textContent = 'Lap ' + lapCount + ' complete \\u2014 ' + data.nodes.length + ' ideas \\u00b7 ' + domains.length + ' domains \\u00b7 mostly ' + top;
+    }
+
+    var oppCycleIndex = 0;
+    var constellationHideTimer = null;
+    function revealConstellation() {
+      if (!alive || !opps.length) return;
+      var opp = opps[oppCycleIndex % opps.length];
+      oppCycleIndex++;
+      var memberIds = {};
+      (opp.ideaIds || []).forEach(function (id) { memberIds[id] = true; });
+
+      nodeSel.filter(function (l) { return memberIds[itemKey(l.data.idea)]; })
+        .transition().duration(350).attr('r', function (l) { return (5 + Math.min(evidence(l.data.idea), 6)) * 1.7; }).attr('fill-opacity', 1)
+        .transition().delay(1700).duration(600)
+        .attr('r', function (l) { return 2 + Math.min(evidence(l.data.idea), 6); }).attr('fill-opacity', 0.55);
+
+      signalPathSel.filter(function (d) { return d[3] === opp.id; })
+        .transition().duration(350).attr('stroke-width', 4.5).attr('opacity', 1)
+        .transition().delay(1700).duration(600).attr('stroke-width', LINK_STYLE.signal.width).attr('opacity', LINK_STYLE.signal.opacity);
+
+      var box = d3.select('#brain-constellation');
+      box.select('.opp-kind').text((DATA.opportunityKindLabel && DATA.opportunityKindLabel[opp.kind]) || opp.kind.replace('-', ' '));
+      box.select('.opp-title').text(opp.title);
+      box.select('.opp-conf').text(Math.round(opp.weight * 100) + '% confidence \\u00b7 built from ' + (opp.ideaIds || []).length + ' ideas');
+      box.style('opacity', 1);
+      clearTimeout(constellationHideTimer);
+      constellationHideTimer = setTimeout(function () { if (alive) box.style('opacity', 0); }, 2600);
+    }
+
+    var revealIntervalId = null;
+    var revealStartTimer = setTimeout(function () {
+      if (!alive) return;
+      revealIntervalId = setInterval(function () { if (!opened) revealConstellation(); }, 6000);
+    }, 2500);
+    if (!opened) revealConstellation();
+
+    rafId = requestAnimationFrame(tick);
+
+    function animateBeta(to, ms) {
+      var from = beta, start = null;
+      function step(ts) {
+        if (!alive) return;
+        if (start === null) start = ts;
+        var p = Math.min(1, (ts - start) / ms);
+        beta = from + (to - from) * (1 - Math.pow(1 - p, 3));
+        if (p < 1) requestAnimationFrame(step);
+      }
+      requestAnimationFrame(step);
+    }
+
+    svg.on('click', function (event) {
+      if (event.target.tagName === 'circle' && event.target.__data__ && event.target.__data__.data) return;
+      opened = !opened;
+      animateBeta(opened ? 0.15 : 0.82, 900);
+      labelSel.transition().duration(opened ? 700 : 200).delay(opened ? 300 : 0).attr('opacity', opened ? 1 : 0);
+      nodeSel.transition().duration(500).attr('r', function (l) { return opened ? 5 + Math.min(evidence(l.data.idea), 6) * 1.3 : 2 + Math.min(evidence(l.data.idea), 6); });
+      linkPaths.transition().duration(700).attr('opacity', function (d) {
+        var base = LINK_STYLE[linkType(d)].opacity;
+        return opened ? base * 0.35 : base;
+      });
+      signalPathSel.transition().duration(700).attr('opacity', opened ? LINK_STYLE.signal.opacity * 0.5 : LINK_STYLE.signal.opacity);
+      var reportEl = document.getElementById('brain-report');
+      if (reportEl) reportEl.style.display = opened ? 'none' : 'block';
+    });
+
+    nodeSel.on('click', function (event, l) {
+      if (!opened) return;
+      event.stopPropagation();
+      switchTab('graph');
+      var key = itemKey(l.data.idea);
+      setTimeout(function () { focusItem(key); }, 0);
+    });
+
+    brainCleanup = function cleanup() {
+      alive = false;
+      if (rafId !== null) cancelAnimationFrame(rafId);
+      clearTimeout(revealStartTimer);
+      if (revealIntervalId !== null) clearInterval(revealIntervalId);
+      clearTimeout(constellationHideTimer);
+    };
+  }
+
   // ---- dropdown + tab wiring ----
   var VIEWS = { radial: renderRadialTree, force: renderForceClusters };
   var currentCleanup = null;
@@ -1372,17 +2004,21 @@ _JS = """
   var activeTab = 'graph';
   function switchTab(name) {
     if (name === activeTab) return;
+    if (activeTab === 'brain' && brainCleanup) { brainCleanup(); brainCleanup = null; }
     activeTab = name;
     document.querySelectorAll('.tab-btn').forEach(function (b) { b.classList.toggle('active', b.dataset.tab === name); });
     document.getElementById('graph-main').hidden = name !== 'graph';
     document.getElementById('stats-main').hidden = name !== 'stats';
     document.getElementById('opportunities-main').hidden = name !== 'opportunities';
+    document.getElementById('brain-main').hidden = name !== 'brain';
     select.style.display = name === 'graph' ? '' : 'none';
     descEl.hidden = name !== 'graph';
     if (name === 'stats') {
       renderStatsView();
     } else if (name === 'opportunities') {
       renderOpportunitiesView();
+    } else if (name === 'brain') {
+      renderBrainView();
     } else if (!currentCleanup && filteredData().nodes.length) {
       switchView(select.value);
     }
@@ -1399,11 +2035,11 @@ _JS = """
       if (on && color) {
         b.style.background = color + '29'; // ~16% alpha, hex shorthand
         b.style.borderColor = color;
-        b.style.color = '#eef3ea';
+        b.style.color = 'var(--fg)';
       } else if (on) {
-        b.style.background = 'rgba(255,255,255,0.14)';
-        b.style.borderColor = 'rgba(255,255,255,0.3)';
-        b.style.color = '#eef3ea';
+        b.style.background = 'rgba(var(--overlay-rgb),0.14)';
+        b.style.borderColor = 'rgba(var(--overlay-rgb),0.3)';
+        b.style.color = 'var(--fg)';
       } else {
         b.style.background = '';
         b.style.borderColor = '';
@@ -1415,6 +2051,7 @@ _JS = """
   function refreshActiveTab() {
     if (activeTab === 'stats') renderStatsView();
     else if (activeTab === 'opportunities') renderOpportunitiesView();
+    else if (activeTab === 'brain') renderBrainView();
     else switchView(select.value);
   }
 
@@ -1442,7 +2079,31 @@ _JS = """
   window.addEventListener('resize', function () {
     if (activeTab === 'graph') switchView(select.value);
     else if (activeTab === 'stats') renderStatsView();
+    else if (activeTab === 'brain') renderBrainView();
   });
+
+  // ---- day/night theme toggle: localStorage persists an explicit choice;
+  // absent that, prefers-color-scheme decides. The actual [data-theme]
+  // attribute is already set by a tiny inline script in <head> (before
+  // this script runs, before first paint) -- this just wires the button
+  // and keeps localStorage in sync with further clicks. ----
+  var themeToggle = document.getElementById('theme-toggle');
+  if (themeToggle) {
+    function currentTheme() { return document.documentElement.getAttribute('data-theme') === 'light' ? 'light' : 'dark'; }
+    function setThemeIcon() { themeToggle.textContent = currentTheme() === 'light' ? '\\u2600' : '\\u263e'; }
+    setThemeIcon();
+    themeToggle.addEventListener('click', function () {
+      var next = currentTheme() === 'light' ? 'dark' : 'light';
+      document.documentElement.setAttribute('data-theme', next);
+      try { localStorage.setItem('brainny-theme', next); } catch (e) { /* private browsing etc -- theme just won't persist */ }
+      setThemeIcon();
+      // most chrome colors are CSS vars and update instantly via the
+      // cascade, but a few (graph link strokes/labels) are baked into an
+      // SVG attribute at render time via cssVar() -- re-render the
+      // current tab so those pick up the new theme's resolved colors too.
+      refreshActiveTab();
+    });
+  }
 })();
 """
 
@@ -1450,7 +2111,10 @@ _JS = """
 def render_html(graph: Graph, opportunities: Opportunities | None = None, title: str = "brainny") -> str:
     """Render graph.json (+ opportunities.json) as a navigable dashboard
     (D3, vendored inline — see `_D3_JS` above, no CDN/network dependency)
-    with three tabs. Graph tab: a dropdown switches between a radial tree
+    with four tabs, and a day/night theme toggle (top-right of the header)
+    that applies to all of them — an explicit choice persists via
+    localStorage, defaulting to the OS's prefers-color-scheme; the light
+    palette is a soft warm tone deliberately, not stark white. Graph tab: a dropdown switches between a radial tree
     (domains branching from a center, ideas as rim leaves) and a
     force-directed network with a colored halo per domain group, alongside
     an itemized accordion list (click a title to unfold
@@ -1467,9 +2131,21 @@ def render_html(graph: Graph, opportunities: Opportunities | None = None, title:
     of ideas that could support each other toward something bigger (a
     tool, website, statistical module, business idea) — see
     opportunities.py/SEED.md principle #1; empty and hidden when there are
-    none, since most projects won't have any. Falls back to the plain
-    terminal tree in the (now near-impossible) case the embedded D3 fails
-    to execute. No server involved — a static, self-contained,
+    none, since most projects won't have any. Brain tab: every idea as a
+    hierarchical edge-bundled mesh that resolves into a living brain
+    silhouette (no literal neuron dots) — kinship (same kind), local
+    (same domain), and signal (proven to combine in an Opportunity, the
+    brightest layer, with animated bidirectional synapse pulses) links
+    layered together; an old-robot probe circles it continuously,
+    stopping to show a percent-ready readout on ideas with real evidence
+    behind them, and gathering a live scrolling report as it passes.
+    Click anywhere to open the mesh into real, labeled, clickable idea
+    circles — clicking one jumps to it in the Graph tab's list, same as
+    every other view. See renderBrainView() in the JS below for exactly
+    how this differs from the standalone prototype it was ported from
+    (examples/viz-prototypes/12-neural-bundle.html). Falls back to the
+    plain terminal tree in the (now near-impossible) case the embedded D3
+    fails to execute. No server involved — a static, self-contained,
     git-shareable file that renders identically with zero network
     access."""
     if opportunities is None:
@@ -1506,7 +2182,7 @@ def render_html(graph: Graph, opportunities: Opportunities | None = None, title:
     if multi_project:
         project_options = "".join(f'<option value="{_esc(p)}">{_esc(p)}</option>' for p in projects)
         project_filter_html = (
-            '<label for="project-filter" style="color:#9aab97;font-size:0.82rem">project</label>'
+            '<label for="project-filter" style="color:var(--text-dimmer);font-size:0.82rem">project</label>'
             f'<select id="project-filter"><option value="all">All ({len(projects)})</option>{project_options}</select>'
         )
 
@@ -1533,6 +2209,21 @@ def render_html(graph: Graph, opportunities: Opportunities | None = None, title:
 <title>{_esc(title)}</title>
 <link rel="icon" type="image/png" href="data:image/png;base64,{_ICON_PNG_B64}">
 <style>{_CSS}</style>
+<script>
+// Sets [data-theme] before first paint -- an explicit prior choice
+// (localStorage) wins, otherwise prefers-color-scheme decides. Runs
+// synchronously in <head> specifically to avoid a flash of the wrong
+// theme; see #theme-toggle's wiring at the end of the main script for
+// what happens on further clicks.
+(function () {{
+  var saved = null;
+  try {{ saved = localStorage.getItem('brainny-theme'); }} catch (e) {{ /* private browsing etc */ }}
+  var theme = saved === 'light' || saved === 'dark'
+    ? saved
+    : (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
+  document.documentElement.setAttribute('data-theme', theme);
+}})();
+</script>
 </head>
 """
 
@@ -1545,11 +2236,13 @@ def render_html(graph: Graph, opportunities: Opportunities | None = None, title:
       <button type="button" class="tab-btn active" data-tab="graph">Graph</button>
       <button type="button" class="tab-btn" data-tab="stats">Stats</button>
       <button type="button" class="tab-btn" data-tab="opportunities">Opportunities{f' ({len(opportunities.items)})' if opportunities.items else ''}</button>
+      <button type="button" class="tab-btn" data-tab="brain">Brain</button>
     </nav>
     <select id="view-select">
       <option value="radial">Radial tree</option>
       <option value="force">Force network with cluster halos</option>
     </select>
+    <button type="button" id="theme-toggle" title="Toggle day/night theme" aria-label="Toggle day/night theme">&#9789;</button>
   </div>
   <div class="row" style="margin-top:0.5rem">
     <nav id="origin-filter">{origin_filter_html}</nav>
@@ -1570,6 +2263,7 @@ def render_html(graph: Graph, opportunities: Opportunities | None = None, title:
 </main>
 <main id="stats-main" hidden></main>
 <main id="opportunities-main" hidden></main>
+<main id="brain-main" hidden></main>
 <div id="tooltip"></div>
 <pre id="fallback" hidden>{_esc(render_tree(graph))}</pre>
 <script id="brainny-data" type="application/json">"""

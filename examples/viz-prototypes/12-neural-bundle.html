@@ -1,0 +1,630 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>12. Neural Bundle</title>
+<link rel="stylesheet" href="shared.css">
+<style>
+  body { padding: 0; overflow: hidden; height: 100vh; }
+  header { position: fixed; top: 0; left: 0; right: 0; z-index: 5; padding: 1rem 1.4rem 0.6rem;
+    background: linear-gradient(180deg, rgba(6,10,8,0.94), rgba(6,10,8,0)); pointer-events: none; }
+  header a, header h1, header p { pointer-events: auto; }
+  h1 { font-size: 1.15rem; }
+  p.desc { max-width: 640px; }
+  svg { display: block; position: fixed; inset: 0; }
+  .bundle-link { fill: none; mix-blend-mode: screen; }
+  .rim-arc { fill: none; stroke-width: 5; opacity: 0.85; }
+  .leaf { cursor: pointer; }
+  .leaf-label { font-size: 9px; fill: rgba(238,243,234,0.85); pointer-events: none; }
+  #report {
+    position: fixed; left: 1.2rem; bottom: 1.2rem; z-index: 6; width: 340px; max-height: 260px;
+    background: rgba(9,15,12,0.88); border: 1px solid rgba(255,255,255,0.1); border-radius: 10px;
+    padding: 0.7rem 0.85rem; font-size: 0.74rem; color: #c9d3c6; overflow: hidden;
+  }
+  #report h3 { margin: 0 0 0.4rem; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.04em; color: #e8b23d; }
+  #report .line { padding: 0.12rem 0; border-bottom: 1px dashed rgba(255,255,255,0.06); opacity: 0; animation: fadeIn 0.4s forwards; }
+  #report .summary-line { color: #8fd67a; font-weight: 600; }
+  @keyframes fadeIn { to { opacity: 1; } }
+  #constellation {
+    position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 4;
+    text-align: center; pointer-events: none; opacity: 0; transition: opacity 0.4s ease;
+    background: rgba(9,15,12,0.8); border: 1px solid rgba(255,224,140,0.3); border-radius: 12px;
+    padding: 0.7rem 1.3rem; max-width: 420px;
+  }
+  #constellation .opp-kind { font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.05em; color: #e8b23d; }
+  #constellation .opp-title { font-size: 1rem; font-weight: 700; color: #fff3d0; margin: 0.15rem 0; }
+  #constellation .opp-conf { font-size: 0.76rem; color: #8fa08c; }
+  #hint { position: fixed; bottom: 1rem; right: 1.4rem; z-index: 5; font-size: 0.74rem; color: #5c6b63; text-align: right; }
+  #panel {
+    position: fixed; top: 0; right: 0; bottom: 0; width: 320px; z-index: 6;
+    background: rgba(9,15,12,0.95); border-left: 1px solid rgba(255,255,255,0.1);
+    padding: 1.2rem 1.1rem; transform: translateX(100%); transition: transform 0.25s ease; overflow-y: auto;
+  }
+  #panel.open { transform: translateX(0); }
+  #panel .kind-badge { display: inline-block; font-size: 0.68rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.04em; padding: 0.15rem 0.5rem; border-radius: 999px; margin-bottom: 0.5rem; }
+  #panel h2 { font-size: 1rem; margin: 0 0 0.5rem; }
+  #panel .meta { color: #8fa08c; font-size: 0.76rem; margin-bottom: 0.7rem; }
+  #panel .summary { font-size: 0.86rem; color: #d7ddd4; line-height: 1.5; }
+  #panel .close { position: absolute; top: 0.8rem; right: 0.9rem; background: none; border: none; color: #8fa08c; font-size: 1.1rem; cursor: pointer; }
+</style>
+</head>
+<body>
+<header>
+  <a class="back" href="index.html">&larr; all options</a>
+  <h1>12. Neural Bundle</h1>
+  <p class="desc">Idle, the ideas ARE the brain: hierarchical edge-bundling pulls every opportunity-link through its domain, so the mesh itself resolves into an organic, fuzzy, constantly-shifting silhouette — no literal neuron dots needed. A little glowing runner circles it continuously — arms and legs actually pumping through a running stride — gathering ideas into a live report as it passes. Click anywhere to make it open — the bundle relaxes outward into the real, labeled idea circles underneath.</p>
+</header>
+<svg id="viz"></svg>
+<div id="report"><h3>Scanning…</h3><div id="reportLines"></div></div>
+<div id="constellation"><div class="opp-kind"></div><div class="opp-title"></div><div class="opp-conf"></div></div>
+<div id="hint">Click the brain to open it · click a circle once open for details</div>
+<div id="panel"><button class="close" id="panelClose">&times;</button><div id="panelBody"></div></div>
+<script src="d3.min.js"></script>
+<script src="data.js"></script>
+<script>
+(function () {
+  function evidence(n) { return (n.hasAttachment ? 1 : 0) + (n.hasSnippet ? 1 : 0) + n.opportunityCount * 1.6; }
+
+  var domains = Array.from(new Set(DATA.nodes.map(function (n) { return n.domain; }))).sort();
+  var domainColor = d3.scaleOrdinal().domain(domains).range([
+    '#e05a9a', '#e8b23d', '#3bb0a8', '#3b6fd6', '#c9432c', '#2f9e5e', '#8b5cd6',
+    '#e07a3b', '#4fa8e0', '#c94fa0', '#7abf5e', '#d6c53b', '#5e7ac9', '#c96f5e',
+  ]);
+
+  var hierarchyData = {
+    name: 'root',
+    children: domains.map(function (dom) {
+      return {
+        name: dom,
+        children: DATA.nodes.filter(function (n) { return n.domain === dom; }).map(function (n) {
+          return { name: n.id, idea: n };
+        }),
+      };
+    }),
+  };
+
+  var width = window.innerWidth, height = window.innerHeight;
+  var cx = width / 2, cy = height / 2 + 10;
+  var outerR = Math.min(width, height) / 2 - 60;
+
+  var root = d3.hierarchy(hierarchyData);
+  var cluster = d3.cluster().size([2 * Math.PI, outerR]);
+  cluster(root);
+
+  var leaves = root.leaves();
+  var byIdeaId = {};
+  leaves.forEach(function (l) { byIdeaId[l.data.idea.id] = l; });
+
+  // Two kinds of connective tissue, like a real brain: dense short-range
+  // links within a domain (local cortical folds -- what makes the mesh
+  // read as an organic silhouette instead of a sparse star), and a small
+  // number of long-range links between ideas proven to combine in an
+  // Opportunity (white-matter tracts -- the signal that actually matters,
+  // rendered brighter so it stands out from the noise).
+  var linkSet = {}, localPairs = [], signalPairs = [];
+  domains.forEach(function (dom) {
+    var domLeaves = leaves.filter(function (l) { return l.data.idea.domain === dom; });
+    for (var i = 0; i < domLeaves.length; i++) {
+      for (var j = i + 1; j < domLeaves.length; j++) {
+        localPairs.push([domLeaves[i], domLeaves[j], 'local']);
+      }
+    }
+  });
+  DATA.opportunities.forEach(function (opp) {
+    for (var i = 0; i < opp.ideaIds.length; i++) {
+      for (var j = i + 1; j < opp.ideaIds.length; j++) {
+        var a = opp.ideaIds[i], b = opp.ideaIds[j];
+        var key = [a, b].sort().join('|');
+        if (linkSet[key]) continue;
+        linkSet[key] = true;
+        signalPairs.push([byIdeaId[a], byIdeaId[b], 'signal', opp.id]);
+      }
+    }
+  });
+  // A third layer, cross-cutting the domain lobes: ideas of the same kind
+  // (all the precautions, wherever they live) wired into a light ring +
+  // chord pattern. This is what actually fills the canvas -- without it
+  // the mesh is just isolated per-domain fans joined by a handful of
+  // opportunity spines, which reads as sparse no matter how bright those
+  // spines are.
+  var byKind = {};
+  leaves.forEach(function (l) { (byKind[l.data.idea.kind] = byKind[l.data.idea.kind] || []).push(l); });
+  var kinshipPairs = [];
+  Object.keys(byKind).forEach(function (k) {
+    var group = byKind[k];
+    for (var i = 0; i < group.length; i++) {
+      kinshipPairs.push([group[i], group[(i + 1) % group.length], 'kinship']);
+      if (group.length > 3) kinshipPairs.push([group[i], group[(i + 2) % group.length], 'kinship']);
+    }
+  });
+
+  var pairs = kinshipPairs.concat(localPairs);
+
+  // Co-occurrence weight per signal pair -- how often these two ideas were
+  // actually "mentioned together" (opportunity co-occurrence count, plus a
+  // bonus for sharing a tag), not just whether they're connected at all.
+  // This drives how many synapse pulses fire along that link.
+  var tagSetOf = {};
+  DATA.nodes.forEach(function (n) { tagSetOf[n.id] = (n.tags || []); });
+  function sharedTagCount(aId, bId) {
+    var a = tagSetOf[aId], b = tagSetOf[bId], c = 0;
+    for (var i = 0; i < a.length; i++) if (b.indexOf(a[i]) !== -1) c++;
+    return c;
+  }
+  var oppCoCount = {};
+  DATA.opportunities.forEach(function (opp) {
+    for (var i = 0; i < opp.ideaIds.length; i++) {
+      for (var j = i + 1; j < opp.ideaIds.length; j++) {
+        var k = [opp.ideaIds[i], opp.ideaIds[j]].sort().join('|');
+        oppCoCount[k] = (oppCoCount[k] || 0) + 1;
+      }
+    }
+  });
+  var signalMeta = signalPairs.map(function (pr) {
+    var aId = pr[0].data.idea.id, bId = pr[1].data.idea.id;
+    var weight = (oppCoCount[[aId, bId].sort().join('|')] || 1) + sharedTagCount(aId, bId);
+    return { weight: weight, pulses: Math.max(1, Math.min(4, weight)) };
+  });
+
+  var svg = d3.select('#viz').attr('width', width).attr('height', height).attr('viewBox', [0, 0, width, height]);
+  var g = svg.append('g').attr('transform', 'translate(' + cx + ',' + cy + ')');
+
+  // Rim arcs hint at the domain clustering even before anything opens --
+  // and their brightness is real, not decorative: each arc's glow/width
+  // scales with that domain's average evidence (attachments, snippets,
+  // opportunity membership), so a mature, well-backed domain visibly
+  // glows brighter than one that's still just raw notes, at a glance.
+  var rimG = g.append('g');
+  domains.forEach(function (dom) {
+    var domLeaves = leaves.filter(function (l) { return l.data.idea.domain === dom; });
+    if (!domLeaves.length) return;
+    var a0 = d3.min(domLeaves, function (l) { return l.x; }) - 0.01;
+    var a1 = d3.max(domLeaves, function (l) { return l.x; }) + 0.01;
+    var arc = d3.arc().innerRadius(outerR + 14).outerRadius(outerR + 14).startAngle(a0).endAngle(a1);
+    var avgEvidence = d3.mean(domLeaves, function (l) { return evidence(l.data.idea); });
+    var brightness = Math.min(1, avgEvidence / 2.2);
+    var color = domainColor(dom);
+    var arcEl = rimG.append('path').attr('class', 'rim-arc').attr('d', arc())
+      .attr('stroke', color)
+      .attr('stroke-width', 2 + brightness * 7)
+      .attr('opacity', 0.16 + brightness * 0.84)
+      .style('filter', brightness > 0.25 ? 'drop-shadow(0 0 ' + (2 + brightness * 9) + 'px ' + color + ')' : 'none');
+    if (brightness > 0.25) {
+      // a slow breathing glow on the domains that actually have evidence
+      // behind them -- motion is what makes "this one's different" read
+      // at a glance, not just a static width/opacity difference
+      (function loopBreath() {
+        arcEl.transition().duration(1400 + Math.random() * 600).attr('opacity', 0.16 + brightness * 0.5)
+          .transition().duration(1400 + Math.random() * 600).attr('opacity', 0.16 + brightness * 0.84)
+          .on('end', loopBreath);
+      })();
+    }
+  });
+
+  var linkG = g.append('g');
+  var line = d3.lineRadial().angle(function (d) { return d.x; }).radius(function (d) { return d.y; }).curve(d3.curveBundle.beta(0.82));
+
+  function linkType(d) { return d[2]; }
+  var LINK_STYLE = {
+    kinship: { color: function (d) { return DATA.kindColor[d[0].data.idea.kind] || '#8a8f98'; }, width: 0.8, opacity: 0.32 },
+    local: { color: function (d) { return domainColor(d[0].data.idea.domain); }, width: 1.1, opacity: 0.4 },
+    signal: { color: function () { return '#ffe08c'; }, width: 2, opacity: 0.7 },
+  };
+  var linkPaths = linkG.selectAll('path').data(pairs).join('path')
+    .attr('class', 'bundle-link')
+    .attr('stroke', function (d) { return LINK_STYLE[linkType(d)].color(d); })
+    .attr('stroke-width', function (d) { return LINK_STYLE[linkType(d)].width; })
+    .attr('opacity', function (d) { return LINK_STYLE[linkType(d)].opacity; });
+
+  // signal (proven co-occurrence) links get their own selection, separate
+  // from the background mesh, so synapse pulses can sample points along
+  // their actual rendered curve each frame (path.getPointAtLength) --
+  // the whole point being a pulse that visibly travels the real bundled
+  // route, not a straight line between the two ideas.
+  var signalPathSel = linkG.selectAll('path.signal').data(signalPairs).join('path')
+    .attr('class', 'bundle-link signal')
+    .attr('stroke', LINK_STYLE.signal.color())
+    .attr('stroke-width', LINK_STYLE.signal.width)
+    .attr('opacity', LINK_STYLE.signal.opacity);
+  var signalPathNodes = signalPathSel.nodes();
+
+  // pulse pool: two directions (there and back, like a real synapse isn't
+  // one-way) times however many pulses that pair's co-occurrence weight
+  // earns -- see signalMeta above.
+  var pulseLayer = g.append('g');
+  var pulses = [];
+  signalMeta.forEach(function (meta, idx) {
+    for (var k = 0; k < meta.pulses; k++) {
+      ['fwd', 'back'].forEach(function (dir) {
+        pulses.push({
+          pathIndex: idx,
+          dir: dir,
+          phase: Math.random(),
+          speed: 0.00028 + Math.random() * 0.00018,
+          el: pulseLayer.append('circle').attr('r', 2.6).attr('fill', '#fff3d0')
+            .style('filter', 'drop-shadow(0 0 5px #ffe08c) drop-shadow(0 0 2px #fff3d0)'),
+        });
+      });
+    }
+  });
+
+  function leafXY(l, r) {
+    var rad = r !== undefined ? r : l.y;
+    var ang = l.x - Math.PI / 2;
+    return [Math.cos(ang) * rad, Math.sin(ang) * rad];
+  }
+
+  var nodeG = g.append('g');
+  var nodeSel = nodeG.selectAll('circle').data(leaves).join('circle')
+    .attr('class', 'leaf')
+    .attr('r', function (l) { return 2 + Math.min(evidence(l.data.idea), 6); })
+    .attr('fill', function (l) { return DATA.kindColor[l.data.idea.kind] || '#8a8f98'; })
+    .attr('fill-opacity', 0.55)
+    .attr('stroke', function (l) { return DATA.originColor[l.data.idea.origin] || DATA.unclassifiedColor; })
+    .attr('stroke-width', 1);
+
+  var labelSel = nodeG.selectAll('text').data(leaves).join('text')
+    .attr('class', 'leaf-label').attr('opacity', 0)
+    .text(function (l) { return l.data.idea.title.length > 30 ? l.data.idea.title.slice(0, 28) + '…' : l.data.idea.title; });
+
+  function positionNodes() {
+    nodeSel.attr('transform', function (l) { var p = leafXY(l); return 'translate(' + p[0] + ',' + p[1] + ')'; });
+    labelSel.attr('transform', function (l) {
+      var p = leafXY(l, l.y + 8);
+      var deg = (l.x * 180 / Math.PI) - 90;
+      var flip = l.x > Math.PI;
+      return 'translate(' + p[0] + ',' + p[1] + ') rotate(' + (flip ? deg + 180 : deg) + ')';
+    }).attr('text-anchor', function (l) { return l.x > Math.PI ? 'end' : 'start'; });
+  }
+
+  var opened = false, beta = 0.82;
+  var jitterSeed = leaves.map(function () { return Math.random() * Math.PI * 2; });
+
+  function bundlePath(d, t) {
+    var path = d[0].path(d[1]).map(function (node, i) {
+      var wob = opened ? 0 : Math.sin(t * 0.0009 + i) * 0.012;
+      return { x: node.x + wob, y: node.y };
+    });
+    return line(path);
+  }
+
+  function render(t) {
+    var b = beta;
+    line.curve(d3.curveBundle.beta(b));
+    linkPaths.attr('d', function (d) { return bundlePath(d, t); });
+    signalPathSel.attr('d', function (d) { return bundlePath(d, t); });
+    positionNodes();
+    updatePulses(t);
+  }
+
+  // Synapse pulses -- a bright dot sampled along the SIGNAL link's actual
+  // rendered curve (path.getPointAtLength), not a straight line between
+  // the two ideas, so it visibly rides the same bundled route the eye
+  // sees. Two per pair minimum, one each direction, like a real back-and-
+  // forth signal rather than one-way traffic; more of them the more often
+  // those two ideas were actually mentioned together (signalMeta.pulses).
+  function updatePulses(t) {
+    pulses.forEach(function (p) {
+      var pathEl = signalPathNodes[p.pathIndex];
+      if (!pathEl) return;
+      var len = pathEl.getTotalLength();
+      if (!len) return;
+      var phase = (p.phase + t * p.speed) % 1;
+      var frac = p.dir === 'fwd' ? phase : 1 - phase;
+      var pt = pathEl.getPointAtLength(frac * len);
+      p.el.attr('cx', pt.x).attr('cy', pt.y)
+        .attr('opacity', opened ? 0.15 : (0.55 + 0.45 * Math.sin(phase * Math.PI)));
+    });
+  }
+
+  // ---- scanning probe + report ----
+  var reportLines = document.getElementById('reportLines');
+  var reportedThisLap = {};
+  var lapCount = 0;
+  var MAX_LINES = 10;
+
+  function addReportLine(html, cls) {
+    var div = document.createElement('div');
+    div.className = 'line' + (cls ? ' ' + cls : '');
+    div.innerHTML = html;
+    reportLines.insertBefore(div, reportLines.firstChild);
+    while (reportLines.children.length > MAX_LINES) reportLines.removeChild(reportLines.lastChild);
+  }
+
+  var templates = [
+    function (n) { return 'Passing <b>' + n.domain + '</b> — "' + n.title + '" (' + n.kind + ')'; },
+    function (n) { return n.kind + ' from ' + (n.origin || 'unclassified') + ': "' + n.title + '"'; },
+    function (n) { return 'Signal in <b>' + n.domain + '</b>: ' + n.title.toLowerCase(); },
+  ];
+
+  var probeAngle = 0;
+  var probeR = outerR + 30;
+
+  // The probe is a little glowing running figure, not just a dot -- head,
+  // two arms ending in glowing "hands", two legs, all pumping through a
+  // running gait as it circles the rim. Drawn facing "up" (head at
+  // negative y, feet at the pivot) in local space, then translated +
+  // rotated each frame so "up" points radially outward -- it looks like
+  // it's actually running around the track, not just sliding along it.
+  // An old-fashioned tin-robot, not a person: boxy riveted head and torso,
+  // an antenna with a blinking bulb, stiff metal limbs -- the only "glow"
+  // left is the indicator-light hands and eyes, like an old sci-fi robot's
+  // panel lights, not a living body.
+  var METAL = '#9aab97', METAL_DARK = '#5c6b63', LIGHT = '#ffe08c', LIGHT_BRIGHT = '#fff3d0';
+
+  // comet trail: a short fading streak of the robot's own recent
+  // positions, drawn underneath it -- purely cosmetic, no new data, just
+  // makes the run itself feel faster/more electric.
+  var TRAIL_LEN = 16;
+  var trailG = g.append('g');
+  var trailPts = [];
+  var trailEls = [];
+  for (var ti = 0; ti < TRAIL_LEN; ti++) {
+    trailEls.push(trailG.append('circle').attr('r', 0).attr('fill', LIGHT).attr('opacity', 0));
+  }
+
+  var robot = g.append('g').attr('class', 'robot');
+  var robotGlow = robot.append('circle').attr('r', 15).attr('cy', -13).attr('fill', 'rgba(255,224,140,0.16)');
+
+  var antenna = robot.append('line').attr('x1', 0).attr('y1', -23).attr('x2', 0).attr('y2', -27)
+    .attr('stroke', METAL_DARK).attr('stroke-width', 1.3);
+  var antennaBulb = robot.append('circle').attr('r', 1.6).attr('cy', -27.5).attr('fill', LIGHT)
+    .style('filter', 'drop-shadow(0 0 4px #ffe08c)');
+
+  var head = robot.append('rect').attr('x', -5).attr('y', -23).attr('width', 10).attr('height', 8)
+    .attr('rx', 1).attr('fill', METAL).attr('stroke', METAL_DARK).attr('stroke-width', 1);
+  var eyeL = robot.append('rect').attr('x', -3.2).attr('y', -20.5).attr('width', 2.4).attr('height', 2.4)
+    .attr('fill', LIGHT).style('filter', 'drop-shadow(0 0 3px #ffe08c)');
+  var eyeR = robot.append('rect').attr('x', 0.8).attr('y', -20.5).attr('width', 2.4).attr('height', 2.4)
+    .attr('fill', LIGHT).style('filter', 'drop-shadow(0 0 3px #ffe08c)');
+
+  var neck = robot.append('rect').attr('x', -1.3).attr('y', -15).attr('width', 2.6).attr('height', 2).attr('fill', METAL_DARK);
+  var torso = robot.append('rect').attr('x', -5.5).attr('y', -13).attr('width', 11).attr('height', 13)
+    .attr('rx', 1.5).attr('fill', METAL).attr('stroke', METAL_DARK).attr('stroke-width', 1);
+  var chestLight = robot.append('circle').attr('r', 1.8).attr('cy', -7).attr('fill', LIGHT).attr('opacity', 0.85);
+  var rivetL = robot.append('circle').attr('r', 0.8).attr('cx', -3.5).attr('cy', -3).attr('fill', METAL_DARK);
+  var rivetR = robot.append('circle').attr('r', 0.8).attr('cx', 3.5).attr('cy', -3).attr('fill', METAL_DARK);
+
+  var armL = robot.append('line').attr('stroke', METAL).attr('stroke-width', 2.6).attr('stroke-linecap', 'square');
+  var armR = robot.append('line').attr('stroke', METAL).attr('stroke-width', 2.6).attr('stroke-linecap', 'square');
+  var elbowL = robot.append('circle').attr('r', 1.3).attr('fill', METAL_DARK);
+  var elbowR = robot.append('circle').attr('r', 1.3).attr('fill', METAL_DARK);
+  var handL = robot.append('circle').attr('r', 2.4).attr('fill', LIGHT_BRIGHT).style('filter', 'drop-shadow(0 0 4px #ffe08c)');
+  var handR = robot.append('circle').attr('r', 2.4).attr('fill', LIGHT_BRIGHT).style('filter', 'drop-shadow(0 0 4px #ffe08c)');
+  var legL = robot.append('line').attr('stroke', METAL).attr('stroke-width', 2.8).attr('stroke-linecap', 'square');
+  var legR = robot.append('line').attr('stroke', METAL).attr('stroke-width', 2.8).attr('stroke-linecap', 'square');
+  var kneeL = robot.append('circle').attr('r', 1.3).attr('fill', METAL_DARK);
+  var kneeR = robot.append('circle').attr('r', 1.3).attr('fill', METAL_DARK);
+  var footL = robot.append('rect').attr('width', 5).attr('height', 2.4).attr('fill', METAL_DARK).attr('rx', 0.6);
+  var footR = robot.append('rect').attr('width', 5).attr('height', 2.4).attr('fill', METAL_DARK).attr('rx', 0.6);
+
+  // readiness readout -- appears above the head when it stops on an idea
+  // with real evidence behind it; always kept upright regardless of which
+  // way the robot itself is currently rotated to face.
+  var pctLabel = robot.append('text').attr('class', 'pct-label')
+    .attr('text-anchor', 'middle').attr('font-size', 10).attr('font-weight', 700)
+    .attr('fill', LIGHT_BRIGHT).style('paint-order', 'stroke').style('stroke', '#070c0a').style('stroke-width', '3px')
+    .attr('opacity', 0);
+
+  // Correct minimal angular distance between two angles, 0..PI. (The
+  // earlier version of this check was inverted -- it fired "near" when
+  // the probe was on the OPPOSITE side of the circle from the idea, not
+  // actually close to it, which is exactly why the robot was stopping in
+  // empty space: it genuinely wasn't near anything when it stopped.)
+  function angleDist(a, b) {
+    var raw = Math.abs(a - b) % (Math.PI * 2);
+    return raw > Math.PI ? Math.PI * 2 - raw : raw;
+  }
+
+  function limbEnd(pivotY, angRad, len) {
+    return [Math.sin(angRad) * len, pivotY + Math.cos(angRad) * len];
+  }
+
+  function placeFoot(rectSel, end, angRad) {
+    // a small rectangular tin-foot, rotated to match the leg's current angle
+    rectSel.attr('transform', 'translate(' + end[0] + ',' + end[1] + ') rotate(' + (angRad * 180 / Math.PI) + ') translate(-2.5,-1.2)');
+  }
+
+  var shoulderY = -12, hipY = -1, armLen = 9, legLen = 10;
+
+  function poseRobot(runPhase) {
+    var swing = Math.sin(runPhase);
+    var armSwing = swing * 0.9;   // stiff metal joints -- a narrower, mechanical swing, not a loose human one
+    var legSwing = swing * 0.65;
+
+    var aL = limbEnd(shoulderY, armSwing, armLen);
+    var aR = limbEnd(shoulderY, -armSwing, armLen);
+    var lL = limbEnd(hipY, -legSwing, legLen);
+    var lR = limbEnd(hipY, legSwing, legLen);
+
+    armL.attr('x1', 0).attr('y1', shoulderY).attr('x2', aL[0]).attr('y2', aL[1]);
+    armR.attr('x1', 0).attr('y1', shoulderY).attr('x2', aR[0]).attr('y2', aR[1]);
+    elbowL.attr('cx', aL[0] * 0.55).attr('cy', shoulderY + (aL[1] - shoulderY) * 0.55);
+    elbowR.attr('cx', aR[0] * 0.55).attr('cy', shoulderY + (aR[1] - shoulderY) * 0.55);
+    handL.attr('cx', aL[0]).attr('cy', aL[1]);
+    handR.attr('cx', aR[0]).attr('cy', aR[1]);
+
+    legL.attr('x1', 0).attr('y1', hipY).attr('x2', lL[0]).attr('y2', lL[1]);
+    legR.attr('x1', 0).attr('y1', hipY).attr('x2', lR[0]).attr('y2', lR[1]);
+    kneeL.attr('cx', lL[0] * 0.55).attr('cy', hipY + (lL[1] - hipY) * 0.55);
+    kneeR.attr('cx', lR[0] * 0.55).attr('cy', hipY + (lR[1] - hipY) * 0.55);
+    placeFoot(footL, lL, -legSwing);
+    placeFoot(footR, lR, legSwing);
+    return Math.abs(swing) * 2.2;
+  }
+
+  function poseIdle(t) {
+    // standing still, processing -- limbs relaxed straight down, a faint
+    // shoulder/eye shimmer instead of the running swing
+    poseRobot(0);
+    var shimmer = 0.75 + 0.25 * Math.sin(t * 0.006);
+    eyeL.attr('opacity', shimmer); eyeR.attr('opacity', shimmer);
+    return 0;
+  }
+
+  // "ready to be used" readout: the same evidence signal used everywhere
+  // else in this dataset (attachment/snippet/opportunity membership),
+  // just expressed as a 0-100% completion instead of a raw weight.
+  var readiness = {};
+  DATA.nodes.forEach(function (n) { readiness[n.id] = Math.round(Math.min(1, evidence(n) / 4) * 100); });
+
+  var stopUntilTs = -1;
+  var showingPct = false;
+
+  function tick(t) {
+    if (!opened) {
+      var stopped = t < stopUntilTs;
+      if (!stopped) {
+        probeAngle += 0.004;
+        if (probeAngle > Math.PI * 2) { probeAngle -= Math.PI * 2; lapCount++; reportedThisLap = {}; summarizeLap(); }
+        if (showingPct) { showingPct = false; pctLabel.transition().duration(250).attr('opacity', 0); }
+      }
+      var pp = leafXY({ x: probeAngle, y: 1 }, probeR);
+      var facingDeg = probeAngle * 180 / Math.PI;
+      var bounce = stopped ? poseIdle(t) : poseRobot(t * 0.014);
+      robot.attr('transform', 'translate(' + pp[0] + ',' + (pp[1] + bounce) + ') rotate(' + facingDeg + ')').attr('opacity', 1);
+      // the readout text is a child of `robot`, which is rotated to face
+      // the direction of travel -- counter-rotate just the text so the
+      // percentage itself always reads upright, wherever on the rim it is.
+      pctLabel.attr('transform', 'translate(0,-32) rotate(' + (-facingDeg) + ')');
+
+      if (!stopped) {
+        trailPts.unshift([pp[0], pp[1] + bounce]);
+        if (trailPts.length > TRAIL_LEN) trailPts.length = TRAIL_LEN;
+      }
+      trailEls.forEach(function (el, i) {
+        var pt = trailPts[i];
+        if (!pt) { el.attr('opacity', 0); return; }
+        var frac = 1 - i / TRAIL_LEN;
+        el.attr('cx', pt[0]).attr('cy', pt[1]).attr('r', 3.2 * frac).attr('opacity', 0.5 * frac * frac);
+      });
+
+      if (!stopped) {
+        leaves.forEach(function (l) {
+          var near = angleDist(l.x, probeAngle) < 0.035;
+          if (!near || reportedThisLap[l.data.idea.id]) return;
+          reportedThisLap[l.data.idea.id] = true;
+          var tmpl = templates[Math.floor(Math.random() * templates.length)];
+          addReportLine(tmpl(l.data.idea));
+          d3.select(nodeSel.nodes()[leaves.indexOf(l)]).attr('fill-opacity', 1).transition().duration(1200).attr('fill-opacity', 0.55);
+
+          var pct = readiness[l.data.idea.id];
+          if (pct > 0) {
+            // stop here for a beat and show it's ready to use, instead of
+            // just running straight through every idea the same way
+            stopUntilTs = t + 1100;
+            showingPct = true;
+            pctLabel.text(pct + '% ready').transition().duration(150).attr('opacity', 1);
+          }
+        });
+      }
+    } else {
+      robot.attr('opacity', 0);
+      if (trailPts.length) { trailPts.length = 0; trailEls.forEach(function (el) { el.attr('opacity', 0); }); }
+    }
+    render(t);
+    requestAnimationFrame(tick);
+  }
+
+  function summarizeLap() {
+    var byKind = {};
+    DATA.nodes.forEach(function (n) { byKind[n.kind] = (byKind[n.kind] || 0) + 1; });
+    var top = Object.keys(byKind).sort(function (a, b) { return byKind[b] - byKind[a]; })[0];
+    document.querySelector('#report h3').textContent = 'Lap ' + lapCount + ' complete — ' + DATA.nodes.length + ' ideas · ' + domains.length + ' domains · mostly ' + top;
+  }
+
+  // Once per lap, put one proposed Opportunity on display: brighten the
+  // member ideas and the exact gold link(s) that connect them, and show
+  // its title + confidence as a callout -- cycles through every real
+  // Opportunity in turn, so what was background texture (the constant
+  // gold pulses) actually pays off as a discrete "here's what this
+  // combination is" moment instead of just ambient decoration.
+  var oppCycleIndex = 0;
+  var constellationHideTimer = null;
+  function revealConstellation() {
+    if (!DATA.opportunities.length) return;
+    var opp = DATA.opportunities[oppCycleIndex % DATA.opportunities.length];
+    oppCycleIndex++;
+    var memberIds = {};
+    opp.ideaIds.forEach(function (id) { memberIds[id] = true; });
+
+    nodeSel.filter(function (l) { return memberIds[l.data.idea.id]; })
+      .transition().duration(350).attr('r', function (l) { return (5 + Math.min(evidence(l.data.idea), 6)) * 1.7; }).attr('fill-opacity', 1)
+      .transition().delay(1700).duration(600)
+      .attr('r', function (l) { return 2 + Math.min(evidence(l.data.idea), 6); }).attr('fill-opacity', 0.55);
+
+    signalPathSel.filter(function (d) { return d[3] === opp.id; })
+      .transition().duration(350).attr('stroke-width', 4.5).attr('opacity', 1)
+      .transition().delay(1700).duration(600).attr('stroke-width', LINK_STYLE.signal.width).attr('opacity', LINK_STYLE.signal.opacity);
+
+    var box = d3.select('#constellation');
+    box.select('.opp-kind').text(opp.kind.replace('-', ' '));
+    box.select('.opp-title').text(opp.title);
+    box.select('.opp-conf').text(Math.round(opp.weight * 100) + '% confidence · built from ' + opp.ideaIds.length + ' ideas');
+    box.style('opacity', 1);
+    clearTimeout(constellationHideTimer);
+    constellationHideTimer = setTimeout(function () { box.style('opacity', 0); }, 2600);
+  }
+
+  // On its own clock, independent of how far the probe has actually
+  // gotten around the rim -- a full lap is ~17s, too long to make someone
+  // wait for the first payoff. First reveal fires almost immediately;
+  // repeats on a fixed interval afterward.
+  if (!opened) revealConstellation();
+  setTimeout(function () {
+    setInterval(function () { if (!opened) revealConstellation(); }, 6000);
+  }, 2500);
+
+  requestAnimationFrame(tick);
+
+  // ---- open / close ----
+  var panel = document.getElementById('panel'), panelBody = document.getElementById('panelBody');
+  document.getElementById('panelClose').addEventListener('click', function (e) { e.stopPropagation(); panel.classList.remove('open'); });
+
+  function animateBeta(to, ms) {
+    var from = beta, start = null;
+    function step(ts) {
+      if (start === null) start = ts;
+      var p = Math.min(1, (ts - start) / ms);
+      beta = from + (to - from) * (1 - Math.pow(1 - p, 3));
+      if (p < 1) requestAnimationFrame(step);
+    }
+    requestAnimationFrame(step);
+  }
+
+  svg.on('click', function (e) {
+    if (e.target.tagName === 'circle' && e.target.__data__ && e.target.__data__.data) return; // handled below
+    opened = !opened;
+    animateBeta(opened ? 0.15 : 0.82, 900);
+    labelSel.transition().duration(opened ? 700 : 200).delay(opened ? 300 : 0).attr('opacity', opened ? 1 : 0);
+    nodeSel.transition().duration(500).attr('r', function (l) { return opened ? 5 + Math.min(evidence(l.data.idea), 6) * 1.3 : 2 + Math.min(evidence(l.data.idea), 6); });
+    linkPaths.transition().duration(700).attr('opacity', function (d) {
+      var base = LINK_STYLE[linkType(d)].opacity;
+      return opened ? base * 0.35 : base;
+    });
+    signalPathSel.transition().duration(700).attr('opacity', opened ? LINK_STYLE.signal.opacity * 0.5 : LINK_STYLE.signal.opacity);
+    document.getElementById('report').style.display = opened ? 'none' : 'block';
+  });
+
+  nodeSel.on('click', function (e, l) {
+    if (!opened) return;
+    e.stopPropagation();
+    var n = l.data.idea;
+    var color = DATA.kindColor[n.kind] || '#8a8f98';
+    panelBody.innerHTML =
+      '<span class="kind-badge" style="background:' + color + '22;color:' + color + ';border:1px solid ' + color + '66">' + n.kind + '</span>' +
+      '<h2>' + n.title + '</h2>' +
+      '<div class="meta">' + n.domain + ' · ' + (n.origin || 'unclassified') + '</div>' +
+      '<div class="summary">' + n.summary + '</div>';
+    panel.classList.add('open');
+  });
+
+  // (intentionally no resize handler -- reloading on resize caused a
+  // reload loop under headless Chrome during testing; a real dashboard
+  // integration would recompute the layout in place instead.)
+})();
+</script>
+</body>
+</html>

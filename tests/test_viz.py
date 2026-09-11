@@ -109,6 +109,29 @@ def test_render_html_has_dropdown_and_mount_points():
     assert 'id="tooltip"' in out
 
 
+def test_render_html_has_brain_tab_and_theme_toggle():
+    out = render_html(Graph())
+    assert 'data-tab="brain">Brain<' in out
+    assert 'id="brain-main"' in out
+    assert 'id="theme-toggle"' in out
+    # the [data-theme] attribute must be set before <style> renders (an
+    # inline <head> script, not the tab-bar script at the end of <body>) --
+    # otherwise the very first paint can flash the wrong theme
+    head, _, _ = out.partition("</head>")
+    assert "data-theme" in head
+    assert "renderBrainView" in out
+    assert ":root[data-theme=\"light\"]" in out
+
+
+def test_render_html_theme_variables_cover_backgrounds():
+    out = render_html(Graph())
+    # spot-check a couple of the chrome colors that must resolve through
+    # the CSS variable, not a hardcoded hex -- a regression here would
+    # mean the light theme silently doesn't apply to that element
+    assert "background: var(--bg)" in out
+    assert "color: var(--fg)" in out
+
+
 def test_render_html_domain_split_for_sub_branches():
     graph = Graph(
         nodes=[

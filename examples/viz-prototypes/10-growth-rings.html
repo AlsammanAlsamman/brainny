@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>10. Growth rings (radial)</title>
+<link rel="stylesheet" href="shared.css">
+<style>
+  .ring-label { fill: #7c8c79; font-size: 10px; }
+</style>
+</head>
+<body>
+<header>
+  <a class="back" href="index.html">&larr; all 10 options</a>
+  <h1>10. Growth rings (radial)</h1>
+  <p class="desc">One concentric ring per domain, ideas placed as points around it in capture order, sized by evidence weight. Ties directly into the tree metaphor already in brAInny's own copy ("growth rings") — reads as a literal cross-section of the brain.</p>
+</header>
+<div class="note"><strong>Adapted for this demo:</strong> the most natural version rings by session (each full lap = one working session); this one-session dataset has nothing to show there, so domains form the rings instead — still genuinely useful, and worth revisiting as session-rings once there's real multi-session history to show.</div>
+<div id="viz"></div>
+<div id="tooltip"></div>
+<script src="d3.min.js"></script>
+<script src="data.js"></script>
+<script>
+(function () {
+  var byDomain = {};
+  DATA.nodes.forEach(function (n) { (byDomain[n.domain] = byDomain[n.domain] || []).push(n); });
+  var domains = Object.keys(byDomain).sort(function (a, b) { return byDomain[a].length - byDomain[b].length; });
+
+  function weight(n) { return 1 + (n.hasAttachment ? 1 : 0) + (n.hasSnippet ? 1 : 0) + n.opportunityCount; }
+
+  var width = 900, height = 900;
+  var cx = width / 2, cy = height / 2;
+  var minR = 60, maxR = Math.min(width, height) / 2 - 40;
+  var ringGap = (maxR - minR) / domains.length;
+
+  var svg = d3.select('#viz').append('svg').attr('viewBox', [0, 0, width, height]).attr('width', '100%').attr('height', height);
+
+  svg.append('circle').attr('cx', cx).attr('cy', cy).attr('r', 30).attr('fill', '#e8b23d');
+  svg.append('text').attr('x', cx).attr('y', cy + 4).attr('text-anchor', 'middle').attr('font-size', 11).attr('fill', '#0b1310').attr('font-weight', 700)
+    .text(DATA.nodes.length);
+
+  var tooltip = document.getElementById('tooltip');
+  domains.forEach(function (dom, ringIdx) {
+    var ringR = minR + ringIdx * ringGap;
+    svg.append('circle').attr('cx', cx).attr('cy', cy).attr('r', ringR).attr('fill', 'none')
+      .attr('stroke', 'rgba(255,255,255,0.08)').attr('stroke-width', 1);
+    svg.append('text').attr('class', 'ring-label').attr('x', cx + 4).attr('y', cy - ringR - 3).text(dom);
+
+    var ideas = byDomain[dom].slice().sort(function (a, b) { return a.id.localeCompare(b.id); });
+    ideas.forEach(function (n, i) {
+      var angle = (i / ideas.length) * Math.PI * 2 - Math.PI / 2;
+      var px = cx + ringR * Math.cos(angle), py = cy + ringR * Math.sin(angle);
+      svg.append('circle').attr('cx', px).attr('cy', py).attr('r', 4 + weight(n) * 1.8)
+        .attr('fill', DATA.kindColor[n.kind] || '#8a8f98')
+        .attr('stroke', DATA.originColor[n.origin] || DATA.unclassifiedColor).attr('stroke-width', 1.5)
+        .style('cursor', 'pointer')
+        .on('mouseenter', function (e) {
+          tooltip.innerHTML = '<div class="tt-title">' + n.title + '</div><div class="tt-meta">' + n.kind + ' · ' + dom + '</div>';
+          tooltip.style.display = 'block';
+        })
+        .on('mousemove', function (e) { tooltip.style.left = (e.clientX + 14) + 'px'; tooltip.style.top = (e.clientY + 14) + 'px'; })
+        .on('mouseleave', function () { tooltip.style.display = 'none'; });
+    });
+  });
+})();
+</script>
+</body>
+</html>

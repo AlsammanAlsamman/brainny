@@ -126,11 +126,26 @@ can drive brainny the same way.
 
 <p align="center"><sub>Opportunities tab — AI-proposed combinations, sorted by confidence weight, linked back to the ideas each one draws from.</sub></p>
 
-All three screenshots are from the same fabricated example dataset (50
-ideas across 14 domains, every kind/origin, attachments, snippets, and 6
-proposed Opportunities) — built to show the full dashboard, not the
-maintainer's real ideas. **Want to click around it yourself, not just
-look at screenshots?**
+A fourth tab, **Brain**, is a different way to look at the same ideas:
+every connection between them — same kind, same domain, and (brightest)
+proven to combine in an Opportunity — bundled into one living mesh that
+resolves into a brain silhouette, no literal neuron dots needed. An
+old-style robot probe circles it continuously, pausing on ideas with real
+evidence behind them to show a percent-ready readout, and gathering a
+live scrolling report as it passes. Click anywhere to open the mesh into
+real, labeled, clickable idea circles.
+
+<p align="center">
+  <img src="examples/demo/brain-preview.svg" alt="Animated preview of brainny's Brain view: hierarchical edge-bundled idea connections forming a brain silhouette, with a probe circling it and a readiness percentage fading in" width="100%">
+</p>
+
+<p align="center"><sub>Brain tab (stylized preview — the real thing runs on your captured ideas). Every view, including this one, has a day/night toggle (top-right) that defaults to your system's preference and remembers your choice.</sub></p>
+
+All screenshots (and the preview above) are from the same fabricated
+example dataset (50 ideas across 14 domains, every kind/origin,
+attachments, snippets, and 6 proposed Opportunities) — built to show the
+full dashboard, not the maintainer's real ideas. **Want to click around
+it yourself, not just look at screenshots?**
 [Open the live example dashboard](https://htmlpreview.github.io/?https://raw.githubusercontent.com/AlsammanAlsamman/brainny/master/examples/demo/graph.html) —
 see [`examples/demo/`](examples/demo/).
 
@@ -223,6 +238,9 @@ brainny query                # your ideas as a terminal tree
 brainny query --html          # a browsable dashboard: brainny-out/graph.html
                                 #   Graph tab: radial tree / force network, click-to-inspect
                                 #   Stats tab: domain treemap, growth trends, kind + origin breakdown
+                                #   Opportunities tab: AI-proposed combinations of ideas
+                                #   Brain tab: edge-bundled mesh + a probe that gathers a live report
+                                #   day/night theme toggle, top-right, in every tab
 brainny open                  # open that dashboard in your browser
 brainny open --central          # ...or the central folder's copy of this project instead
 brainny open --central --project X  # ...or an explicit project's central copy, from anywhere

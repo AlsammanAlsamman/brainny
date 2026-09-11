@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>3. Domain × Kind matrix</title>
+<link rel="stylesheet" href="shared.css">
+<style>
+  .cell { stroke: rgba(11,19,16,0.8); stroke-width: 2; }
+  .row-label { fill: #c9d3c6; font-size: 11px; }
+  .col-label { fill: #c9d3c6; font-size: 11px; }
+  .cell-text { fill: #0b1310; font-size: 11px; font-weight: 700; pointer-events: none; }
+</style>
+</head>
+<body>
+<header>
+  <a class="back" href="index.html">&larr; all 10 options</a>
+  <h1>3. Domain × Kind matrix</h1>
+  <p class="desc">Every domain as a row, every kind as a column, cell = count, shaded by intensity. Reveals coverage gaps at a glance — a domain with plenty of precautions but zero skills is a domain you've learned from but haven't turned into anything reusable yet.</p>
+</header>
+<div id="viz"></div>
+<div id="tooltip"></div>
+<script src="d3.min.js"></script>
+<script src="data.js"></script>
+<script>
+(function () {
+  var kinds = Object.keys(DATA.kindColor);
+  var domains = Array.from(new Set(DATA.nodes.map(function (n) { return n.domain; }))).sort();
+
+  var counts = {};
+  domains.forEach(function (d) { counts[d] = {}; kinds.forEach(function (k) { counts[d][k] = 0; }); });
+  DATA.nodes.forEach(function (n) { counts[n.domain][n.kind] += 1; });
+
+  var cellW = 78, cellH = 26, labelW = 130, labelH = 26;
+  var width = labelW + kinds.length * cellW + 20;
+  var height = labelH + domains.length * cellH + 20;
+
+  var svg = d3.select('#viz').append('svg').attr('viewBox', [0, 0, width, height]).attr('width', '100%').attr('height', height);
+  var g = svg.append('g').attr('transform', 'translate(' + labelW + ',' + labelH + ')');
+
+  var maxCount = d3.max(domains, function (d) { return d3.max(kinds, function (k) { return counts[d][k]; }); }) || 1;
+  var color = d3.scaleSequential(d3.interpolateYlGnBu).domain([0, maxCount]);
+
+  kinds.forEach(function (k, ki) {
+    svg.append('text').attr('class', 'col-label').attr('x', labelW + ki * cellW + cellW / 2).attr('y', labelH - 8)
+      .attr('text-anchor', 'middle').text(k);
+  });
+
+  var tooltip = document.getElementById('tooltip');
+  domains.forEach(function (dom, di) {
+    svg.append('text').attr('class', 'row-label').attr('x', labelW - 10).attr('y', labelH + di * cellH + cellH / 2 + 4)
+      .attr('text-anchor', 'end').text(dom);
+    kinds.forEach(function (k, ki) {
+      var v = counts[dom][k];
+      g.append('rect').attr('class', 'cell')
+        .attr('x', ki * cellW).attr('y', di * cellH).attr('width', cellW - 3).attr('height', cellH - 3).attr('rx', 4)
+        .attr('fill', v ? color(v) : 'rgba(255,255,255,0.04)')
+        .on('mouseenter', function (e) {
+          tooltip.innerHTML = '<div class="tt-title">' + dom + ' · ' + k + '</div><div class="tt-meta">' + v + ' idea(s)</div>';
+          tooltip.style.display = 'block';
+        })
+        .on('mousemove', function (e) { tooltip.style.left = (e.clientX + 14) + 'px'; tooltip.style.top = (e.clientY + 14) + 'px'; })
+        .on('mouseleave', function () { tooltip.style.display = 'none'; });
+      if (v) {
+        g.append('text').attr('class', 'cell-text').attr('x', ki * cellW + (cellW - 3) / 2).attr('y', di * cellH + cellH / 2 + 4)
+          .attr('text-anchor', 'middle').text(v);
+      }
+    });
+  });
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>5. Packed circle bubbles</title>
+<link rel="stylesheet" href="shared.css">
+<style>
+  .domain-label { fill: #8fa08c; font-size: 11px; font-weight: 600; pointer-events: none; }
+</style>
+</head>
+<body>
+<header>
+  <a class="back" href="index.html">&larr; all 10 options</a>
+  <h1>5. Packed circle bubbles</h1>
+  <p class="desc">One circle per idea, grouped by domain, sized by an "evidence weight" — has an attachment, has a snippet, appears in an opportunity all make a circle bigger. A genuine usefulness map: big circles are ideas with real backing, not just a title.</p>
+</header>
+<div class="legend-row" id="legend"></div>
+<div id="viz"></div>
+<div id="tooltip"></div>
+<script src="d3.min.js"></script>
+<script src="data.js"></script>
+<script>
+(function () {
+  var legend = document.getElementById('legend');
+  Object.keys(DATA.kindColor).forEach(function (k) {
+    legend.innerHTML += '<span class="legend-item"><span class="dot" style="background:' + DATA.kindColor[k] + '"></span>' + k + '</span>';
+  });
+
+  function weight(n) { return 1 + (n.hasAttachment ? 2 : 0) + (n.hasSnippet ? 1.5 : 0) + n.opportunityCount * 2.5; }
+
+  var byDomain = {};
+  DATA.nodes.forEach(function (n) { (byDomain[n.domain] = byDomain[n.domain] || []).push(n); });
+
+  var root = {
+    name: 'root',
+    children: Object.keys(byDomain).map(function (dom) {
+      return { name: dom, children: byDomain[dom].map(function (n) { return { name: n.title, idea: n, value: weight(n) }; }) };
+    }),
+  };
+
+  var width = document.getElementById('viz').clientWidth || 1100, height = 760;
+  var pack = d3.pack().size([width - 4, height - 4]).padding(3);
+  var hierarchy = d3.hierarchy(root).sum(function (d) { return d.value || 0; }).sort(function (a, b) { return b.value - a.value; });
+  var packed = pack(hierarchy);
+
+  var svg = d3.select('#viz').append('svg').attr('viewBox', [0, 0, width, height]).attr('width', '100%').attr('height', height);
+  var g = svg.append('g');
+  svg.call(d3.zoom().scaleExtent([0.5, 4]).on('zoom', function (e) { g.attr('transform', e.transform); }));
+
+  var domainGroups = g.selectAll('g.domain').data(packed.children).join('g').attr('class', 'domain');
+  domainGroups.append('circle')
+    .attr('cx', function (d) { return d.x; }).attr('cy', function (d) { return d.y; }).attr('r', function (d) { return d.r; })
+    .attr('fill', 'none').attr('stroke', 'rgba(255,255,255,0.14)').attr('stroke-dasharray', '3,3');
+  domainGroups.append('text').attr('class', 'domain-label')
+    .attr('x', function (d) { return d.x; }).attr('y', function (d) { return d.y - d.r - 6; })
+    .attr('text-anchor', 'middle').text(function (d) { return d.data.name; });
+
+  var tooltip = document.getElementById('tooltip');
+  var leaves = g.selectAll('circle.leaf').data(packed.leaves()).join('circle').attr('class', 'leaf')
+    .attr('cx', function (d) { return d.x; }).attr('cy', function (d) { return d.y; }).attr('r', function (d) { return d.r; })
+    .attr('fill', function (d) { return DATA.kindColor[d.data.idea.kind] || '#8a8f98'; })
+    .attr('stroke', function (d) { return DATA.originColor[d.data.idea.origin] || DATA.unclassifiedColor; })
+    .attr('stroke-width', 2).style('cursor', 'pointer')
+    .on('mouseenter', function (e, d) {
+      var n = d.data.idea;
+      tooltip.innerHTML = '<div class="tt-title">' + n.title + '</div><div class="tt-meta">' + n.kind + ' · ' + n.domain +
+        (n.hasAttachment ? ' · has attachment' : '') + (n.hasSnippet ? ' · has snippet' : '') +
+        (n.opportunityCount ? ' · in ' + n.opportunityCount + ' opportunity(ies)' : '') + '</div>';
+      tooltip.style.display = 'block';
+    })
+    .on('mousemove', function (e) { tooltip.style.left = (e.clientX + 14) + 'px'; tooltip.style.top = (e.clientY + 14) + 'px'; })
+    .on('mouseleave', function () { tooltip.style.display = 'none'; });
+})();
+</script>
+</body>
+</html>

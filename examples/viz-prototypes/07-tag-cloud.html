@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>7. Tag cloud</title>
+<link rel="stylesheet" href="shared.css">
+<style>
+  #cloud { display: flex; flex-wrap: wrap; gap: 0.5rem 0.9rem; align-items: baseline; max-width: 900px; }
+  .tag { cursor: default; transition: opacity 0.15s; }
+  .tag:hover { opacity: 0.75; }
+</style>
+</head>
+<body>
+<header>
+  <a class="back" href="index.html">&larr; all 10 options</a>
+  <h1>7. Tag cloud</h1>
+  <p class="desc">Every tag ever used, sized by frequency. Cheap, a little fun, and occasionally surfaces a theme you didn't notice you kept returning to.</p>
+</header>
+<div id="cloud"></div>
+<div id="tooltip"></div>
+<script src="d3.min.js"></script>
+<script src="data.js"></script>
+<script>
+(function () {
+  var counts = {};
+  var kindByTag = {};
+  DATA.nodes.forEach(function (n) {
+    (n.tags || []).forEach(function (t) {
+      counts[t] = (counts[t] || 0) + 1;
+      (kindByTag[t] = kindByTag[t] || {})[n.kind] = (kindByTag[t][n.kind] || 0) + 1;
+    });
+  });
+  var tags = Object.keys(counts).sort(function (a, b) { return counts[b] - counts[a]; });
+  var maxCount = counts[tags[0]] || 1;
+  var size = d3.scaleSqrt().domain([1, maxCount]).range([13, 46]);
+
+  var cloud = document.getElementById('cloud');
+  var tooltip = document.getElementById('tooltip');
+  tags.forEach(function (t) {
+    var dominantKind = Object.keys(kindByTag[t]).sort(function (a, b) { return kindByTag[t][b] - kindByTag[t][a]; })[0];
+    var el = document.createElement('span');
+    el.className = 'tag';
+    el.textContent = t;
+    el.style.fontSize = size(counts[t]) + 'px';
+    el.style.color = DATA.kindColor[dominantKind] || '#c9d3c6';
+    el.style.fontWeight = counts[t] > 2 ? '700' : '400';
+    el.addEventListener('mouseenter', function (e) {
+      tooltip.innerHTML = '<div class="tt-title">#' + t + '</div><div class="tt-meta">' + counts[t] + ' idea(s), mostly ' + dominantKind + '</div>';
+      tooltip.style.display = 'block';
+    });
+    el.addEventListener('mousemove', function (e) { tooltip.style.left = (e.clientX + 14) + 'px'; tooltip.style.top = (e.clientY + 14) + 'px'; });
+    el.addEventListener('mouseleave', function () { tooltip.style.display = 'none'; });
+    cloud.appendChild(el);
+  });
+})();
+</script>
+</body>
+</html>
