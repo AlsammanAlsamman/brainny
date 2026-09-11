@@ -69,34 +69,3 @@ def test_render_badge_svg_escapes_title():
     svg = render_badge_svg(Graph(), title="<script>alert(1)</script>")
     assert "<script>alert(1)</script>" not in svg
     assert "&lt;script&gt;" in svg
-
-
-def test_render_badge_svg_has_animated_robot():
-    # the badge is served raw and embedded via <img>, which never runs
-    # <script> -- the probe's whole back-and-forth-on-a-link, sit-and-
-    # laugh choreography has to be pure declarative SMIL (animateMotion/
-    # animateTransform/animate), not JS. Pin down that it's actually
-    # there, and that every chained id it references is a real element
-    # (a typo in one of these would silently produce a dead robot with no
-    # error anywhere, since browsers don't warn on an unresolved SMIL
-    # syncbase reference).
-    svg = render_badge_svg(Graph(nodes=[_node("idea_0001", "precaution")]))
-    assert "<animateMotion" in svg
-    assert 'fill="freeze"' in svg
-    assert "ha ha!" in svg  # the laugh
-    for slug in ("skills", "techniques", "precautions", "projects", "active"):
-        assert f'id="badge-link-{slug}"' in svg
-        for direction in ("out", "back"):
-            seg_id = f"badge-robot-{slug}-{direction}"
-            assert f'id="{seg_id}"' in svg
-            assert f'href="#badge-link-{slug}"' in svg
-    import re
-
-    referenced_ids = set(re.findall(r'begin="([a-zA-Z0-9_.;\s-]+)"', svg))
-    all_ids = set(re.findall(r'\bid="([^"]+)"', svg))
-    for begin_value in referenced_ids:
-        for token in begin_value.replace(" ", "").split(";"):
-            if token in ("0s",):
-                continue
-            referenced_id = token.split(".")[0]
-            assert referenced_id in all_ids, f"begin= references missing id {referenced_id!r}"

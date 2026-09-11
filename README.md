@@ -350,16 +350,8 @@ brainny badge --out assets/badge.svg # write it somewhere specific
 ```
 
 <p align="center">
-  <img src="assets/badge-example.svg" alt="brAInny activity badge: a brain icon with curved branches leading to small labeled counts for skills, techniques, precautions, projects, and recent activity, with a tiny animated robot probe traveling back and forth along the branches" width="70%">
+  <img src="assets/badge-example.svg" alt="brAInny activity badge: a brain icon with curved branches leading to small labeled counts for skills, techniques, precautions, projects, and recent activity" width="70%">
 </p>
-
-A tiny animated robot rides the badge itself: it travels out along one
-branch at a time, growing or shrinking to match that branch's count (big
-for a busy precautions count, small when a category is empty), heads
-back, moves on to the next branch — and every so often it just sits at
-the hub and laughs for a moment before its next lap. Pure SMIL (no
-JavaScript runs in an `<img>`-embedded SVG), so it animates the same way
-on a GitHub profile page as it does here.
 
 Nothing gets uploaded anywhere — `brainny badge` only ever writes a local
 `.svg` file, same "no silent push" rule as everything else here. Shows:
