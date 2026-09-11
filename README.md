@@ -141,7 +141,25 @@ real, labeled, clickable idea circles.
 
 <p align="center"><sub>Brain tab — same 50-idea example dataset as the screenshots above, not a mockup. Every view, including this one, has a day/night toggle (top-right) that defaults to your system's preference and remembers your choice.</sub></p>
 
-All screenshots (and the preview above) are from the same fabricated
+A fifth tab, **Network**, is the multi-project picture: your central
+brain in the middle, with a small brain for every project connected to
+it — sized by how many of its ideas are currently shown, linked back to
+the hub. This is the one view that's actually about the *central folder*
+(`brainny central --html`) rather than one project's ideas; on a
+single-project dashboard it still works, just with one small brain.
+Click a project to filter the whole dashboard to it (the same filter the
+**project** dropdown uses — they always agree); click the center to
+clear it.
+
+<p align="center">
+  <img src="assets/screenshot-network.png" alt="brAInny dashboard Network tab: a central brain hub in the middle connected to four smaller project brains (brainny, gwas-pipeline, lab-manuscript, lab-website), each sized by its idea count" width="100%">
+</p>
+
+<p align="center"><sub>Network tab — a separate example central folder with 4 real projects (built through the real CLI, not hand-edited), to actually show more than one brain connected.</sub></p>
+
+All screenshots (and the preview above), except the Network tab's — that
+one needs more than one project to be worth showing, so it's a separate
+small fabricated central folder instead — are from the same fabricated
 example dataset (50 ideas across 14 domains, every kind/origin,
 attachments, snippets, and 6 proposed Opportunities) — built to show the
 full dashboard, not the maintainer's real ideas. **Want to click around
@@ -240,6 +258,7 @@ brainny query --html          # a browsable dashboard: brainny-out/graph.html
                                 #   Stats tab: domain treemap, growth trends, kind + origin breakdown
                                 #   Opportunities tab: AI-proposed combinations of ideas
                                 #   Brain tab: edge-bundled mesh + a probe that gathers a live report
+                                #   Network tab: the central brain + a small brain per connected project
                                 #   day/night theme toggle, top-right, in every tab
 brainny open                  # open that dashboard in your browser
 brainny open --central          # ...or the central folder's copy of this project instead

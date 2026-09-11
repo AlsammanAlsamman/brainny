@@ -123,6 +123,24 @@ def test_render_html_has_brain_tab_and_theme_toggle():
     assert ":root[data-theme=\"light\"]" in out
 
 
+def test_render_html_has_network_tab():
+    out = render_html(Graph())
+    assert 'data-tab="network">Network<' in out
+    assert 'id="network-main"' in out
+    assert "renderNetworkView" in out
+    assert "setActiveProject" in out
+
+
+def test_render_html_network_tab_uses_shared_project_filter_state():
+    # the Network tab's clickable project nodes and the existing project
+    # <select> dropdown must agree on the same `activeProject` variable --
+    # a regression here would mean clicking a project in one view doesn't
+    # show up as filtered in the other
+    out = render_html(Graph())
+    assert "if (projectSelect) projectSelect.value = project;" in out
+    assert "projectSelect.addEventListener('change', function () { setActiveProject(projectSelect.value); });" in out
+
+
 def test_render_html_theme_variables_cover_backgrounds():
     out = render_html(Graph())
     # spot-check a couple of the chrome colors that must resolve through

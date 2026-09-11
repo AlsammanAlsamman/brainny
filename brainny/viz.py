@@ -342,8 +342,27 @@ _CSS = """
 
   main { flex: 1; display: grid; grid-template-columns: 300px 1fr; min-height: 0; }
   main#stats-main, main#opportunities-main { display: block; overflow-y: auto; padding: 1.1rem 1.4rem 2rem; }
-  main#brain-main { display: block; overflow: hidden; padding: 0; position: relative; }
-  #graph-main[hidden], #stats-main[hidden], #opportunities-main[hidden], #brain-main[hidden] { display: none !important; }
+  main#brain-main, main#network-main { display: block; overflow: hidden; padding: 0; position: relative; }
+  #graph-main[hidden], #stats-main[hidden], #opportunities-main[hidden], #brain-main[hidden], #network-main[hidden] { display: none !important; }
+
+  /* ---- network tab: the central brain (this central folder, or just
+     this one project when there's nothing else synced into it yet) with
+     a small brain per connected project -- literally what's feeding it
+     ideas. Static, not animated (no probe, no loop) -- a map, not a
+     performance. ---- */
+  #network-main svg { display: block; width: 100%; height: 100%; }
+  .network-link { fill: none; }
+  .network-node { cursor: pointer; }
+  .network-node.dimmed { opacity: 0.35; }
+  .network-label { font-size: 12px; fill: var(--text-muted); pointer-events: none; text-anchor: middle; }
+  .network-count { font-size: 10px; fill: var(--text-fainter); pointer-events: none; text-anchor: middle; }
+  .network-hub-label { font-size: 13px; font-weight: 700; fill: var(--fg); pointer-events: none; text-anchor: middle; }
+  .network-caption {
+    position: absolute; top: 0; left: 0; right: 0; z-index: 2; padding: 0.8rem 1.1rem;
+    background: linear-gradient(180deg, rgba(var(--bg-rgb),0.85), rgba(var(--bg-rgb),0));
+    font-size: 0.78rem; color: var(--text-dimmer); pointer-events: none; max-width: 640px;
+  }
+  .network-caption strong { color: var(--fg); }
 
   /* ---- opportunities tab: AI-proposed combinations of ideas ---- */
   .opp-list { display: flex; flex-direction: column; gap: 0.9rem; max-width: 760px; margin: 0 auto; }
@@ -1975,6 +1994,105 @@ _JS = """
     };
   }
 
+  // ---- network tab: the central brain (this central folder's merged
+  // view, or just this one project when nothing else is synced into it
+  // yet) with a small brain per connected project -- literally what's
+  // feeding it ideas, per the user's own framing. Deliberately static
+  // (no probe, no requestAnimationFrame loop) -- a map to click around
+  // in, not another performance; nothing here needs the teardown
+  // machinery the Brain tab needs. Clicking a project sets the same
+  // `activeProject` filter the dropdown does (and vice versa -- the
+  // dropdown and this view always agree on the current filter);
+  // clicking the hub clears it.
+  function renderNetworkView() {
+    var mount = document.getElementById('network-main');
+    mount.innerHTML = '';
+
+    if (!DATA.nodes.length) {
+      mount.innerHTML = '<p class="empty-note" style="padding:2rem">No ideas captured yet \\u2014 nothing connected to the central brain yet.</p>';
+      return;
+    }
+
+    var data = filteredData();
+    var byProject = {};
+    data.nodes.forEach(function (n) { var p = n.project || 'unknown'; byProject[p] = (byProject[p] || 0) + 1; });
+    var projects = (DATA.projects && DATA.projects.length) ? DATA.projects.slice() : Object.keys(byProject).sort();
+
+    var soloNote = projects.length <= 1
+      ? ' Only one project is synced here so far \\u2014 run <code>brainny sync</code> from another project (pointed at the same central folder) to see it join.'
+      : '';
+    mount.innerHTML =
+      '<div class="network-caption"><strong>Network</strong> \\u2014 the central brain, and every project connected to it. ' +
+      'Click a project to filter the whole dashboard to it; click the center to clear the filter.' + soloNote + '</div>' +
+      '<svg id="network-viz"></svg>';
+
+    var width = mount.clientWidth || 800;
+    var height = mount.clientHeight || 600;
+    var cx = width / 2, cy = height / 2;
+    var ringR = Math.max(90, Math.min(width, height) / 2 - 100);
+    var hubR = 34;
+    var iconHref = document.getElementById('brand-icon').getAttribute('src');
+    var maxCount = Math.max(1, projects.reduce(function (m, p) { return Math.max(m, byProject[p] || 0); }, 0));
+
+    var nodesData = projects.map(function (p, i) {
+      var angle = projects.length === 1 ? -Math.PI / 2 : (i / projects.length) * Math.PI * 2 - Math.PI / 2;
+      var count = byProject[p] || 0;
+      return {
+        project: p, count: count, r: 14 + (count / maxCount) * 22,
+        x: Math.cos(angle) * ringR, y: Math.sin(angle) * ringR,
+      };
+    });
+
+    var svg = d3.select('#network-viz').attr('viewBox', [0, 0, width, height]).attr('width', '100%').attr('height', '100%');
+    var g = svg.append('g').attr('transform', 'translate(' + cx + ',' + cy + ')');
+
+    g.append('g').selectAll('path').data(nodesData).join('path')
+      .attr('class', 'network-link')
+      .attr('d', function (d) { return 'M0,0 Q' + (d.x * 0.5) + ',' + (d.y * 0.5) + ' ' + d.x + ',' + d.y; })
+      .attr('stroke', function (d) { return d.count > 0 ? '#e8b23d' : 'rgba(var(--overlay-rgb),0.3)'; })
+      .attr('stroke-width', function (d) { return d.count > 0 ? 1.2 + (d.count / maxCount) * 2.6 : 1; })
+      .attr('opacity', function (d) {
+        if (activeProject !== 'all' && activeProject !== d.project) return 0.12;
+        return d.count > 0 ? 0.65 : 0.3;
+      });
+
+    var hub = g.append('g').attr('class', 'network-node')
+      .on('click', function () { setActiveProject('all'); })
+      .on('mouseenter', function (event) { showTooltip(event, '<div class="tt-title">central brain</div><div class="tt-meta">' + DATA.nodes.length + ' idea(s) \\u00b7 ' + projects.length + ' project(s) \\u00b7 click to clear the project filter</div>'); })
+      .on('mousemove', function (event) { showTooltip(event, '<div class="tt-title">central brain</div><div class="tt-meta">' + DATA.nodes.length + ' idea(s) \\u00b7 ' + projects.length + ' project(s) \\u00b7 click to clear the project filter</div>'); })
+      .on('mouseleave', hideTooltip);
+    hub.append('circle').attr('r', hubR + 6).attr('fill', 'rgba(232,178,61,0.12)');
+    hub.append('circle').attr('r', hubR).attr('fill', '#111a14')
+      .attr('stroke', activeProject === 'all' ? '#e8b23d' : 'rgba(232,178,61,0.5)')
+      .attr('stroke-width', activeProject === 'all' ? 2.6 : 1.6);
+    hub.append('image').attr('href', iconHref)
+      .attr('x', -hubR * 0.62).attr('y', -hubR * 0.62).attr('width', hubR * 1.24).attr('height', hubR * 1.24);
+    hub.append('text').attr('class', 'network-hub-label').attr('y', hubR + 20).text('central brain');
+    hub.append('text').attr('class', 'network-count').attr('y', hubR + 34)
+      .text(DATA.nodes.length + ' idea(s) \\u00b7 ' + projects.length + ' project(s)');
+
+    g.append('g').selectAll('g').data(nodesData).join('g')
+      .attr('class', function (d) { return 'network-node' + (activeProject !== 'all' && activeProject !== d.project ? ' dimmed' : ''); })
+      .attr('transform', function (d) { return 'translate(' + d.x + ',' + d.y + ')'; })
+      .on('click', function (event, d) { setActiveProject(activeProject === d.project ? 'all' : d.project); })
+      .on('mouseenter', function (event, d) { showTooltip(event, '<div class="tt-title">' + escapeHtml(d.project) + '</div><div class="tt-meta">' + d.count + ' idea(s) currently shown \\u00b7 click to filter</div>'); })
+      .on('mousemove', function (event, d) { showTooltip(event, '<div class="tt-title">' + escapeHtml(d.project) + '</div><div class="tt-meta">' + d.count + ' idea(s) currently shown \\u00b7 click to filter</div>'); })
+      .on('mouseleave', hideTooltip)
+      .call(function (sel) {
+        sel.append('circle').attr('r', function (d) { return d.r + 5; }).attr('fill', 'rgba(59,111,214,0.1)');
+        sel.append('circle').attr('r', function (d) { return d.r; }).attr('fill', '#111a14')
+          .attr('stroke', function (d) { return activeProject === d.project ? '#e8b23d' : 'rgba(59,111,214,0.55)'; })
+          .attr('stroke-width', function (d) { return activeProject === d.project ? 2.4 : 1.4; });
+        sel.append('image').attr('href', iconHref)
+          .attr('x', function (d) { return -d.r * 0.62; }).attr('y', function (d) { return -d.r * 0.62; })
+          .attr('width', function (d) { return d.r * 1.24; }).attr('height', function (d) { return d.r * 1.24; });
+        sel.append('text').attr('class', 'network-label').attr('y', function (d) { return d.r + 16; })
+          .text(function (d) { return d.project.length > 22 ? d.project.slice(0, 20) + '\\u2026' : d.project; });
+        sel.append('text').attr('class', 'network-count').attr('y', function (d) { return d.r + 30; })
+          .text(function (d) { return d.count + ' idea(s)'; });
+      });
+  }
+
   // ---- dropdown + tab wiring ----
   var VIEWS = { radial: renderRadialTree, force: renderForceClusters };
   var currentCleanup = null;
@@ -2011,6 +2129,7 @@ _JS = """
     document.getElementById('stats-main').hidden = name !== 'stats';
     document.getElementById('opportunities-main').hidden = name !== 'opportunities';
     document.getElementById('brain-main').hidden = name !== 'brain';
+    document.getElementById('network-main').hidden = name !== 'network';
     select.style.display = name === 'graph' ? '' : 'none';
     descEl.hidden = name !== 'graph';
     if (name === 'stats') {
@@ -2019,6 +2138,8 @@ _JS = """
       renderOpportunitiesView();
     } else if (name === 'brain') {
       renderBrainView();
+    } else if (name === 'network') {
+      renderNetworkView();
     } else if (!currentCleanup && filteredData().nodes.length) {
       switchView(select.value);
     }
@@ -2052,6 +2173,7 @@ _JS = """
     if (activeTab === 'stats') renderStatsView();
     else if (activeTab === 'opportunities') renderOpportunitiesView();
     else if (activeTab === 'brain') renderBrainView();
+    else if (activeTab === 'network') renderNetworkView();
     else switchView(select.value);
   }
 
@@ -2065,13 +2187,18 @@ _JS = """
   });
   applyOriginFilterUI();
 
+  // shared by the project <select> (when this is a merged multi-project
+  // view) and the Network tab's clickable nodes -- both just need to
+  // agree on `activeProject` and stay in sync with each other.
   var projectSelect = document.getElementById('project-filter');
+  function setActiveProject(project) {
+    activeProject = project;
+    if (projectSelect) projectSelect.value = project;
+    refreshItemList();
+    refreshActiveTab();
+  }
   if (projectSelect) {
-    projectSelect.addEventListener('change', function () {
-      activeProject = projectSelect.value;
-      refreshItemList();
-      refreshActiveTab();
-    });
+    projectSelect.addEventListener('change', function () { setActiveProject(projectSelect.value); });
   }
 
   switchView(select.value);
@@ -2080,6 +2207,7 @@ _JS = """
     if (activeTab === 'graph') switchView(select.value);
     else if (activeTab === 'stats') renderStatsView();
     else if (activeTab === 'brain') renderBrainView();
+    else if (activeTab === 'network') renderNetworkView();
   });
 
   // ---- day/night theme toggle: localStorage persists an explicit choice;
@@ -2143,11 +2271,17 @@ def render_html(graph: Graph, opportunities: Opportunities | None = None, title:
     circles — clicking one jumps to it in the Graph tab's list, same as
     every other view. See renderBrainView() in the JS below for exactly
     how this differs from the standalone prototype it was ported from
-    (examples/viz-prototypes/12-neural-bundle.html). Falls back to the
-    plain terminal tree in the (now near-impossible) case the embedded D3
-    fails to execute. No server involved — a static, self-contained,
-    git-shareable file that renders identically with zero network
-    access."""
+    (examples/viz-prototypes/12-neural-bundle.html). Network tab: the
+    central brain (this central folder's merged view, or just this one
+    project when nothing else is synced into it yet) with a small brain
+    per connected project, sized by how many of its ideas are currently
+    shown — literally what's feeding the central brain, and how much.
+    Static, not animated. Clicking a project sets the same project filter
+    the dropdown does (and vice versa); clicking the center clears it.
+    Falls back to the plain terminal tree in the (now near-impossible)
+    case the embedded D3 fails to execute. No server involved — a
+    static, self-contained, git-shareable file that renders identically
+    with zero network access."""
     if opportunities is None:
         opportunities = Opportunities()
 
@@ -2237,6 +2371,7 @@ def render_html(graph: Graph, opportunities: Opportunities | None = None, title:
       <button type="button" class="tab-btn" data-tab="stats">Stats</button>
       <button type="button" class="tab-btn" data-tab="opportunities">Opportunities{f' ({len(opportunities.items)})' if opportunities.items else ''}</button>
       <button type="button" class="tab-btn" data-tab="brain">Brain</button>
+      <button type="button" class="tab-btn" data-tab="network">Network</button>
     </nav>
     <select id="view-select">
       <option value="radial">Radial tree</option>
@@ -2264,6 +2399,7 @@ def render_html(graph: Graph, opportunities: Opportunities | None = None, title:
 <main id="stats-main" hidden></main>
 <main id="opportunities-main" hidden></main>
 <main id="brain-main" hidden></main>
+<main id="network-main" hidden></main>
 <div id="tooltip"></div>
 <pre id="fallback" hidden>{_esc(render_tree(graph))}</pre>
 <script id="brainny-data" type="application/json">"""

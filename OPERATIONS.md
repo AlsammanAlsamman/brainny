@@ -1025,5 +1025,51 @@ permission-gated local check — see above.
       pollution after testing (none — this step didn't exercise
       capture/attach).
 
+26. Network tab (5th dashboard view): the central brain + a small brain per project. ✅
+    - User's ask, close to verbatim: "a tab where a central brain we have
+      and we have small brains connected to it, those are the projects
+      that have brainny and brainny got ideas from it and connected to
+      it." This is the one dashboard view that's actually *about* the
+      central folder rather than one project's ideas -- the hub is the
+      merged central view (`brainny central --html`; on a single-project
+      dashboard it still renders, just with one small brain, and a note
+      explaining that more show up once more projects are synced).
+    - `renderNetworkView()` in `viz.py`: reuses `payload.projects`
+      (already computed for the existing project filter) and per-project
+      counts from `filteredData()` (so, like every other tab, it respects
+      the origin filter too). Deliberately static -- no probe, no
+      `requestAnimationFrame` loop, no teardown machinery needed, unlike
+      the Brain tab -- a map to click around in, not another
+      performance; the two prior asks this session (the Brain tab probe
+      redesign, the animated badge robot) both got reverted as "too
+      much," so this one stayed intentionally restrained. The brain icon
+      for the hub and every satellite is the SAME image already baked
+      into the header as `#brand-icon` -- read via
+      `document.getElementById('brand-icon').getAttribute('src')` rather
+      than duplicating the base64 data into the JSON payload.
+    - Clicking a project node calls the same `setActiveProject()` the
+      existing project `<select>` dropdown now also calls (refactored
+      out of that dropdown's own `change` handler) -- both stay in sync
+      with each other and with every other tab's project filter, in
+      either direction. Clicking the hub clears the filter. The current
+      filter is reflected visually: the selected project's node and link
+      stay full brightness with a gold ring, the rest dim.
+    - 2 new tests (`test_render_html_has_network_tab`,
+      `test_render_html_network_tab_uses_shared_project_filter_state`) —
+      140 tests total. Verified with headless Chrome against two real
+      scenarios: the existing single-project example dataset (correctly
+      shows one small brain with a "sync another project to see it join"
+      note), and a genuine 4-project central folder built through the
+      real `capture()`/`build_merged_graph()` functions directly (not
+      the CLI, so no `_sync_to_central` mirroring risk, and confirmed no
+      pollution of the real central folder afterward) -- confirmed
+      node sizing scales with idea count, and confirmed clicking a
+      project node correctly filters the dashboard (dims the other
+      nodes, updates the project dropdown to match, and the merged-view
+      subtitle/counts respond) via an injected click event. This second
+      dataset became `assets/screenshot-network.png` for the README,
+      since the single-project example dataset can't show what this tab
+      is actually for.
+
 Each step should land, get tested, and get dogfooded (per SEED.md §6
 Layer 7) before the next starts — same discipline as the v0 build.
