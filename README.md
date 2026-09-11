@@ -130,16 +130,13 @@ A fourth tab, **Brain**, is a different way to look at the same ideas:
 every connection between them — same kind, same domain, and (brightest)
 proven to combine in an Opportunity — bundled into one living mesh that
 resolves into a brain silhouette, no literal neuron dots needed. An
-old-style robot probe travels out from the center to one branch at a
-time, showing that branch's average readiness and firing an electric
-surge through it — its rim glows, its own connections briefly light up,
-and a few sparks race along them — then heads back to the center before
-shooting out to the next branch, gathering a live scrolling report the
-whole time. Click anywhere to open the mesh into real, labeled, clickable
-idea circles.
+old-style robot probe circles it continuously, pausing on ideas with real
+evidence behind them to show a percent-ready readout, and gathering a
+live scrolling report as it passes. Click anywhere to open the mesh into
+real, labeled, clickable idea circles.
 
 <p align="center">
-  <img src="examples/demo/brain-preview.gif" alt="Animated preview of brainny's Brain tab on the same 50-idea example dataset: an old-style robot probe traveling out from the center to a branch, firing an electric surge through it, then heading back and out to the next branch" width="100%">
+  <img src="examples/demo/brain-preview.gif" alt="Animated preview of brainny's Brain tab on the same 50-idea example dataset: hierarchical edge-bundled connections forming a brain silhouette, with an old-style robot probe circling it and an Opportunity lit up in the mesh" width="100%">
 </p>
 
 <p align="center"><sub>Brain tab — same 50-idea example dataset as the screenshots above, not a mockup. Every view, including this one, has a day/night toggle (top-right) that defaults to your system's preference and remembers your choice.</sub></p>
