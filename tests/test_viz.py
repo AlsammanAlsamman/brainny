@@ -123,6 +123,21 @@ def test_render_html_has_brain_tab_and_theme_toggle():
     assert ":root[data-theme=\"light\"]" in out
 
 
+def test_render_html_brain_probe_travels_branch_to_branch():
+    out = render_html(Graph())
+    # the probe's movement is a branch-hopping state machine (out to a
+    # branch, electric surge, back to center, next branch) -- not the
+    # earlier continuous rim orbit, which this pins down so a future
+    # revert wouldn't slip by unnoticed
+    assert "electricSurge" in out
+    assert "PHASE_DURATION" in out
+    assert "branchOrder" in out
+    assert "reportBranchArrival" in out
+    # the old orbit-specific state must actually be gone, not just unused
+    for stale in ("probeAngle", "summarizeLap", "reportedThisLap", "angleDist"):
+        assert stale not in out
+
+
 def test_render_html_theme_variables_cover_backgrounds():
     out = render_html(Graph())
     # spot-check a couple of the chrome colors that must resolve through

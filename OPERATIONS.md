@@ -1025,5 +1025,70 @@ permission-gated local check — see above.
       pollution after testing (none — this step didn't exercise
       capture/attach).
 
+26. Brain tab probe redesign: branch-to-branch travel + electric surges. ✅
+    - User feedback on step 25's continuous-rim-orbit probe: "make the
+      page also dynamic with robot going to a branch and then back the
+      brain and then to the next branch and the branches fires with
+      electricity glowing signals." Replaced the whole probe movement
+      model in `renderBrainView()` with a small state machine
+      (`phase`: `out` -> `dwell` -> `in` -> `out`, `PHASE_DURATION` per
+      leg, eased with `easeInOutCubic`): the probe travels radially from
+      near the center out to one domain's rim angle (`domainAngleMid`,
+      captured when the rim arcs are built), dwells there while an
+      "electric surge" fires, then travels back toward the center while
+      ALSO swinging its angle toward the next branch (`lerpAngleShort`,
+      a shortest-path angle lerp so a transition near the 0/2*PI seam
+      doesn't swing the long way around) so the next outbound leg is a
+      clean straight shot. `branchIndex` cycles through `domains` in
+      order; wrapping back to 0 triggers `summarizeCycle()` (renamed
+      from the old orbit's `summarizeLap()` — a "cycle" is now one full
+      pass over every branch, not one loop of the rim).
+    - `electricSurge(dom, t)`: a rapid irregular flicker on that branch's
+      own rim arc (plain `setTimeout` sequence, not a chained D3
+      transition -- interrupting the ambient "breathing" transition
+      already running on that arc fires D3's `interrupt` event instead
+      of `end`, which would have silently broken its self-rescheduling
+      loop the first time a surge ever touched it; `startBreath()` was
+      pulled out into its own function with a `domainBreathToken` guard
+      specifically so a surge can invalidate an old breathing loop and
+      start a fresh one afterward), that branch's own idea circles
+      briefly at full brightness, and a handful of bright sparks racing
+      along that branch's own `local` (strictly same-domain) links for
+      the rest of the dwell -- driven every frame from the main `tick()`
+      loop via `activeSparks` + `getPointAtLength`, the same sampling
+      technique the Opportunity signal pulses already used, rather than
+      a second independent timer. `reportBranchArrival()` replaces the
+      old per-leaf "passing by" reports with a per-branch one (idea
+      count + average readiness, plus 1-2 sampled idea lines).
+    - Removed as dead code once no longer reachable: `angleDist` (the
+      old orbit's near-a-leaf check), `probeAngle`/`stopUntilTs`/
+      `showingPct`/`reportedThisLap`/`lapCount`. A new test
+      (`test_render_html_brain_probe_travels_branch_to_branch`) pins
+      down both the new state machine's presence AND that these are
+      actually gone, not just unused.
+    - Verified two ways: `node --check` on the extracted `_JS` (valid
+      syntax), and headless Chrome with a temporary debug hook
+      (`window.__brainCustom2`, generation-only, never shipped) that
+      freezes the animation loop and jumps straight to an arbitrary
+      branch/transit-fraction/surge combination, screenshotted directly
+      -- the same reason step 25's `window.__brainFrame` needed the
+      animation loop frozen: the still-running `tick()` would otherwise
+      keep overwriting a manually-set position on its very next frame.
+      Also ran a 6-second natural (non-frozen) render with a
+      `window.onerror` collector and confirmed zero exceptions across
+      many full phase cycles -- an uncaught error inside `tick()` would
+      silently and permanently kill the rest of the animation, since
+      nothing would be left to call `requestAnimationFrame` again.
+    - Regenerated `examples/demo/brain-preview.gif` against the new
+      behavior using the same real-headless-Chrome-frames-via-Pillow
+      approach as step 25, this time driving a purpose-built debug hook
+      through several out/transit/arrival combinations across 6 branches
+      so the GIF visibly shows the requested motion: robot shoots out to
+      a branch, that branch's rim lights up with the electric surge,
+      robot heads back near center, then out to the next one. Updated
+      the README paragraph and this file's own describing text
+      accordingly (the old wording described the retired continuous-
+      orbit behavior).
+
 Each step should land, get tested, and get dogfooded (per SEED.md §6
 Layer 7) before the next starts — same discipline as the v0 build.

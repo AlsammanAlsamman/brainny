@@ -1528,28 +1528,52 @@ web-app/
     var g = svg.append('g').attr('transform', 'translate(' + cx + ',' + cy + ')');
 
     var rimG = g.append('g');
+    // per-domain lookups the branch-hopping probe (below) needs: where a
+    // branch's rim arc sits (angle to travel to, and the arc/color to
+    // light up when the probe arrives) and its baseline brightness (to
+    // restore to once the electric surge finishes).
+    var domainAngleMid = {};
+    var rimArcByDomain = {};
+    var domainBaseState = {};
+    // each domain's ambient "breathing" glow is a self-rescheduling
+    // transition chain (loop() below) -- when the probe's electric surge
+    // (further down) needs to briefly hijack an arc's styling with a
+    // flicker, it bumps this domain's token first, which makes any
+    // in-flight breathing loop for that domain see a stale token on its
+    // next iteration and quietly stop instead of fighting the flicker;
+    // the surge starts a fresh loop (new token) once it's done.
+    var domainBreathToken = {};
+    function startBreath(dom) {
+      var base = domainBaseState[dom];
+      var arcEl = rimArcByDomain[dom];
+      if (!base || !arcEl || base.brightness <= 0.25) return;
+      var myToken = ++domainBreathToken[dom];
+      (function loop() {
+        if (!alive || domainBreathToken[dom] !== myToken) return;
+        arcEl.transition().duration(1400 + Math.random() * 600).attr('opacity', 0.16 + base.brightness * 0.5)
+          .transition().duration(1400 + Math.random() * 600).attr('opacity', 0.16 + base.brightness * 0.84)
+          .on('end', loop);
+      })();
+    }
     domains.forEach(function (dom) {
       var domLeaves = leaves.filter(function (l) { return l.data.idea.domain === dom; });
       if (!domLeaves.length) return;
       var a0 = d3.min(domLeaves, function (l) { return l.x; }) - 0.01;
       var a1 = d3.max(domLeaves, function (l) { return l.x; }) + 0.01;
+      domainAngleMid[dom] = (a0 + a1) / 2;
       var arc = d3.arc().innerRadius(outerR + 14).outerRadius(outerR + 14).startAngle(a0).endAngle(a1);
       var avgEvidence = d3.mean(domLeaves, function (l) { return evidence(l.data.idea); });
       var brightness = Math.min(1, avgEvidence / 2.2);
       var color = domainColor(dom);
+      domainBaseState[dom] = { strokeWidth: 2 + brightness * 7, opacity: 0.16 + brightness * 0.84, brightness: brightness, color: color };
       var arcEl = rimG.append('path').attr('class', 'rim-arc').attr('d', arc())
         .attr('stroke', color)
         .attr('stroke-width', 2 + brightness * 7)
         .attr('opacity', 0.16 + brightness * 0.84)
         .style('filter', brightness > 0.25 ? 'drop-shadow(0 0 ' + (2 + brightness * 9) + 'px ' + color + ')' : 'none');
-      if (brightness > 0.25) {
-        (function loopBreath() {
-          if (!alive) return;
-          arcEl.transition().duration(1400 + Math.random() * 600).attr('opacity', 0.16 + brightness * 0.5)
-            .transition().duration(1400 + Math.random() * 600).attr('opacity', 0.16 + brightness * 0.84)
-            .on('end', loopBreath);
-        })();
-      }
+      rimArcByDomain[dom] = arcEl;
+      domainBreathToken[dom] = 0;
+      startBreath(dom);
     });
 
     var linkG = g.append('g');
@@ -1566,6 +1590,17 @@ web-app/
       .attr('stroke', function (d) { return LINK_STYLE[linkType(d)].color(d); })
       .attr('stroke-width', function (d) { return LINK_STYLE[linkType(d)].width; })
       .attr('opacity', function (d) { return LINK_STYLE[linkType(d)].opacity; });
+    var linkPathNodes = linkPaths.nodes();
+
+    // which of `pairs` (by index) are the strictly-same-domain "local"
+    // links for each domain -- what the probe's electric surge (below)
+    // races sparks along and flashes when it arrives at that branch.
+    var domainLocalLinkIdx = {};
+    pairs.forEach(function (d, i) {
+      if (d[2] !== 'local') return;
+      var dom = d[0].data.idea.domain;
+      (domainLocalLinkIdx[dom] = domainLocalLinkIdx[dom] || []).push(i);
+    });
 
     var signalPathSel = linkG.selectAll('path.signal').data(signalPairs).join('path')
       .attr('class', 'bundle-link signal')
@@ -1651,8 +1686,6 @@ web-app/
 
     // ---- scanning probe (old-tin-robot) + report ----
     var reportLines = document.getElementById('brain-report-lines');
-    var reportedThisLap = {};
-    var lapCount = 0;
     var MAX_LINES = 10;
 
     function addReportLine(html) {
@@ -1669,8 +1702,8 @@ web-app/
       function (n) { return 'Signal in <b>' + escapeHtml(n.domain) + '</b>: ' + escapeHtml(n.title.toLowerCase()); },
     ];
 
-    var probeAngle = 0;
     var probeR = outerR + 30;
+    var CENTER_R = 26;
     var METAL = '#9aab97', METAL_DARK = '#5c6b63', LIGHT = '#ffe08c', LIGHT_BRIGHT = '#fff3d0';
 
     var TRAIL_LEN = 16;
@@ -1710,13 +1743,6 @@ web-app/
       .attr('fill', LIGHT_BRIGHT).style('paint-order', 'stroke').style('stroke', '#070c0a').style('stroke-width', '3px')
       .attr('opacity', 0);
 
-    // Minimal angular distance, 0..PI -- NOT `Math.abs(a - b)` alone, which
-    // breaks across the 0/2*PI wrap point.
-    function angleDist(a, b) {
-      var raw = Math.abs(a - b) % (Math.PI * 2);
-      return raw > Math.PI ? Math.PI * 2 - raw : raw;
-    }
-
     function limbEnd(pivotY, angRad, len) { return [Math.sin(angRad) * len, pivotY + Math.cos(angRad) * len]; }
     function placeFoot(rectSel, end, angRad) {
       rectSel.attr('transform', 'translate(' + end[0] + ',' + end[1] + ') rotate(' + (angRad * 180 / Math.PI) + ') translate(-2.5,-1.2)');
@@ -1752,29 +1778,157 @@ web-app/
     var readiness = {};
     data.nodes.forEach(function (n) { readiness[itemKey(n)] = Math.round(Math.min(1, evidence(n) / 4) * 100); });
 
-    var stopUntilTs = -1;
-    var showingPct = false;
+    function avgReadinessFor(dom) {
+      var domLeaves = leaves.filter(function (l) { return l.data.idea.domain === dom; });
+      if (!domLeaves.length) return 0;
+      var sum = 0;
+      domLeaves.forEach(function (l) { sum += readiness[itemKey(l.data.idea)] || 0; });
+      return Math.round(sum / domLeaves.length);
+    }
+
+    function reportBranchArrival(dom) {
+      var domLeaves = leaves.filter(function (l) { return l.data.idea.domain === dom; });
+      addReportLine('Arrived at <b>' + escapeHtml(dom) + '</b> \u2014 ' + domLeaves.length + ' idea(s), ' + avgReadinessFor(dom) + '% ready on average');
+      domLeaves.slice().sort(function () { return Math.random() - 0.5; }).slice(0, Math.min(2, domLeaves.length)).forEach(function (l) {
+        var tmpl = templates[Math.floor(Math.random() * templates.length)];
+        addReportLine(tmpl(l.data.idea));
+      });
+    }
+
+    // ---- electric surge: fired once, right as the probe arrives at a
+    // branch -- a rapid irregular flicker on that branch's own rim arc
+    // (a real jolt, not a smooth fade), its idea circles briefly lit at
+    // full brightness, and a handful of bright sparks racing along that
+    // branch's own local links for the rest of the dwell. Deliberately
+    // NOT built as a D3 transition chained onto the ambient "breathing"
+    // transition already running on that arc -- interrupting one
+    // transition to start another fires D3's 'interrupt' event instead
+    // of 'end', which would silently kill the breathing loop's self-
+    // rescheduling chain (see startBreath's `domainBreathToken` comment)
+    // the first time a surge ever touched it. Plain setTimeouts sidestep
+    // that entirely, at the cost of needing to cancel them explicitly on
+    // teardown (see `pendingTimers` in brainCleanup below).
+    var pendingTimers = [];
+    var activeSparks = null;
+    function electricSurge(dom, t) {
+      var arcEl = rimArcByDomain[dom];
+      var base = domainBaseState[dom];
+      if (arcEl && base) {
+        domainBreathToken[dom] = (domainBreathToken[dom] || 0) + 1; // stops any in-flight breathing loop for this arc
+        arcEl.interrupt();
+        var FLICKER_N = 5, FLICKER_STEP = 55;
+        for (var i = 0; i <= FLICKER_N; i++) {
+          (function (on) {
+            pendingTimers.push(setTimeout(function () {
+              if (!alive) return;
+              arcEl.attr('stroke', on ? '#fff3d0' : base.color)
+                .attr('stroke-width', on ? base.strokeWidth + 6 : base.strokeWidth)
+                .attr('opacity', on ? 1 : Math.max(0.5, base.opacity))
+                .style('filter', on ? 'drop-shadow(0 0 14px #fff3d0)' : (base.brightness > 0.25 ? 'drop-shadow(0 0 ' + (2 + base.brightness * 9) + 'px ' + base.color + ')' : 'none'));
+            }, i * FLICKER_STEP));
+          })(i % 2 === 0);
+        }
+        pendingTimers.push(setTimeout(function () {
+          if (!alive) return;
+          arcEl.attr('stroke', base.color).attr('stroke-width', base.strokeWidth).attr('opacity', base.opacity)
+            .style('filter', base.brightness > 0.25 ? 'drop-shadow(0 0 ' + (2 + base.brightness * 9) + 'px ' + base.color + ')' : 'none');
+          startBreath(dom);
+        }, (FLICKER_N + 1) * FLICKER_STEP + 250));
+      }
+
+      nodeSel.filter(function (l) { return l.data.idea.domain === dom; })
+        .transition().duration(200).attr('fill-opacity', 1)
+        .transition().delay(Math.max(0, PHASE_DURATION.dwell - 600)).duration(400).attr('fill-opacity', 0.55);
+
+      var idx = domainLocalLinkIdx[dom] || [];
+      var count = Math.min(5, idx.length);
+      if (count > 0) {
+        var chosen = [];
+        for (var k = 0; k < count; k++) chosen.push(idx[Math.floor(Math.random() * idx.length)]);
+        var els = chosen.map(function () {
+          return pulseLayer.append('circle').attr('r', 2.2).attr('fill', '#fff3d0')
+            .style('filter', 'drop-shadow(0 0 6px #fff3d0) drop-shadow(0 0 3px #bfe36b)');
+        });
+        activeSparks = { pathIdxs: chosen, els: els, startT: t };
+      }
+    }
+
+    // ---- branch-hopping probe: out to a branch, dwell (electric surge
+    // fires here), back to the brain, then out to the next branch --
+    // rather than the old continuous rim orbit. `phase` cycles
+    // out -> dwell -> in -> out; only the `in` (return) leg also swings
+    // the angle toward the next branch, so the outbound leg is a clean
+    // straight radial shot once it's re-aimed.
+    var PHASE_DURATION = { out: 850, dwell: 1500, in: 850 };
+    var branchOrder = domains.slice();
+    var branchIndex = 0;
+    var phase = 'out';
+    var phaseStart = null;
+    var fromAngle = domainAngleMid[branchOrder[0]] || 0;
+    var toAngle = fromAngle;
+    var cyclesCompleted = 0;
     var rafId = null;
+
+    function easeInOutCubic(p) { return p < 0.5 ? 4 * p * p * p : 1 - Math.pow(-2 * p + 2, 3) / 2; }
+
+    // shortest-path angle interpolation -- a plain lerp between e.g. 0.1
+    // and 6.1 rad would swing almost all the way around instead of the
+    // short way across the 0/2*PI seam.
+    function lerpAngleShort(a, b, frac) {
+      var diff = ((b - a + Math.PI * 3) % (Math.PI * 2)) - Math.PI;
+      return a + diff * frac;
+    }
 
     function tick(t) {
       if (!alive) return;
       if (!opened) {
-        var stopped = t < stopUntilTs;
-        if (!stopped) {
-          probeAngle += 0.004;
-          if (probeAngle > Math.PI * 2) { probeAngle -= Math.PI * 2; lapCount++; reportedThisLap = {}; summarizeLap(); }
-          if (showingPct) { showingPct = false; pctLabel.transition().duration(250).attr('opacity', 0); }
+        if (phaseStart === null) phaseStart = t;
+        var dur = PHASE_DURATION[phase];
+        var p = Math.min(1, (t - phaseStart) / dur);
+        var eased = easeInOutCubic(p);
+        var currentDom = branchOrder[branchIndex];
+        var angle, r, running;
+
+        if (phase === 'out') {
+          angle = domainAngleMid[currentDom];
+          r = CENTER_R + (probeR - CENTER_R) * eased;
+          running = true;
+          if (p >= 1) {
+            phase = 'dwell'; phaseStart = t;
+            electricSurge(currentDom, t);
+            reportBranchArrival(currentDom);
+            pctLabel.text(avgReadinessFor(currentDom) + '% ready').transition().duration(150).attr('opacity', 1);
+          }
+        } else if (phase === 'dwell') {
+          angle = domainAngleMid[currentDom];
+          r = probeR;
+          running = false;
+          if (p >= 1) {
+            phase = 'in'; phaseStart = t;
+            pctLabel.transition().duration(250).attr('opacity', 0);
+            var nextDom = branchOrder[(branchIndex + 1) % branchOrder.length];
+            fromAngle = domainAngleMid[currentDom];
+            toAngle = domainAngleMid[nextDom];
+          }
+        } else { // 'in' -- back toward the brain, swinging toward the next branch
+          angle = lerpAngleShort(fromAngle, toAngle, eased);
+          r = probeR - (probeR - CENTER_R) * eased;
+          running = true;
+          if (p >= 1) {
+            branchIndex = (branchIndex + 1) % branchOrder.length;
+            if (branchIndex === 0) { cyclesCompleted++; summarizeCycle(); }
+            phase = 'out'; phaseStart = t;
+          }
         }
-        var pp = leafXY({ x: probeAngle, y: 1 }, probeR);
-        var facingDeg = probeAngle * 180 / Math.PI;
-        var bounce = stopped ? poseIdle(t) : poseRobot(t * 0.014);
+
+        var pp = leafXY({ x: angle, y: 1 }, r);
+        var facingDeg = angle * 180 / Math.PI;
+        var bounce = running ? poseRobot(t * 0.014) : poseIdle(t);
         robot.attr('transform', 'translate(' + pp[0] + ',' + (pp[1] + bounce) + ') rotate(' + facingDeg + ')').attr('opacity', 1);
         pctLabel.attr('transform', 'translate(0,-32) rotate(' + (-facingDeg) + ')');
 
-        if (!stopped) {
-          trailPts.unshift([pp[0], pp[1] + bounce]);
-          if (trailPts.length > TRAIL_LEN) trailPts.length = TRAIL_LEN;
-        }
+        trailPts.unshift([pp[0], pp[1] + bounce]);
+        if (trailPts.length > TRAIL_LEN) trailPts.length = TRAIL_LEN;
         trailEls.forEach(function (el, i) {
           var pt = trailPts[i];
           if (!pt) { el.attr('opacity', 0); return; }
@@ -1782,23 +1936,22 @@ web-app/
           el.attr('cx', pt[0]).attr('cy', pt[1]).attr('r', 3.2 * frac).attr('opacity', 0.5 * frac * frac);
         });
 
-        if (!stopped) {
-          leaves.forEach(function (l) {
-            var near = angleDist(l.x, probeAngle) < 0.035;
-            var key = itemKey(l.data.idea);
-            if (!near || reportedThisLap[key]) return;
-            reportedThisLap[key] = true;
-            var tmpl = templates[Math.floor(Math.random() * templates.length)];
-            addReportLine(tmpl(l.data.idea));
-            d3.select(nodeSel.nodes()[leaves.indexOf(l)]).attr('fill-opacity', 1).transition().duration(1200).attr('fill-opacity', 0.55);
-
-            var pct = readiness[key];
-            if (pct > 0) {
-              stopUntilTs = t + 1100;
-              showingPct = true;
-              pctLabel.text(pct + '% ready').transition().duration(150).attr('opacity', 1);
-            }
-          });
+        if (activeSparks) {
+          var sparkElapsed = t - activeSparks.startT;
+          if (sparkElapsed > PHASE_DURATION.dwell - 100) {
+            activeSparks.els.forEach(function (el) { el.remove(); });
+            activeSparks = null;
+          } else {
+            activeSparks.pathIdxs.forEach(function (pathIdx, i) {
+              var pathEl = linkPathNodes[pathIdx];
+              if (!pathEl) return;
+              var len = pathEl.getTotalLength();
+              if (!len) return;
+              var frac = ((sparkElapsed / 260) + i / activeSparks.pathIdxs.length) % 1;
+              var pos = pathEl.getPointAtLength(frac * len);
+              activeSparks.els[i].attr('cx', pos.x).attr('cy', pos.y).attr('opacity', 0.9);
+            });
+          }
         }
       } else {
         robot.attr('opacity', 0);
@@ -1808,11 +1961,11 @@ web-app/
       rafId = requestAnimationFrame(tick);
     }
 
-    function summarizeLap() {
+    function summarizeCycle() {
       var byKindCount = {};
       data.nodes.forEach(function (n) { byKindCount[n.kind] = (byKindCount[n.kind] || 0) + 1; });
       var top = Object.keys(byKindCount).sort(function (a, b) { return byKindCount[b] - byKindCount[a]; })[0];
-      document.querySelector('#brain-report h3').textContent = 'Lap ' + lapCount + ' complete \u2014 ' + data.nodes.length + ' ideas \u00b7 ' + domains.length + ' domains \u00b7 mostly ' + top;
+      document.querySelector('#brain-report h3').textContent = 'Cycle ' + cyclesCompleted + ' complete \u2014 ' + data.nodes.length + ' ideas \u00b7 ' + domains.length + ' domains \u00b7 mostly ' + top;
     }
 
     var oppCycleIndex = 0;
@@ -1892,6 +2045,7 @@ web-app/
       clearTimeout(revealStartTimer);
       if (revealIntervalId !== null) clearInterval(revealIntervalId);
       clearTimeout(constellationHideTimer);
+      pendingTimers.forEach(clearTimeout);
     };
   }
 
