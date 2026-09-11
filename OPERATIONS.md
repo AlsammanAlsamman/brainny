@@ -1025,5 +1025,66 @@ permission-gated local check — see above.
       pollution after testing (none — this step didn't exercise
       capture/attach).
 
+26. Animated robot on the activity badge. ✅
+    - User's ask: a small robot on `assets/badge-example.svg` that goes
+      back and forth on the badge's own branches, growing/shrinking
+      depending on which branch it's on, and every so often sits down
+      and laughs. The badge is served raw and embedded via `<img>`,
+      which never executes `<script>` -- so the whole thing had to be
+      pure declarative SMIL (`animateMotion`/`animateTransform`/
+      `animate`), the same constraint the earlier `brain-preview.gif`
+      exploration ran into before settling on real screenshots instead.
+    - `_badge_robot_svg()` in `brainny/badge.py`: each of the 5 existing
+      branch paths got an `id`; the robot is two nested `<g>`s (an outer
+      one animated by `<animateMotion>` for position, an inner one
+      animated by `<animateTransform type="scale">` for size) so
+      position and size never have to fight over ownership of the
+      `transform` attribute. A round trip on one link is two chained
+      `<animateMotion>` elements on the SAME path -- `keyPoints="0;1"`
+      for the outbound leg, `keyPoints="1;0"` for the return, each
+      `begin`ing at the previous segment's `id.end` -- with a parallel
+      chain of `<animateTransform>` elements smoothly growing/shrinking
+      the scale toward each link's target size (`_robot_scale()`, same
+      "more evidence -> bigger" idea as the leaf circles' own radius
+      formula, just a gentler range so it never disappears or dwarfs the
+      badge). After all 5 links, one more segment holds position at the
+      hub for a pause (a zero-length `M x,y L x,y` "path") with a small
+      bounce (`animateTransform type="translate"`) and a fading "ha ha!"
+      text -- the laugh. The whole sequence loops forever via the
+      standard SMIL idiom for this: the first segment's `begin` is
+      `"0s;badge-robot-pause.end"` (fires once on load, then again every
+      time the pause segment finishes), rather than needing
+      `repeatCount` on every individual piece.
+    - New test `test_render_badge_svg_has_animated_robot` (parses every
+      `begin="..."` attribute's referenced ids out with a regex and
+      confirms each one actually exists as an `id=` somewhere in the
+      document) -- a typo in one of these chained ids would silently
+      produce a robot that never moves, with no error anywhere a browser
+      would ever surface, since an unresolved SMIL syncbase reference
+      just never fires. 139 tests total.
+    - Verification hit a real limitation worth recording: headless
+      Chrome's `--virtual-time-budget` could confirm the robot's
+      starting frame (correct position/size at the hub) and that
+      `pauseAnimations()`/`setCurrentTime()` are live, functioning SMIL
+      APIs on the loaded document, but every attempt to observe a LATER
+      point in the sequence -- via bigger budgets, via `setCurrentTime()`
+      seeking through an `<object>` wrapper -- landed on the exact same
+      frame (the robot frozen right at the first link's far end)
+      regardless of how much virtual time was requested. The chained-id
+      markup itself checks out against the spec (confirmed by hand-
+      reading the generated `begin=`/`id=` chain, which is also now what
+      the new test locks down), and `setCurrentTime()` seeks DID report
+      back the requested time correctly -- so the most likely explanation
+      is that this headless setup's compositor only ever advances the
+      SMIL clock by roughly however much real wall-clock time its own
+      startup/render pipeline actually takes (~1-2s), independent of the
+      requested virtual budget, since (unlike JS timers) SMIL playback is
+      driven by real compositor frames rather than anything
+      `--virtual-time-budget` intercepts. This is a different flavor of
+      the same class of headless-timing limitation noted in steps 23 and
+      25 -- real, continuously-running browser tabs (an actual GitHub
+      profile page) are not expected to share it, but it could not be
+      independently confirmed from this environment.
+
 Each step should land, get tested, and get dogfooded (per SEED.md §6
 Layer 7) before the next starts — same discipline as the v0 build.
