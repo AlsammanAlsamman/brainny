@@ -1570,5 +1570,40 @@ permission-gated local check — see above.
       push but after it does, custom interval, drive mirror + unchanged
       skip, `off`, status line. 164 passed.
 
+39. Dashboard revision: Overview landing page, search, topics, readable graph. ✅
+    - Real review of a real central brain (209 ideas, 43 projects) in
+      headless Chrome: the default radial tree was an unreadable smear of
+      ~200 overlapping labels; 136 free-text domains for 209 ideas (103
+      singletons, same area spelled many ways) left every domain-grouped
+      view with nothing to cluster; the seed/sprout/fruit legend encoded
+      nothing (every idea is still `seed`); a 3-line developer note took
+      the top of the page; no text search, though "have I hit this
+      before?" is the main question; 62% of ideas are precautions with no
+      view built for them; phone layout overflowed.
+    - New `brainny/topics.py`: `normalize_domain()` (case/spacing/"/"
+      only, applied at capture and at render, so old data benefits) and
+      `topic_of()` (ordered keyword buckets, unmatched domains keep their
+      own first segment -- never forced into a wrong bucket). On the real
+      data: 136 domains -> 17 topics.
+    - Dashboard: new default **Overview** tab (summary cards, precautions
+      checklist grouped by topic, top-3 opportunities, new this week);
+      header **search** (`/` to focus, Esc clears) wired into
+      `filteredData()` so every tab honors it, opportunities included
+      (own text or any member idea matches); "group by topic" is the new
+      default and Stats groups by the current grouping (so its treemap
+      and the list always agree); radial tree labels only topics, outside
+      the rim at each arc's middle, and labels individual ideas only when
+      <= 60 are shown (search/one project); force view labels each halo;
+      dev note replaced by a one-line summary; growth-state legend shown
+      only once states differ; Brain/Network moved behind a separator as
+      secondary tabs; narrow-screen layout (scrollable tab strip, search
+      full-width, graph above list). Also fixed: newest-ideas clicks used
+      the raw id, which never matched on a merged multi-project view.
+    - Verified in headless Chrome against the real central brain, light +
+      dark + 390px phone width: no console errors, no horizontal scroll,
+      search narrows every tab, clicking a precaution lands on that idea.
+      README screenshots in `assets/` predate this and still show the old
+      layout. 170 passed.
+
 Each step should land, get tested, and get dogfooded (per SEED.md §6
 Layer 7) before the next starts — same discipline as the v0 build.

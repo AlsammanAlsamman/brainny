@@ -12,6 +12,7 @@ from pathlib import Path
 
 from brainny.graph import DEFAULT_OUT_DIR, load_graph, next_id, save_graph
 from brainny.schema import EntryInput, GrowthLogEntry, Node, ProvenanceEntry, now_iso
+from brainny.topics import normalize_domain
 
 
 def load_entries(entries_path: Path) -> list[EntryInput]:
@@ -37,8 +38,10 @@ def capture(
     ts = now_iso()
     new_nodes: list[Node] = []
     for entry in entries:
+        fields = entry.model_dump()
+        fields["domain"] = normalize_domain(fields["domain"])
         node = Node(
-            **entry.model_dump(),
+            **fields,
             id=next_id(graph),
             state="seed",
             provenance=[ProvenanceEntry(project=project, session=session, ts=ts)],

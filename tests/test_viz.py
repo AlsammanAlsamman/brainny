@@ -111,7 +111,7 @@ def test_render_html_has_dropdown_and_mount_points():
 
 def test_render_html_has_brain_tab_and_theme_toggle():
     out = render_html(Graph())
-    assert 'data-tab="brain">Brain<' in out
+    assert 'data-tab="brain"' in out
     assert 'id="brain-main"' in out
     assert 'id="theme-toggle"' in out
     # the [data-theme] attribute must be set before <style> renders (an
@@ -125,7 +125,7 @@ def test_render_html_has_brain_tab_and_theme_toggle():
 
 def test_render_html_has_network_tab():
     out = render_html(Graph())
-    assert 'data-tab="network">Network<' in out
+    assert 'data-tab="network"' in out
     assert 'id="network-main"' in out
     assert "renderNetworkView" in out
     assert "setActiveProject" in out
@@ -138,9 +138,10 @@ def test_render_html_has_cluster_by_dropdown():
     # the same way theme/live-refresh already are.
     out = render_html(Graph())
     assert 'id="cluster-select"' in out
-    assert '<option value="domain">Cluster by domain</option>' in out
-    assert '<option value="kind">Cluster by kind</option>' in out
-    assert '<option value="tags">Cluster by primary tag</option>' in out
+    assert '<option value="topic">Group by topic</option>' in out
+    assert '<option value="domain">Group by exact domain</option>' in out
+    assert '<option value="kind">Group by kind</option>' in out
+    assert '<option value="tags">Group by primary tag</option>' in out
     assert "brainny-cluster-by" in out
     assert "function setClusterBy" in out
     assert "function clusterPath" in out
@@ -203,8 +204,31 @@ def test_render_html_domain_split_for_sub_branches():
     )
     payload = _extract_payload(render_html(graph))
     domains = {n["id"]: n["domain"] for n in payload["nodes"]}
-    assert domains == {"idea_0001": "GWAS / merging", "idea_0002": "GWAS"}
+    # normalized for display (case/spacing only); the "/" split still drives sub-branches
+    assert domains == {"idea_0001": "gwas/merging", "idea_0002": "gwas"}
     assert payload["domainCount"] == 2
+    assert {n["topic"] for n in payload["nodes"]} == {"gwas"}
+    assert payload["topicCount"] == 1
+
+
+def test_render_html_overview_is_default_tab_with_search():
+    out = render_html(Graph())
+    assert 'class="tab-btn active" data-tab="overview"' in out
+    assert 'id="overview-main"' in out
+    assert '<main id="graph-main" hidden>' in out
+    assert 'id="search"' in out
+    assert "function renderOverviewView" in out
+    assert "function matchesSearch" in out
+
+
+def test_render_html_hides_state_legend_until_states_vary():
+    same = Graph(nodes=[Node(kind="insight", title="a", summary="s", domain="x", id="idea_0001")])
+    assert "state-dot state-seed" not in render_html(same)
+    mixed = Graph(nodes=[
+        Node(kind="insight", title="a", summary="s", domain="x", id="idea_0001"),
+        Node(kind="insight", title="b", summary="s", domain="x", id="idea_0002", state="mature"),
+    ])
+    assert "state-dot state-seed" in render_html(mixed)
 
 
 def test_save_html_writes_file(tmp_path):

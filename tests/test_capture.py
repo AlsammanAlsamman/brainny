@@ -57,3 +57,12 @@ def test_capture_appends_to_existing_graph(tmp_path):
     assert nodes2[0].id == "idea_0003"
     graph = load_graph(out_dir)
     assert len(graph.nodes) == 4
+
+
+def test_capture_normalizes_domain_spelling(tmp_path):
+    entries = tmp_path / "e.json"
+    entries.write_text(
+        '[{"kind": "insight", "title": "t", "summary": "s", "domain": "  GWAS / Fine-Mapping "}]', encoding="utf-8"
+    )
+    nodes, _ = capture(entries, project="p", session="s1", out_dir=tmp_path / "out")
+    assert nodes[0].domain == "gwas/fine-mapping"

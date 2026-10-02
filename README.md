@@ -276,13 +276,17 @@ you've captured anything (you'll get a real, empty dashboard explaining
 what to do next, not an error). See it above for what it actually looks
 like once there's something in it. The dashboard (`brainny-out/graph.html`)
 is a single self-contained file — no server, works offline:
-- **Graph** — radial tree / force network, click-to-inspect; a **cluster by**
-  dropdown re-groups both it and the itemized list below by domain
-  (default), kind, or primary tag, remembered across reloads
-- **Stats** — domain treemap, growth trends, kind + origin breakdown
+- a **search box** in the header (press `/`) that filters every tab as you type
+- **Overview** (the landing page) — top opportunities, what's new this week,
+  and every precaution as a per-topic checklist to read before working in an area
+- **Graph & list** — radial tree / force network plus the itemized list;
+  a **group by** dropdown re-groups both by topic (default), exact domain,
+  kind, or primary tag, remembered across reloads. Free-text domains are
+  normalized (case/spacing) and bucketed into coarse topics (gwas, hpc,
+  pipelines, python, ai & llm, …) so related ideas actually cluster
+- **Stats** — treemap + activity table for the current grouping, kind + origin breakdown
 - **Opportunities** — AI-proposed combinations of ideas
-- **Brain** — edge-bundled mesh + a probe that gathers a live report
-- **Network** — the central brain + a small brain per connected project
+- **Brain** / **Network** (secondary) — animated idea mesh; which projects feed the central brain
 - a day/night theme toggle, top-right, in every tab
 - an opt-in **live** toggle next to it — every `capture`/`attach`/
   `propose`/`sync` already keeps `graph.html` current the moment it

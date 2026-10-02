@@ -13,6 +13,7 @@ from pathlib import Path
 from brainny.graph import DEFAULT_OUT_DIR, html_path
 from brainny.opportunities import load_opportunities
 from brainny.schema import Graph, Node, Opportunities
+from brainny.topics import normalize_domain, topic_of
 
 OPPORTUNITY_KIND_COLOR = {
     "tool": "#3b6fd6",
@@ -162,7 +163,8 @@ def _build_payload(graph: Graph, opportunities: Opportunities, title: str) -> di
                 "summary": n.summary,
                 "detail": n.detail,
                 "snippet": n.snippet,
-                "domain": n.domain,
+                "domain": normalize_domain(n.domain),
+                "topic": topic_of(n.domain),
                 "tags": n.tags,
                 "trigger": n.trigger,
                 "state": n.state,
@@ -198,7 +200,8 @@ def _build_payload(graph: Graph, opportunities: Opportunities, title: str) -> di
         "nodes": nodes,
         "sessions": sessions,
         "projects": projects,
-        "domainCount": len({n.domain for n in graph.nodes}),
+        "domainCount": len({normalize_domain(n.domain) for n in graph.nodes}),
+        "topicCount": len({topic_of(n.domain) for n in graph.nodes}),
         "kindColor": KIND_COLOR,
         "stateMeta": STATE_META,
         "originColor": ORIGIN_COLOR,
@@ -292,6 +295,46 @@ _CSS = """
   #brand-icon { width: 28px; height: 28px; object-fit: contain; flex: none; }
   header h1 { margin: 0; font-size: 1.15rem; }
   header p { margin: 0.35rem 0 0; color: var(--text-dimmer); font-size: 0.82rem; }
+  #search {
+    flex: 1 1 180px; max-width: 300px; min-width: 140px;
+    background: rgba(var(--overlay-rgb),0.06); border: 1px solid rgba(var(--overlay-rgb),0.16); color: var(--fg);
+    padding: 0.35rem 0.7rem; border-radius: 8px; font: inherit; font-size: 0.85rem;
+  }
+  #search:focus { outline: none; border-color: rgba(232,178,61,0.6); background: rgba(var(--overlay-rgb),0.09); }
+  #search::placeholder { color: var(--text-faintest); }
+  #summary-line { margin: 0.45rem 0 0; color: var(--text-dimmer); font-size: 0.8rem; }
+  .tab-sep { width: 1px; align-self: stretch; background: rgba(var(--overlay-rgb),0.14); margin: 0.2rem 0.2rem; }
+  .tab-secondary { font-size: 0.78rem; opacity: 0.8; }
+  .rim-label { font-size: 12px; font-weight: 600; pointer-events: none; }
+  .hull-label { font-size: 17px; font-weight: 600; text-anchor: middle; paint-order: stroke; stroke-width: 3px; pointer-events: none; }
+
+  /* ---- overview tab ---- */
+  main#overview-main { display: block; overflow-y: auto; padding: 1.1rem 1.4rem 2rem; }
+  #overview-main[hidden] { display: none !important; }
+  .overview-grid { display: grid; grid-template-columns: minmax(320px, 1.5fr) minmax(280px, 1fr); gap: 1.6rem; align-items: start; }
+  .check-topic { border: 1px solid rgba(var(--overlay-rgb),0.08); border-radius: 8px; margin-bottom: 0.5rem; background: rgba(var(--overlay-rgb),0.02); }
+  .check-topic summary { cursor: pointer; padding: 0.5rem 0.7rem; font-weight: 600; font-size: 0.88rem; color: var(--fg); }
+  .check-count { font-weight: 400; font-size: 0.74rem; color: var(--text-faint); background: rgba(var(--overlay-rgb),0.07); border-radius: 999px; padding: 0.05rem 0.5rem; margin-left: 0.3rem; }
+  .check-list { list-style: none; margin: 0; padding: 0 0.7rem 0.6rem 0.7rem; display: flex; flex-direction: column; gap: 0.35rem; }
+  .check-list li { padding-left: 1.3rem; position: relative; }
+  .check-list li::before { content: '\\26A0'; position: absolute; left: 0; top: 0.05rem; color: #c9432c; font-size: 0.8rem; }
+  .check-title { background: none; border: none; padding: 0; font: inherit; font-size: 0.84rem; color: var(--text); text-align: left; cursor: pointer; }
+  .check-title:hover { color: var(--fg); text-decoration: underline; }
+  .check-trigger { font-size: 0.72rem; color: var(--text-fainter); }
+  .ov-opp {
+    display: block; width: 100%; text-align: left; font: inherit; cursor: pointer; color: var(--fg);
+    background: rgba(var(--overlay-rgb),0.03); border: 1px solid rgba(var(--overlay-rgb),0.08);
+    border-radius: 10px; padding: 0.65rem 0.8rem; margin-bottom: 0.55rem;
+  }
+  .ov-opp:hover { background: rgba(var(--overlay-rgb),0.06); }
+  .ov-opp-title { font-weight: 600; font-size: 0.88rem; }
+  .ov-opp-pct { float: right; font-size: 0.74rem; color: var(--text-dimmer); }
+  .ov-opp-sum {
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+    margin-top: 0.35rem; font-size: 0.78rem; color: var(--text-dim);
+  }
+  .ov-more { background: none; border: none; color: #6f96e0; font: inherit; font-size: 0.8rem; cursor: pointer; padding: 0.1rem 0; }
+
   #view-select, #cluster-select {
     background: rgba(var(--overlay-rgb),0.06); border: 1px solid rgba(var(--overlay-rgb),0.16); color: var(--fg);
     padding: 0.3rem 0.6rem; border-radius: 8px; font: inherit; font-size: 0.85rem; cursor: pointer;
@@ -567,6 +610,28 @@ _CSS = """
   #brain-constellation .opp-kind { font-size: 0.66rem; text-transform: uppercase; letter-spacing: 0.05em; color: #e8b23d; }
   #brain-constellation .opp-title { font-size: 0.96rem; font-weight: 700; color: #fff3d0; margin: 0.15rem 0; }
   #brain-constellation .opp-conf { font-size: 0.74rem; color: #9aab97; }
+  /* ---- narrow screens: one column, scrollable tab strip, graph above
+     the list instead of beside it ---- */
+  @media (max-width: 900px) {
+    .overview-grid { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 700px) {
+    header { padding: 0.7rem 1rem; }
+    header .row { gap: 0.5rem; }
+    #tab-bar { order: 10; flex: 1 0 100%; margin-left: 0; overflow-x: auto; flex-wrap: nowrap; scrollbar-width: none; }
+    #tab-bar::-webkit-scrollbar { display: none; }
+    .tab-btn { white-space: nowrap; flex: none; }
+    #search { order: 11; flex: 1 0 100%; max-width: none; }
+    #view-select, #cluster-select { order: 12; flex: 1 1 45%; min-width: 0; }
+    #live-toggle { margin-left: auto; }
+    #project-filter-row { margin-left: 0; }
+    main { grid-template-columns: 1fr; grid-template-rows: 55vh auto; overflow-y: auto; }
+    #viz { order: -1; border-bottom: 1px solid rgba(var(--overlay-rgb),0.08); }
+    #panel { border-right: none; overflow: visible; }
+    main#overview-main, main#stats-main, main#opportunities-main { padding: 1rem; }
+    .stat-cards { grid-template-columns: repeat(2, 1fr); }
+    .domain-table th:nth-child(4), .domain-table td:nth-child(4) { display: none; }
+  }
   #brain-hint { position: absolute; bottom: 1rem; right: 1.2rem; z-index: 2; font-size: 0.72rem; color: var(--text-faintest); text-align: right; pointer-events: none; }
 """
 
@@ -643,13 +708,40 @@ _JS = """
     return activeProject === 'all' || idea.project === activeProject;
   }
 
+  // ---- free-text search: every whitespace-separated term must appear
+  // somewhere in the idea (title, summary, detail, trigger, domain, topic,
+  // tags, project, kind, snippet). Applies to every tab, like the filters
+  // above. ----
+  var searchTerms = [];
+
+  function haystackOf(idea) {
+    if (!idea._hay) {
+      idea._hay = [idea.title, idea.summary, idea.detail, idea.trigger, idea.domain, idea.topic,
+        (idea.tags || []).join(' '), idea.project, idea.kind, idea.snippet]
+        .filter(Boolean).join(' ').toLowerCase();
+    }
+    return idea._hay;
+  }
+
+  function matchesSearch(idea) {
+    if (!searchTerms.length) return true;
+    var hay = haystackOf(idea);
+    return searchTerms.every(function (term) { return hay.indexOf(term) !== -1; });
+  }
+
+  function isFiltered() {
+    return activeOrigin !== 'all' || activeProject !== 'all' || searchTerms.length > 0;
+  }
+
   function filteredData() {
-    if (activeOrigin === 'all' && activeProject === 'all') return DATA;
+    if (!isFiltered()) return DATA;
     var filtered = {};
     for (var k in DATA) { if (Object.prototype.hasOwnProperty.call(DATA, k)) filtered[k] = DATA[k]; }
-    filtered.nodes = DATA.nodes.filter(function (n) { return matchesOriginFilter(n) && matchesProjectFilter(n); });
+    filtered.nodes = DATA.nodes.filter(function (n) { return matchesOriginFilter(n) && matchesProjectFilter(n) && matchesSearch(n); });
     return filtered;
   }
+
+  var NO_MATCH_MSG = 'No ideas match the current search/filter \\u2014 clear the search box or pick "All".';
 
   function escapeHtml(s) {
     var div = document.createElement('div');
@@ -673,8 +765,8 @@ _JS = """
   // sub-branches (a "GWAS / sub-analysis" path splits on "/"); 'kind' and
   // 'tags' are flat, single-level groupings. Persisted across reloads the
   // same way theme/live-refresh are.
-  var CLUSTER_LABELS = { domain: 'domain', kind: 'kind', tags: 'primary tag' };
-  var clusterBy = 'domain';
+  var CLUSTER_LABELS = { topic: 'topic', domain: 'domain', kind: 'kind', tags: 'primary tag' };
+  var clusterBy = 'topic';
   try {
     var savedCluster = localStorage.getItem('brainny-cluster-by');
     if (savedCluster && CLUSTER_LABELS[savedCluster]) clusterBy = savedCluster;
@@ -686,6 +778,7 @@ _JS = """
   function clusterPath(idea) {
     if (clusterBy === 'kind') return [idea.kind];
     if (clusterBy === 'tags') return [(idea.tags && idea.tags.length) ? idea.tags[0] : 'untagged'];
+    if (clusterBy === 'topic') return [idea.topic || 'uncategorized'];
     return idea.domain.split('/').map(function (p) { return p.trim(); }).filter(Boolean);
   }
 
@@ -733,6 +826,7 @@ _JS = """
   function groupKeyOf(idea) {
     if (clusterBy === 'kind') return idea.kind;
     if (clusterBy === 'tags') return (idea.tags && idea.tags.length) ? idea.tags[0] : 'untagged';
+    if (clusterBy === 'topic') return idea.topic || 'uncategorized';
     return idea.domain;
   }
 
@@ -828,8 +922,8 @@ _JS = """
     if (!data.nodes.length) {
       var empty = document.createElement('p');
       empty.className = 'empty-note';
-      empty.textContent = (DATA.nodes.length && (activeOrigin !== 'all' || activeProject !== 'all'))
-        ? 'No ideas match this filter \\u2014 try a different one, or "All".'
+      empty.textContent = (DATA.nodes.length && isFiltered())
+        ? NO_MATCH_MSG
         : 'No ideas captured yet. Run `brainny capture <entries.json>`.';
       container.appendChild(empty);
       return;
@@ -903,14 +997,17 @@ _JS = """
   function tooltipHtml(n) {
     var html = '<div class="tt-title">' + escapeHtml(n.name) + '</div>';
     if (n.kind === 'idea') {
-      html += '<div class="tt-meta">' + escapeHtml(n.idea.kind) + ' \\u00b7 ' + escapeHtml(n.idea.state) + ' \\u00b7 click to view</div>';
+      html += '<div class="tt-meta">' + escapeHtml(n.idea.kind) + ' \\u00b7 ' + escapeHtml(n.idea.domain) +
+        (MULTI_PROJECT && n.idea.project ? ' \\u00b7 ' + escapeHtml(n.idea.project) : '') + ' \\u00b7 click to view</div>';
     } else if (n.kind === 'branch') {
-      html += '<div class="tt-meta">branch</div>';
+      html += '<div class="tt-meta">' + (n.count || 0) + ' idea(s)</div>';
     } else {
       html += '<div class="tt-meta">mother tree</div>';
     }
     return html;
   }
+
+  var LEAF_LABEL_LIMIT = 60;
 
   // ---- view 1: radial tree ----
   function renderRadialTree() {
@@ -965,14 +1062,42 @@ _JS = """
       .on('mouseleave', hideTooltip)
       .on('click', function (event, d) { if (d.data.kind === 'idea') focusItem(d.data.id); });
 
-    node.append('text')
+    // Labelling all ~200 leaves turns the rim into an unreadable smear, so
+    // ideas are only labelled when few are shown (a search, one project);
+    // otherwise only the groups are, and ideas name themselves on hover.
+    var labelLeaves = root.leaves().length <= LEAF_LABEL_LIMIT;
+    root.descendants().forEach(function (d) { if (d.data.kind === 'branch') d.data.count = d.leaves().length; });
+    if (!labelLeaves) {
+      var rimLabels = root.descendants().filter(function (d) { return d.depth === 1 && d.data.kind === 'branch' && d.data.count >= 3; });
+      g.append('g').selectAll('text').data(rimLabels).join('text')
+        .attr('class', 'rim-label')
+        .attr('transform', function (d) {
+          var a = d3.mean(d.leaves(), function (l) { return l.x; });
+          var p = radialPoint(a, radius + 18);
+          return 'translate(' + p[0] + ',' + p[1] + ')';
+        })
+        .attr('text-anchor', function (d) {
+          var p = radialPoint(d3.mean(d.leaves(), function (l) { return l.x; }), 1);
+          return Math.abs(p[0]) < 0.25 ? 'middle' : (p[0] < 0 ? 'end' : 'start');
+        })
+        .attr('dy', '0.31em')
+        .attr('fill', cssVar('--fg'))
+        .text(function (d) { return d.data.name + ' (' + d.data.count + ')'; });
+    }
+    node.filter(function (d) { return (d.data.kind === 'branch' && labelLeaves) || (d.data.kind === 'idea' && labelLeaves); }).append('text')
       .attr('dy', '0.31em')
-      .attr('x', function (d) { return radialPoint(d.x, d.y)[0] < 0 ? -8 : 8; })
-      .attr('text-anchor', function (d) { return radialPoint(d.x, d.y)[0] < 0 ? 'end' : 'start'; })
-      .attr('fill', cssVar('--text-muted'))
-      .style('font-size', '10px')
+      .attr('x', function (d) { return d.data.kind === 'branch' ? 0 : (radialPoint(d.x, d.y)[0] < 0 ? -8 : 8); })
+      .attr('y', function (d) { return d.data.kind === 'branch' ? -11 : 0; })
+      .attr('text-anchor', function (d) { return d.data.kind === 'branch' ? 'middle' : (radialPoint(d.x, d.y)[0] < 0 ? 'end' : 'start'); })
+      .attr('fill', function (d) { return d.data.kind === 'idea' ? cssVar('--text-muted') : cssVar('--fg'); })
+      .attr('paint-order', 'stroke').attr('stroke', cssVar('--bg')).attr('stroke-width', 3)
+      .style('font-size', function (d) { return d.data.kind === 'idea' ? '10px' : '12px'; })
+      .style('font-weight', function (d) { return d.data.kind === 'idea' ? 400 : 600; })
       .style('pointer-events', 'none')
-      .text(function (d) { return d.data.kind === 'root' ? d.data.name : (d.data.name.length > 28 ? d.data.name.slice(0, 27) + '\\u2026' : d.data.name); });
+      .text(function (d) {
+        if (d.data.kind === 'branch') return d.data.name + ' (' + d.data.count + ')';
+        return d.data.name.length > 28 ? d.data.name.slice(0, 27) + '\\u2026' : d.data.name;
+      });
 
     return function cleanup() {};
   }
@@ -984,11 +1109,15 @@ _JS = """
     var links = [];
     var groupPalette = ['#3b6fd6', '#c9432c', '#2f9e5e', '#8b5cd6', '#d68a3b', '#3bb0d6', '#d63b8a'];
     var groupColor = {};
+    var groupName = {};
     var groupIdx = 0;
 
     (function walk(node, parent, group) {
       var thisGroup = group || (node.kind === 'branch' ? node.id : null);
-      if (thisGroup && !(thisGroup in groupColor)) groupColor[thisGroup] = groupPalette[groupIdx++ % groupPalette.length];
+      if (thisGroup && !(thisGroup in groupColor)) {
+        groupColor[thisGroup] = groupPalette[groupIdx++ % groupPalette.length];
+        groupName[thisGroup] = node.name;
+      }
       nodes.push({
         id: node.id, name: node.name, kind: node.kind,
         idea: node.idea || null, value: node.value || 0,
@@ -1009,6 +1138,7 @@ _JS = """
     var hullLayer = g.append('g');
     var linkLayer = g.append('g');
     var nodeLayer = g.append('g');
+    var hullLabelLayer = g.append('g');
 
     function radiusOf(d) {
       if (d.kind === 'root') return 12;
@@ -1108,6 +1238,16 @@ _JS = """
         .attr('stroke', function (d) { return groupColor[d[0]]; })
         .attr('stroke-opacity', 0.35)
         .attr('d', function (d) { return lineGen(paddedHull(d[1], 26)); });
+      hullLabelLayer.selectAll('text')
+        .data(Object.keys(byGroup).filter(function (k) { return byGroup[k].length >= 3; })
+          .map(function (k) { return [k, byGroup[k]]; }), function (d) { return d[0]; })
+        .join('text')
+        .attr('class', 'hull-label')
+        .attr('x', function (d) { return d3.mean(d[1], function (p) { return p[0]; }); })
+        .attr('y', function (d) { return d3.mean(d[1], function (p) { return p[1]; }); })
+        .attr('fill', cssVar('--fg'))
+        .attr('stroke', cssVar('--bg'))
+        .text(function (d) { return groupName[d[0]] || d[0]; });
     }
 
     function fitToViewport(animate) {
@@ -1167,8 +1307,9 @@ _JS = """
     var now = Date.now();
     var byDomain = {};
     data.nodes.forEach(function (n) {
-      var d = byDomain[n.domain] || (byDomain[n.domain] = {
-        domain: n.domain, count: 0, recentCount: 0, kinds: {}, lastTouched: null, timestamps: [],
+      var key = groupKeyOf(n);
+      var d = byDomain[key] || (byDomain[key] = {
+        domain: key, count: 0, recentCount: 0, kinds: {}, lastTouched: null, timestamps: [],
       });
       d.count += 1;
       d.kinds[n.kind] = (d.kinds[n.kind] || 0) + 1;
@@ -1212,11 +1353,9 @@ _JS = """
   }
 
   function scrollToDomainGroup(domain) {
+    // the Stats treemap/table group by the same clustering as the list
+    // (groupKeyOf), so the group it names always exists there as-is
     switchTab('graph');
-    // the Stats treemap only ever names real domains -- jumping there only
-    // makes sense (and only finds a match) if the list is domain-grouped,
-    // so force that regardless of whatever clustering was active before.
-    setClusterBy('domain');
     setTimeout(function () {
       var group = document.querySelector('.item-group[data-domain="' + CSS.escape(domain) + '"]');
       if (!group) return;
@@ -1330,8 +1469,9 @@ _JS = """
       li.className = 'recent-item';
       li.innerHTML =
         '<span class="ri-title">' + escapeHtml(n.title) + '</span>' +
-        '<span class="ri-meta">' + escapeHtml(n.domain) + ' \\u00b7 ' + escapeHtml(formatRelative(new Date(n.lastTouched).getTime())) + '</span>';
-      li.addEventListener('click', function () { goToIdea(n.id); });
+        '<span class="ri-meta">' + escapeHtml(n.topic || n.domain) + (MULTI_PROJECT && n.project ? ' \\u00b7 ' + escapeHtml(n.project) : '') +
+        ' \\u00b7 ' + escapeHtml(formatRelative(new Date(n.lastTouched).getTime())) + '</span>';
+      li.addEventListener('click', function () { goToIdea(itemKey(n)); });
       ul.appendChild(li);
     });
     mount.appendChild(ul);
@@ -1350,6 +1490,131 @@ _JS = """
     return project === activeProject;
   }
 
+  // an opportunity stays visible under a search if its own text matches,
+  // or any idea it was built from does
+  function visibleOpportunities() {
+    var byKey = {};
+    DATA.nodes.forEach(function (n) { byKey[itemKey(n)] = n; });
+    return (DATA.opportunities || []).filter(opportunityMatchesProjectFilter).filter(function (opp) {
+      if (!searchTerms.length) return true;
+      var own = [opp.title, opp.summary, opp.rationale, opp.kind].join(' ').toLowerCase();
+      if (searchTerms.every(function (term) { return own.indexOf(term) !== -1; })) return true;
+      return (opp.ideaIds || []).some(function (k) { return byKey[k] && matchesSearch(byKey[k]); });
+    }).sort(function (a, b) { return b.weight - a.weight; });
+  }
+
+  // ---- overview tab (the landing page): what to act on, not a picture.
+  // Top opportunities, what's new this week, and every precaution as a
+  // per-topic checklist -- precautions are most of what gets captured and
+  // are only useful if you can see them before starting work in an area.
+  var WEEK_MS = 7 * 24 * 3600 * 1000;
+
+  function renderOverviewView() {
+    var mount = document.getElementById('overview-main');
+    mount.innerHTML = '';
+    var data = filteredData();
+    if (!data.nodes.length) {
+      mount.innerHTML = '<p class="empty-note" style="padding:2rem">' +
+        (DATA.nodes.length ? NO_MATCH_MSG : 'No ideas captured yet. Run `brainny capture <entries.json>`.') + '</p>';
+      return;
+    }
+    var now = Date.now();
+    var recent = data.nodes.filter(function (n) { return n.lastTouched && now - new Date(n.lastTouched).getTime() <= WEEK_MS; })
+      .sort(function (a, b) { return new Date(b.lastTouched) - new Date(a.lastTouched); });
+    var precautions = data.nodes.filter(function (n) { return n.kind === 'precaution'; });
+    var topics = {};
+    data.nodes.forEach(function (n) { topics[n.topic || 'uncategorized'] = true; });
+    var opps = visibleOpportunities();
+
+    var cards = document.createElement('div');
+    cards.className = 'stat-cards';
+    [
+      [data.nodes.length, 'ideas'],
+      [Object.keys(topics).length, 'topics'],
+      [recent.length, 'new this week'],
+      [precautions.length, 'precautions'],
+      [opps.length, 'opportunities'],
+    ].concat(MULTI_PROJECT ? [[(new Set(data.nodes.map(function (n) { return n.project; }))).size, 'projects']] : [])
+      .forEach(function (pair) {
+        var card = document.createElement('div');
+        card.className = 'stat-card';
+        card.innerHTML = '<div class="stat-num">' + pair[0] + '</div><div class="stat-label">' + pair[1] + '</div>';
+        cards.appendChild(card);
+      });
+    mount.appendChild(cards);
+
+    var grid = document.createElement('div');
+    grid.className = 'overview-grid';
+
+    // left: precautions checklist, grouped by topic, biggest first
+    var left = document.createElement('div');
+    left.className = 'stats-block';
+    left.innerHTML = '<h2>precautions checklist \\u2014 read before working in an area</h2>';
+    var byTopic = {};
+    precautions.forEach(function (n) { (byTopic[n.topic || 'uncategorized'] = byTopic[n.topic || 'uncategorized'] || []).push(n); });
+    var topicNames = Object.keys(byTopic).sort(function (a, b) { return byTopic[b].length - byTopic[a].length || a.localeCompare(b); });
+    if (!topicNames.length) {
+      left.insertAdjacentHTML('beforeend', '<p class="empty-note">No precautions in the current view.</p>');
+    }
+    topicNames.forEach(function (topic, i) {
+      var det = document.createElement('details');
+      det.className = 'check-topic';
+      if (i < 3 || searchTerms.length) det.open = true;
+      det.innerHTML = '<summary>' + escapeHtml(topic) + ' <span class="check-count">' + byTopic[topic].length + '</span></summary>';
+      var ul = document.createElement('ul');
+      ul.className = 'check-list';
+      byTopic[topic].forEach(function (n) {
+        var li = document.createElement('li');
+        li.innerHTML = '<button type="button" class="check-title">' + escapeHtml(n.title) + '</button>' +
+          (n.trigger ? '<div class="check-trigger">when: ' + escapeHtml(n.trigger) + '</div>' : '') +
+          (MULTI_PROJECT && n.project ? '<div class="check-trigger">from ' + escapeHtml(n.project) + '</div>' : '');
+        li.querySelector('.check-title').addEventListener('click', function () { goToIdea(itemKey(n)); });
+        ul.appendChild(li);
+      });
+      det.appendChild(ul);
+      left.appendChild(det);
+    });
+    grid.appendChild(left);
+
+    // right: top opportunities + new this week
+    var right = document.createElement('div');
+    right.className = 'stats-block';
+    right.innerHTML = '<h2>top opportunities</h2>';
+    if (!opps.length) {
+      right.insertAdjacentHTML('beforeend', '<p class="empty-note">None proposed yet.</p>');
+    }
+    opps.slice(0, 3).forEach(function (opp) {
+      var color = DATA.opportunityKindColor[opp.kind] || '#8a8f98';
+      var pct = Math.round(opp.weight * 100);
+      var card = document.createElement('button');
+      card.type = 'button';
+      card.className = 'ov-opp';
+      card.innerHTML = '<span class="opp-kind-badge" style="background:' + color + '22;color:' + color + ';border-color:' + color + '66">' +
+        escapeHtml(DATA.opportunityKindLabel[opp.kind] || opp.kind) + '</span> ' +
+        '<span class="ov-opp-title">' + escapeHtml(opp.title) + '</span>' +
+        '<span class="ov-opp-pct">' + pct + '%</span>' +
+        '<span class="ov-opp-sum">' + escapeHtml(opp.summary) + '</span>';
+      card.addEventListener('click', function () { switchTab('opportunities'); });
+      right.appendChild(card);
+    });
+    if (opps.length > 3) {
+      var more = document.createElement('button');
+      more.type = 'button';
+      more.className = 'ov-more';
+      more.textContent = 'all ' + opps.length + ' opportunities \\u2192';
+      more.addEventListener('click', function () { switchTab('opportunities'); });
+      right.appendChild(more);
+    }
+    right.insertAdjacentHTML('beforeend', '<h2 style="margin-top:1.4rem">new this week</h2>');
+    if (!recent.length) {
+      right.insertAdjacentHTML('beforeend', '<p class="empty-note">Nothing captured in the last 7 days.</p>');
+    } else {
+      renderRecentList(right, { nodes: recent.slice(0, 10) });
+    }
+    grid.appendChild(right);
+    mount.appendChild(grid);
+  }
+
   function renderOpportunitiesView() {
     var mount = document.getElementById('opportunities-main');
     mount.innerHTML = '';
@@ -1357,11 +1622,11 @@ _JS = """
     var byKey = {};
     DATA.nodes.forEach(function (n) { byKey[itemKey(n)] = n; });
 
-    var opps = (DATA.opportunities || []).filter(opportunityMatchesProjectFilter);
+    var opps = visibleOpportunities();
     if (!opps.length) {
       mount.innerHTML = '<p class="empty-note" style="padding:2rem">' +
         ((DATA.opportunities || []).length
-          ? 'No opportunities for this project filter \\u2014 try "All".'
+          ? 'No opportunities match the current search/filter.'
           : 'No opportunities proposed yet. An assistant running the synthesis skill ' +
             '(<code>brainny propose</code>) looks over captured ideas for ones that genuinely ' +
             'support each other toward a tool, website, statistical module, or business idea ' +
@@ -1369,8 +1634,6 @@ _JS = """
         '</p>';
       return;
     }
-
-    opps = opps.slice().sort(function (a, b) { return b.weight - a.weight; });
 
     var wrap = document.createElement('div');
     wrap.className = 'opp-list';
@@ -1420,8 +1683,8 @@ _JS = """
     var data = filteredData();
     if (!data.nodes.length) {
       mount.innerHTML = '<p class="empty-note" style="padding:2rem">' +
-        ((DATA.nodes.length && activeOrigin !== 'all')
-          ? 'No ' + escapeHtml(activeOrigin) + ' ideas yet \\u2014 try a different filter, or "All".'
+        ((DATA.nodes.length && isFiltered())
+          ? NO_MATCH_MSG
           : 'No ideas captured yet \\u2014 nothing to show stats on.') +
         '</p>';
       return;
@@ -1436,7 +1699,7 @@ _JS = """
     cards.className = 'stat-cards';
     [
       [data.nodes.length, 'ideas'],
-      [domains.length, 'domains'],
+      [domains.length, CLUSTER_LABELS[clusterBy] + 's'],
       [data.sessions.length, 'sessions'],
       [recentTotal, 'new (3d)'],
       [domains.filter(function (d) { return d.trend === 'growing'; }).length, 'growing clusters'],
@@ -1454,7 +1717,7 @@ _JS = """
 
     var left = document.createElement('div');
     left.className = 'stats-block';
-    left.innerHTML = '<h2>domain treemap \\u2014 size = idea count, color = activity</h2><div id="treemap-mount"></div>' +
+    left.innerHTML = '<h2>' + CLUSTER_LABELS[clusterBy] + ' treemap \\u2014 size = idea count, color = activity</h2><div id="treemap-mount"></div>' +
       '<p class="stats-caption">Click a cluster to jump to it in the Graph tab\\u2019s idea list.</p>';
     grid.appendChild(left);
 
@@ -1470,7 +1733,7 @@ _JS = """
         '</tr>';
     });
     right.innerHTML = '<h2>clusters, by activity</h2>' +
-      '<table class="domain-table"><thead><tr><th>domain</th><th>ideas</th><th>trend</th><th>last touched</th><th>growth</th></tr></thead>' +
+      '<table class="domain-table"><thead><tr><th>' + CLUSTER_LABELS[clusterBy] + '</th><th>ideas</th><th>trend</th><th>last touched</th><th>growth</th></tr></thead>' +
       '<tbody>' + tableRows.join('') + '</tbody></table>';
     grid.appendChild(right);
 
@@ -2162,8 +2425,8 @@ _JS = """
       var empty = document.createElement('p');
       empty.className = 'empty-note';
       empty.style.padding = '2rem';
-      empty.textContent = (DATA.nodes.length && activeOrigin !== 'all')
-        ? 'No ' + activeOrigin + ' ideas yet \\u2014 try a different filter, or "All".'
+      empty.textContent = (DATA.nodes.length && isFiltered())
+        ? NO_MATCH_MSG
         : 'No ideas captured yet \\u2014 just the mother tree. Run `brainny capture <entries.json>`.';
       vizEl.appendChild(empty);
     }
@@ -2183,24 +2446,29 @@ _JS = """
     clusterSelect.value = key;
     try { localStorage.setItem('brainny-cluster-by', key); } catch (e) { /* private browsing etc -- just won't persist */ }
     refreshItemList();
-    if (currentCleanup || filteredData().nodes.length) switchView(select.value);
+    if (activeTab === 'graph') switchView(select.value);
+    else if (activeTab === 'stats') renderStatsView();
   }
   clusterSelect.addEventListener('change', function () { setClusterBy(clusterSelect.value); });
 
-  var activeTab = 'graph';
+  var activeTab = 'overview';
   function switchTab(name) {
     if (name === activeTab) return;
     if (activeTab === 'brain' && brainCleanup) { brainCleanup(); brainCleanup = null; }
     activeTab = name;
     document.querySelectorAll('.tab-btn').forEach(function (b) { b.classList.toggle('active', b.dataset.tab === name); });
+    document.getElementById('overview-main').hidden = name !== 'overview';
     document.getElementById('graph-main').hidden = name !== 'graph';
     document.getElementById('stats-main').hidden = name !== 'stats';
     document.getElementById('opportunities-main').hidden = name !== 'opportunities';
     document.getElementById('brain-main').hidden = name !== 'brain';
     document.getElementById('network-main').hidden = name !== 'network';
     select.style.display = name === 'graph' ? '' : 'none';
+    clusterSelect.style.display = (name === 'graph' || name === 'stats') ? '' : 'none';
     descEl.hidden = name !== 'graph';
-    if (name === 'stats') {
+    if (name === 'overview') {
+      renderOverviewView();
+    } else if (name === 'stats') {
       renderStatsView();
     } else if (name === 'opportunities') {
       renderOpportunitiesView();
@@ -2208,7 +2476,7 @@ _JS = """
       renderBrainView();
     } else if (name === 'network') {
       renderNetworkView();
-    } else if (!currentCleanup && filteredData().nodes.length) {
+    } else {
       switchView(select.value);
     }
   }
@@ -2238,7 +2506,8 @@ _JS = """
   }
 
   function refreshActiveTab() {
-    if (activeTab === 'stats') renderStatsView();
+    if (activeTab === 'overview') renderOverviewView();
+    else if (activeTab === 'stats') renderStatsView();
     else if (activeTab === 'opportunities') renderOpportunitiesView();
     else if (activeTab === 'brain') renderBrainView();
     else if (activeTab === 'network') renderNetworkView();
@@ -2269,9 +2538,36 @@ _JS = """
     projectSelect.addEventListener('change', function () { setActiveProject(projectSelect.value); });
   }
 
-  switchView(select.value);
+  // ---- search box: debounced, applies to every tab ----
+  var searchInput = document.getElementById('search');
+  var searchTimer = null;
+  function applySearch() {
+    searchTerms = searchInput.value.toLowerCase().split(/\\s+/).filter(Boolean);
+    refreshItemList();
+    refreshActiveTab();
+  }
+  searchInput.addEventListener('input', function () {
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(applySearch, 160);
+  });
+  searchInput.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') { searchInput.value = ''; applySearch(); }
+  });
+  document.addEventListener('keydown', function (e) {
+    if (e.key === '/' && document.activeElement !== searchInput && !/input|select|textarea/i.test(document.activeElement.tagName)) {
+      e.preventDefault();
+      searchInput.focus();
+    }
+  });
+
+  // start on the overview; the graph renders lazily on first visit
+  select.style.display = 'none';
+  descEl.hidden = true;
+  clusterSelect.style.display = 'none';
+  renderOverviewView();
 
   window.addEventListener('resize', function () {
+    if (activeTab === 'overview') return;
     if (activeTab === 'graph') switchView(select.value);
     else if (activeTab === 'stats') renderStatsView();
     else if (activeTab === 'brain') renderBrainView();
@@ -2430,19 +2726,16 @@ def render_html(graph: Graph, opportunities: Opportunities | None = None, title:
         )
 
     subtitle = (
-        f"{len(graph.nodes)} idea(s) · {payload['domainCount']} branch(es), "
-        f"grown over {len(payload['sessions'])} session(s)"
+        f"{len(graph.nodes)} idea(s) in {payload['topicCount']} topic(s), "
+        f"from {len(payload['sessions'])} session(s)"
         + (f" across {len(projects)} project(s)" if multi_project else "")
         if graph.nodes
         else "No ideas captured yet — just the mother tree."
     )
-    project_note = (
-        " This is the merged central view — every project synced into the central folder, "
-        "shown together (concatenated, not deduplicated yet; that's still v0.4 work per SEED.md). "
-        "Use the <strong>project</strong> dropdown above to narrow to one."
-        if multi_project
-        else ""
-    )
+    # the growth-state legend only means something once states actually
+    # differ (dedup/stats, v0.1); until then every idea is a "seed" and the
+    # legend is noise
+    states_vary = len({n.state for n in graph.nodes}) > 1
 
     head = f"""<!doctype html>
 <html lang="en">
@@ -2476,20 +2769,24 @@ def render_html(graph: Graph, opportunities: Opportunities | None = None, title:
     <img id="brand-icon" src="data:image/png;base64,{_ICON_PNG_B64}" alt="">
     <h1>{_esc(title)}</h1>
     <nav id="tab-bar">
-      <button type="button" class="tab-btn active" data-tab="graph">Graph</button>
+      <button type="button" class="tab-btn active" data-tab="overview">Overview</button>
+      <button type="button" class="tab-btn" data-tab="graph">Graph &amp; list</button>
       <button type="button" class="tab-btn" data-tab="stats">Stats</button>
       <button type="button" class="tab-btn" data-tab="opportunities">Opportunities{f' ({len(opportunities.items)})' if opportunities.items else ''}</button>
-      <button type="button" class="tab-btn" data-tab="brain">Brain</button>
-      <button type="button" class="tab-btn" data-tab="network">Network</button>
+      <span class="tab-sep" aria-hidden="true"></span>
+      <button type="button" class="tab-btn tab-secondary" data-tab="brain" title="Animated view of how ideas connect">Brain</button>
+      <button type="button" class="tab-btn tab-secondary" data-tab="network" title="Which projects feed the central brain">Network</button>
     </nav>
+    <input id="search" type="search" placeholder="Search ideas…  ( / )" aria-label="Search ideas" autocomplete="off">
     <select id="view-select">
       <option value="radial">Radial tree</option>
-      <option value="force">Force network with cluster halos</option>
+      <option value="force">Force network</option>
     </select>
     <select id="cluster-select" title="Group ideas by this field, in both the graph above and the list below">
-      <option value="domain">Cluster by domain</option>
-      <option value="kind">Cluster by kind</option>
-      <option value="tags">Cluster by primary tag</option>
+      <option value="topic">Group by topic</option>
+      <option value="domain">Group by exact domain</option>
+      <option value="kind">Group by kind</option>
+      <option value="tags">Group by primary tag</option>
     </select>
     <button type="button" id="live-toggle" title="Auto-refresh this page every 20s (this file is rewritten on every capture/attach/propose/sync elsewhere)" aria-label="Toggle live auto-refresh">&#8635;</button>
     <button type="button" id="theme-toggle" title="Toggle day/night theme" aria-label="Toggle day/night theme">&#9789;</button>
@@ -2498,14 +2795,15 @@ def render_html(graph: Graph, opportunities: Opportunities | None = None, title:
     <nav id="origin-filter">{origin_filter_html}</nav>
     {f'<div id="project-filter-row">{project_filter_html}</div>' if project_filter_html else ""}
   </div>
+  <p id="summary-line">{_esc(subtitle)}</p>
   <p id="view-desc"></p>
-  <p class="note">{_esc(subtitle)} · sizing/highlighting uses the real <code>recurrence</code>/<code>state</code> fields, but v0.1 (dedup/stats) doesn't exist yet — every idea is currently <code>recurrence: 1</code>, <code>state: "seed"</code>, so nothing visibly stands out yet. Click any idea to jump to it in the list. The <strong>human / AI / collaborative</strong> filter above shows who actually originated each idea — the human supplies direction and innovation, the AI supplies collective/pattern knowledge, and a lot of real work is both.{project_note}</p>
 </header>
-<main id="graph-main">
+<main id="overview-main"></main>
+<main id="graph-main" hidden>
   <div id="panel">
     <h2>legend</h2>
     <div class="legend-row">{kind_legend}</div>
-    <div class="legend-row">{state_legend}</div>
+    {f'<div class="legend-row">{state_legend}</div>' if states_vary else ""}
     <h2>ideas</h2>
     <div id="item-list-mount"></div>
   </div>
