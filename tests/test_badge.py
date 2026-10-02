@@ -29,6 +29,7 @@ def test_compute_badge_stats_counts_by_kind_and_domain():
     assert stats["by_kind"]["skill"] == 1
     assert stats["by_kind"]["precaution"] == 1
     assert stats["domains"] == 2
+    assert stats["topics"] == 2
     assert stats["projects"] == 2
 
 

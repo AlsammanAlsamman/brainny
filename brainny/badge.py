@@ -18,6 +18,7 @@ from collections import Counter
 from datetime import datetime, timezone
 
 from brainny.schema import Graph
+from brainny.topics import topic_of
 from brainny.viz import KIND_COLOR, _ICON_PNG_B64
 
 RECENT_DAYS = 3
@@ -40,6 +41,9 @@ def compute_badge_stats(graph: Graph) -> dict:
     now = datetime.now(timezone.utc)
     by_kind: Counter = Counter(n.kind for n in graph.nodes)
     domains = {n.domain for n in graph.nodes}
+    # topics, not raw domains, for the headline: free-text domains fragment
+    # (one area spelled many ways), so their count overstates breadth
+    topics = {topic_of(n.domain) for n in graph.nodes}
     projects = {p.project for n in graph.nodes for p in n.provenance}
     recent = 0
     for n in graph.nodes:
@@ -50,6 +54,7 @@ def compute_badge_stats(graph: Graph) -> dict:
         "total": len(graph.nodes),
         "by_kind": by_kind,
         "domains": len(domains),
+        "topics": len(topics),
         "projects": len(projects),
         "recent": recent,
     }
@@ -93,7 +98,7 @@ def render_badge_svg(graph: Graph, title: str = "brAInny") -> str:
             f'</g>'
         )
 
-    subtitle = f"{stats['total']} idea(s) captured across {stats['domains']} domain(s)"
+    subtitle = f"{stats['total']} idea(s) captured across {stats['topics']} topic(s)"
     generated = datetime.now(timezone.utc).strftime("%Y-%m-%d")
 
     return f"""<svg width="{width}" height="{height}" viewBox="0 0 {width} {height}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="{_esc(title)} activity badge">
