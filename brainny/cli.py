@@ -336,7 +336,9 @@ def cmd_status(args: argparse.Namespace) -> int:
     state = "in sync" if in_sync else f"{len(graph.nodes) - len(central_graph.nodes):+d} idea(s) since last sync"
     print(f"  central copy: {len(central_graph.nodes)} idea(s) at {graph_path(central_out)} ({state})")
 
-    days_since = _days_since_last_central_commit(Path(central))
+    # the legacy daily push reminder is superseded once `brainny backup`
+    # pushes to GitHub on its own cadence -- showing both just conflicts
+    days_since = None if "github" in backup.targets() else _days_since_last_central_commit(Path(central))
     if days_since is not None:
         interval = _sync_interval_days()
         due = " - due for a GitHub push (`brainny sync --push`)" if days_since >= interval else ""
