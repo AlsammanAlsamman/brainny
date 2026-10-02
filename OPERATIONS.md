@@ -1534,5 +1534,41 @@ permission-gated local check — see above.
       and the persistence key being present in the rendered HTML. 154
       passed.
 
+38. Feature: `brainny backup` -- opt-in off-machine backup, every 72h, only when changed. ✅
+    - Real gap: a user asked whether their central brain was "pushed as
+      private to GitHub and updated every while" -- it wasn't anywhere:
+      onboarding had set up a local-only folder, and the only push path
+      (`sync --push`) needed a repo they'd set up by hand plus a yes every
+      single time. They asked for a linked private GitHub repo or Google
+      Drive folder that brainny updates every 72 hours if there are new
+      ideas.
+    - New `brainny/backup.py` + `brainny backup` (`setup --github URL`,
+      `setup --drive FOLDER`, `--interval-hours`, `schedule`, `off`,
+      `--now`). GitHub: `setup` is the one place brainny runs `git init`
+      / `remote add` itself -- the user named the URL in that command.
+      Drive: a plain copy (never deletes) into `<folder>/brainny-central`,
+      relying on Google Drive for desktop to upload -- no OAuth, and
+      OneDrive/Dropbox folders work identically.
+    - Consent model: SEED.md §1.7's no-silent-push rule still holds by
+      default. `setup` is the explicit, durable opt-in (`backup-auto:
+      true`); `backup off` revokes it. Only then do capture/attach/
+      propose/sync call `maybe_auto_backup()`, which runs only if the
+      cadence elapsed (`backup-interval-hours`, default 72) AND central
+      changed (git: staged diff or unpushed commits; drive: path+size+
+      mtime fingerprint). A pass that pushes nothing doesn't restart the
+      clock, so the first new idea after the window goes out at once.
+      Never fails the calling command; git runs with
+      `GIT_TERMINAL_PROMPT=0` and a timeout so a capture can't hang on a
+      credential prompt.
+    - Durable trigger: `backup schedule` installs a Windows scheduled task
+      (`pythonw -m brainny backup`, every 12h; cron line printed
+      elsewhere) -- closes sync-check's old "no durable timer exists"
+      gap for this half, since the OS, not a Claude session, fires it.
+    - `tests/test_backup.py` (10 tests, real bare repo standing in for
+      GitHub): setup inits + pushes, not-due no-op, due-but-unchanged
+      doesn't push or reset the clock, capture inside the window doesn't
+      push but after it does, custom interval, drive mirror + unchanged
+      skip, `off`, status line. 164 passed.
+
 Each step should land, get tested, and get dogfooded (per SEED.md §6
 Layer 7) before the next starts — same discipline as the v0 build.

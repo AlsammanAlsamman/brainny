@@ -21,6 +21,7 @@ from collections import Counter, defaultdict
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
+from brainny import backup
 from brainny import central as central_module
 from brainny import config
 from brainny.badge import render_badge_svg
@@ -168,6 +169,7 @@ def cmd_capture(args: argparse.Namespace) -> int:
     central_out = _sync_to_central(out_dir, graph, args.project)
     if central_out is not None:
         print(f"brainny: mirrored to central -> {central_out}")
+        backup.maybe_auto_backup()
     return 0
 
 
@@ -223,6 +225,7 @@ def cmd_propose(args: argparse.Namespace) -> int:
     central_out = _sync_to_central(out_dir, graph, args.project or _infer_project_name(graph))
     if central_out is not None:
         print(f"brainny: mirrored to central -> {central_out}")
+        backup.maybe_auto_backup()
     return 0
 
 
@@ -275,6 +278,7 @@ def cmd_attach(args: argparse.Namespace) -> int:
     central_out = _sync_to_central(out_dir, graph, _infer_project_name(graph))
     if central_out is not None:
         print(f"brainny: mirrored to central -> {central_out}")
+        backup.maybe_auto_backup()
     return 0
 
 
@@ -337,6 +341,9 @@ def cmd_status(args: argparse.Namespace) -> int:
         interval = _sync_interval_days()
         due = " - due for a GitHub push (`brainny sync --push`)" if days_since >= interval else ""
         print(f"  central github: last pushed {days_since:.1f} day(s) ago (push every {interval:g} day(s)){due}")
+    backup_line = backup.status_line()
+    if backup_line:
+        print(backup_line)
     return 0
 
 
@@ -894,7 +901,9 @@ def cmd_sync(args: argparse.Namespace) -> int:
 
     print(f"brainny: synced {len(graph.nodes)} idea(s) to {graph_path(central_out)}")
 
-    return _maybe_push(central_root, project, len(graph.nodes), args.push)
+    code = _maybe_push(central_root, project, len(graph.nodes), args.push)
+    backup.maybe_auto_backup()
+    return code
 
 
 def _maybe_push(central_root: Path, project: str, idea_count: int, push_requested: bool) -> int:
@@ -946,6 +955,28 @@ def _maybe_push(central_root: Path, project: str, idea_count: int, push_requeste
 
     print(f"brainny: pushed to {central_root}'s git remote.")
     return 0
+
+
+def cmd_backup(args: argparse.Namespace) -> int:
+    if args.action == "setup":
+        if not (args.github or args.drive):
+            print("brainny: pass --github <private-repo-url> and/or --drive <google-drive-folder>.", file=sys.stderr)
+            return 1
+        if args.interval_hours is not None:
+            config.set_value("backup-interval-hours", f"{args.interval_hours:g}")
+        code = 0
+        if args.github:
+            code |= backup.setup_github(args.github)
+        if args.drive:
+            code |= backup.setup_drive(args.drive)
+        return code
+    if args.action == "schedule":
+        return backup.remove_schedule() if args.remove else backup.install_schedule()
+    if args.action == "off":
+        config.set_value("backup-auto", "false")
+        print("brainny: automatic backups off (targets kept; `brainny backup --now` still works).")
+        return 0
+    return backup.run_backup(force=args.now)
 
 
 def cmd_not_yet(name: str):
@@ -1032,6 +1063,23 @@ def build_parser() -> argparse.ArgumentParser:
         help="also git commit+push if the central folder is a git repo with a remote (never runs without this flag or the git-auto-push setting)",
     )
     p_sync.set_defaults(func=cmd_sync)
+
+    p_backup = sub.add_parser(
+        "backup", help="back up the central folder to a private GitHub repo / Google Drive folder (every 72h, only when changed)"
+    )
+    p_backup.add_argument("--now", action="store_true", help="ignore the cadence and back up now (still skips if nothing changed)")
+    p_backup.set_defaults(func=cmd_backup, action=None)
+    backup_sub = p_backup.add_subparsers(dest="action")
+    p_backup_setup = backup_sub.add_parser("setup", help="choose backup target(s) and turn on automatic backups")
+    p_backup_setup.add_argument("--github", metavar="URL", help="PRIVATE GitHub repo URL; the central folder becomes a git repo pushing there")
+    p_backup_setup.add_argument("--drive", metavar="FOLDER", help="a folder synced by Google Drive for desktop (e.g. 'G:/My Drive')")
+    p_backup_setup.add_argument("--interval-hours", type=float, help=f"backup cadence in hours (default {backup.DEFAULT_INTERVAL_HOURS:g})")
+    p_backup_setup.set_defaults(func=cmd_backup)
+    p_backup_schedule = backup_sub.add_parser("schedule", help="install an OS scheduled task so backups run even without captures")
+    p_backup_schedule.add_argument("--remove", action="store_true", help="remove the scheduled task instead")
+    p_backup_schedule.set_defaults(func=cmd_backup)
+    p_backup_off = backup_sub.add_parser("off", help="turn automatic backups off")
+    p_backup_off.set_defaults(func=cmd_backup)
 
     p_search = sub.add_parser("search", help="find ideas by keyword/tag/kind/domain")
     p_search.add_argument("term")

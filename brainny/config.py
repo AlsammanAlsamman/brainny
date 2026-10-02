@@ -28,6 +28,11 @@ KNOWN_KEYS = {
     "git-auto-push": "'true' to let `brainny sync` push without needing --push each time",
     "sync-interval-days": "how often `brainny status` flags the central folder as "
     "due for a GitHub push, in days (default 1); read by cli.py's `_sync_interval_days()`",
+    "backup-github": "private GitHub repo URL the central folder backs up to (set by `brainny backup setup --github`)",
+    "backup-drive-folder": "Google Drive for desktop (or any cloud-synced) folder the central folder mirrors into",
+    "backup-interval-hours": "how often automatic backups run, in hours (default 72); only when something changed",
+    "backup-auto": "'true' once `brainny backup setup` ran: capture/attach/sync then back up whenever due",
+    "last-backup": "UTC timestamp of the last backup that actually pushed something (written by brainny)",
     "project-nature": "one-line descriptor for this project's capture prompt",
     "onboarding-done": "'true' once the one-time central-folder setup offer "
     "(brainny-onboarding skill) has been asked, so it never asks again "

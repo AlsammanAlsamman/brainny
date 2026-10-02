@@ -385,6 +385,24 @@ tracks how long it's been since the last push and flags it as due once
 `sync-interval-days` has passed (default **1 day**) —
 `brainny-sync-check` asks before pushing.
 
+**Back the central brain up off this machine** — a private GitHub repo,
+a Google Drive folder, or both. You opt in once; after that brainny
+backs up **every 72 hours, and only if there are new ideas**:
+
+```bash
+brainny backup setup --github https://github.com/<you>/brainny-central.git   # make it PRIVATE
+brainny backup setup --drive "G:/My Drive"     # a folder Google Drive for desktop syncs
+brainny backup setup --github <url> --interval-hours 48   # different cadence
+brainny backup schedule      # OS task (Windows Task Scheduler / cron) so it runs even with no captures
+brainny backup               # back up now if due;  --now ignores the cadence
+brainny backup off           # stop automatic backups
+```
+
+Every capture/attach/sync checks whether a backup is due and runs it if
+so; `brainny status` shows when the last one happened. The Drive target
+is just a copy into a folder Drive for desktop uploads (no Google login
+inside brainny), so OneDrive/Dropbox folders work the same way.
+
 **See everything together, not one project at a time:**
 
 ```bash

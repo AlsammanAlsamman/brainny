@@ -24,6 +24,16 @@ an older `brainny` build. This skill still checks for it (belt-and-
 suspenders, and it's the only thing that catches those backfill cases),
 but expect it to fire far less often than the GitHub-push-staleness half.
 
+## Automatic backups take over the push half
+
+If `brainny status` prints a `backup:` line with `(auto, ...)`, the
+user already opted into `brainny backup` (private GitHub repo and/or
+Google Drive, every 72h by default, only when changed). Then **don't ask
+about GitHub pushes at all** -- brainny pushes on its own when due. Only
+mention it if the line says `due` *and* the last backup is more than
+twice the interval old (backups are probably failing -- suggest running
+`brainny backup --now` to see the error).
+
 ## What to do
 
 1. If the `brainny` CLI isn't installed/on PATH: do nothing, silently.
